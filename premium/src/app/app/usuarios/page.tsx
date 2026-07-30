@@ -8,19 +8,26 @@ import { PersonaUsuariaForm } from "@/components/PersonaUsuariaForm";
 import { PersonaUsuaria } from "@/types/personaUsuaria";
 import { PersonasUsuariasService } from "@/services/personasUsuarias";
 
-function SearchParamsHandler({ onOpenFicha }: { onOpenFicha: (id: string, action?: string) => void }) {
+function SearchParamsHandler({ onOpenFicha }: { onOpenFicha: (id: string, params?: Record<string, string>) => void }) {
     const searchParams = useSearchParams();
-    const router = useRouter();
     const openFicha = searchParams.get('openFicha');
-    const action = searchParams.get('action');
+    const action = searchParams.get('action') || undefined;
+    const procesoId = searchParams.get('procesoId') || undefined;
+    const recordId = searchParams.get('recordId') || undefined;
+    const recordType = searchParams.get('recordType') || undefined;
+    const returnTo = searchParams.get('returnTo') || undefined;
 
     useEffect(() => {
         if (openFicha) {
-            onOpenFicha(openFicha, action || undefined);
-            // Replace url to clean up the query param without full refresh
-            router.replace('/app/usuarios');
+            onOpenFicha(openFicha, {
+                action: action || '',
+                procesoId: procesoId || '',
+                recordId: recordId || '',
+                recordType: recordType || '',
+                returnTo: returnTo || ''
+            });
         }
-    }, [openFicha, action, onOpenFicha, router]);
+    }, [openFicha, action, procesoId, recordId, recordType, returnTo, onOpenFicha]);
 
     return null;
 }
@@ -111,8 +118,8 @@ export default function UsuariosPage() {
         }
     };
 
-    const handleOpenFichaFromUrl = useCallback(async (id: string, action?: string) => {
-        if (!globalActiveYear) return;
+    const handleOpenFichaFromUrl = useCallback(async (id: string, params?: Record<string, string>) => {
+        const action = params?.action;
         
         // Try memory first
         setLoadingData(true);

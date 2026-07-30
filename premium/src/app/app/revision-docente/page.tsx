@@ -8,6 +8,7 @@ import { BandejaDocenteInteligente } from "@/components/revision-docente/Bandeja
 import { featureFlags } from "@/lib/agent/config";
 
 import { ResolvedAuthor } from "@/types/clinicalAuthor";
+import { buildClinicalRecordLink } from "@/lib/navigation/clinicalRecordLink";
 
 type RecordKind = "EVALUACION" | "EVOLUCION";
 type DateRangePreset = "HOY" | "AYER" | "7DIAS" | "HISTORICO";
@@ -374,12 +375,18 @@ export default function RevisionDocentePage() {
               <button
                 onClick={() =>
                   router.push(
-                    `/app/usuarios?openFicha=${encodeURIComponent(selected.patientId)}&recordId=${selected.id}`
+                    buildClinicalRecordLink({
+                      patientId: selected.patientId,
+                      recordId: selected.id,
+                      recordType: selected.kind,
+                      mode: 'readonly',
+                      returnTo: 'revision-docente',
+                    })
                   )
                 }
                 className="mt-6 w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700"
               >
-                Abrir en Expediente Clínico
+                Abrir Registro Exacto en Expediente
               </button>
             </>
           )}
