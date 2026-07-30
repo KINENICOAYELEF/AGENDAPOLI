@@ -1218,7 +1218,7 @@ Body: {
 
                                     <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700/70 space-y-2">
                                         <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 uppercase">3. Tutoría Metodológica</span>
-                                        <h4 className="font-bold text-white text-sm">Asesoría Metodológica en Tesis (PFG Dashboard)</h4>
+                                        <h4 className="font-bold text-white text-sm">Asesoría Metodológica en Tesis</h4>
                                         <p className="text-[11px] text-slate-300 leading-relaxed">
                                             Revisión de proyectos de título de los alumnos: metodología, cálculo muestral, consistencia del problema de investigación y citación EBM.
                                         </p>
