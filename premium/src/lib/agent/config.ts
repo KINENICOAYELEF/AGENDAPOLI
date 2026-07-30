@@ -15,3 +15,13 @@ Reglas de Comportamiento Estrictas:
 9. No invente objetivos, mediciones ni hallazgos.
 10. NUNCA modifique fichas clínicas, notas oficiales ni envíe mensajes directos a estudiantes. Todo borrador debe guardarse mediante herramientas MCP para aprobación docente.`,
 };
+
+export const featureFlags = {
+  teacherInboxV2: process.env.NEXT_PUBLIC_FF_TEACHER_INBOX_V2 === 'true' || false,
+  agentShadowMode: process.env.NEXT_PUBLIC_FF_AGENT_SHADOW_MODE === 'true' || false,
+  agentWriteEnabled: process.env.NEXT_PUBLIC_FF_AGENT_WRITE_ENABLED === 'true' || false,
+  studentFeedbackPublishing: process.env.NEXT_PUBLIC_FF_STUDENT_FEEDBACK_PUBLISHING === 'true' || false,
+  telegramAgentEnabled: process.env.NEXT_PUBLIC_FF_TELEGRAM_AGENT_ENABLED === 'true' || false,
+  nativeTriggersEnabled: process.env.NEXT_PUBLIC_FF_NATIVE_TRIGGERS_ENABLED === 'true' || false,
+};
+

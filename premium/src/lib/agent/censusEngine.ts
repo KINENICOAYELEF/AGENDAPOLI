@@ -1,8 +1,15 @@
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { mapEvidenceToRubric } from './rubrics';
+import { featureFlags } from './config';
 
 export async function runCensusEngine() {
+  if (!featureFlags.agentWriteEnabled) {
+    console.log('[PR0 Protection] runCensusEngine execution blocked: featureFlags.agentWriteEnabled is false.');
+    return;
+  }
+
   const db = getAdminDb();
+
   
   try {
     // 1. Motor determinista de censo que recorre todos los estudiantes activos

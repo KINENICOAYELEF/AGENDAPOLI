@@ -1090,9 +1090,9 @@ export default function EntrenamientoClinicoVoz() {
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <h3 className="text-lg font-black tracking-tight text-white">Google Antigravity Managed Agent Engine</h3>
-                                                <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-400/30 flex items-center gap-1">
-                                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                                                    ACTIVE / MONITORING
+                                                <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-400/30 flex items-center gap-1">
+                                                    <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                                                    MODO SOMBRA / CONFIGURACIÓN INICIAL
                                                 </span>
                                             </div>
                                             <p className="text-xs text-indigo-200/80 font-mono mt-0.5">
