@@ -9,17 +9,32 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/server/firebaseAdmin';
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+let cachedBotToken = process.env.TELEGRAM_BOT_TOKEN || '';
 const TELEGRAM_ALLOWED_CHAT_ID = process.env.TELEGRAM_ALLOWED_CHAT_ID;
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
+async function getActiveBotToken(): Promise<string> {
+    if (cachedBotToken) return cachedBotToken;
+    try {
+        const doc = await adminDb.collection('system_settings').doc('telegram_bot').get();
+        if (doc.exists && doc.data()?.botToken) {
+            cachedBotToken = doc.data().botToken;
+            return cachedBotToken;
+        }
+    } catch (e) {
+        console.error("Error reading botToken from Firestore:", e);
+    }
+    return '';
+}
+
 async function sendTelegramMessage(chatId: string | number, text: string) {
-    if (!TELEGRAM_BOT_TOKEN) {
+    const token = await getActiveBotToken();
+    if (!token) {
         console.log(`[Telegram Bot Output Mock] ChatId: ${chatId} | Text: ${text}`);
         return;
     }
 
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -32,14 +47,26 @@ async function sendTelegramMessage(chatId: string | number, text: string) {
 
 export async function GET(req: Request) {
     const url = new URL(req.url);
-    const tokenQuery = url.searchParams.get('token') || TELEGRAM_BOT_TOKEN;
+    const tokenQuery = url.searchParams.get('token') || cachedBotToken;
+
+    if (tokenQuery) {
+        cachedBotToken = tokenQuery;
+        try {
+            await adminDb.collection('system_settings').doc('telegram_bot').set({
+                botToken: tokenQuery,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+        } catch (e) {
+            console.error("Error saving botToken to Firestore:", e);
+        }
+    }
 
     if (!tokenQuery) {
         return NextResponse.json({
             status: 'SETUP_REQUIRED',
             message: 'Agrega el token de tu bot en la URL como: ?token=TU_BOT_TOKEN o configura TELEGRAM_BOT_TOKEN en Vercel',
             envConfigured: {
-                hasBotToken: Boolean(TELEGRAM_BOT_TOKEN),
+                hasBotToken: Boolean(cachedBotToken),
                 hasAllowedChatId: Boolean(TELEGRAM_ALLOWED_CHAT_ID),
                 hasWebhookSecret: Boolean(TELEGRAM_WEBHOOK_SECRET)
             }
