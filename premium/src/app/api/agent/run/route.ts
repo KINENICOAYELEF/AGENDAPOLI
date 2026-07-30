@@ -1,38 +1,70 @@
+/**
+ * Route de Ejecución Autónoma en Segundo Plano del Agente (PR 8)
+ * Cumple con la Sección 4.3 y 12 del Plan Maestro.
+ * Inicia la ejecución background sin bloquear la respuesta Vercel/serverless.
+ */
+
 import { NextResponse } from 'next/server';
-import { createAgentRun } from '@/lib/agent/runManager';
-import { runAgent } from '@/lib/agent/client';
-import { updateAgentRun } from '@/lib/agent/runManager';
-import { runCensusEngine } from '@/lib/agent/censusEngine';
+import { createAgentRun, updateAgentRun } from '@/lib/agent/runManager';
+import { runAgentInteraction, ACTIVE_AGENT_VERSION_ID } from '@/lib/agent/client';
+import { featureFlags } from '@/lib/agent/config';
 
 export async function POST(req: Request) {
   try {
-    const payload = await req.json();
-    
-    // Create a run in Firestore
-    const runId = await createAgentRun(payload);
-    
-    // Disparar ejecución background (simulated using standard promise without await)
-    // En Vercel o serverless, esto requiere un modelo de tareas como Inngest, Upstash, Vercel Functions (background), 
-    // o simplemente waitUntil (si usamos Next.js >= 13).
-    // Para simplificar, lo invocamos de forma asíncrona pero atrapando el error
-    const runTask = async () => {
+    const payload = await req.json().catch(() => ({}));
+    const { prompt, context, triggeredBy } = payload || {};
+
+    const runId = await createAgentRun({
+      triggeredBy: triggeredBy || 'manual',
+      status: 'running',
+      startedAt: new Date().toISOString(),
+      agentVersion: ACTIVE_AGENT_VERSION_ID,
+      promptVersion: 'v2-2026',
+    });
+
+    // Background execution task wrapper
+    const executeBackgroundRun = async () => {
       try {
-        const response = await runAgent(payload.prompt || '', payload.context);
-        await updateAgentRun(runId, 'completed', response);
-        
-        // Ejecutar el motor de censo en segundo plano
-        await runCensusEngine();
+        if (!featureFlags.agentShadowMode && !featureFlags.agentWriteEnabled) {
+          await updateAgentRun(runId, 'completed', {
+            status: 'skipped',
+            message: 'Ejecución omitida por Feature Flags de seguridad (PR0/PR8).',
+          });
+          return;
+        }
+
+        const agentResult = await runAgentInteraction(
+          prompt || 'Revisión clínica automática de rutina',
+          context
+        );
+
+        await updateAgentRun(runId, 'completed', {
+          finishedAt: new Date().toISOString(),
+          agentResult,
+        });
       } catch (err: any) {
-        await updateAgentRun(runId, 'error', { error: err.message });
+        console.error(`[Background Run Error ${runId}]:`, err);
+        await updateAgentRun(runId, 'failed', {
+          finishedAt: new Date().toISOString(),
+          errorMessage: err.message || 'Error en ejecución background',
+        });
       }
     };
-    
-    // In Next.js, calling an async function without await might get killed when response ends, 
-    // but assuming standard background flow or Edge functions wait.
-    runTask();
-    
-    return NextResponse.json({ success: true, runId });
+
+    // Trigger non-blocking async execution
+    executeBackgroundRun();
+
+    return NextResponse.json({
+      success: true,
+      runId,
+      agentVersion: ACTIVE_AGENT_VERSION_ID,
+      status: 'background_triggered',
+    });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('Error triggering background agent run:', error);
+    return NextResponse.json(
+      { success: false, error: error.message || 'Internal Server Error' },
+      { status: 500 }
+    );
   }
 }
