@@ -7,7 +7,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { DebugOverlay } from '@/components/DebugOverlay';
 import { SimuladorAlertaModal } from '@/components/SimuladorAlertaModal';
-import { EvidenceAlertaModal } from '@/components/evidence/EvidenceAlertaModal';
 import { NotificationCenter } from '@/components/NotificationCenter';
 import { 
     LayoutDashboard, 
@@ -90,7 +89,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex h-screen bg-slate-100/70 font-sans text-slate-900">
             <SimuladorAlertaModal />
-            <EvidenceAlertaModal />
             
             {/* Overlay Móvil */}
             {isSidebarOpen && (
@@ -228,16 +226,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                 <span>Bandeja Auditoría</span>
                             </Link>
 
-                            <Link
-                                href="/app/pfg"
-                                onClick={() => setIsSidebarOpen(false)}
-                                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                                    isActive('/app/pfg') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                                }`}
-                            >
-                                <Layers className="w-4 h-4 text-emerald-400" />
-                                <span>PFG Dashboard</span>
-                            </Link>
 
                             <Link
                                 href="/app/pasantia"
