@@ -7,6 +7,8 @@ import { useYear } from "@/context/YearContext";
 import { BandejaDocenteInteligente } from "@/components/revision-docente/BandejaDocenteInteligente";
 import { featureFlags } from "@/lib/agent/config";
 
+import { ResolvedAuthor } from "@/types/clinicalAuthor";
+
 type RecordKind = "EVALUACION" | "EVOLUCION";
 type DateRangePreset = "HOY" | "AYER" | "7DIAS" | "HISTORICO";
 
@@ -17,6 +19,7 @@ interface ReviewRecord {
   patientName: string;
   authorUid?: string;
   authorName: string;
+  authorDetails?: ResolvedAuthor;
   sessionAt?: string;
   createdAt?: string;
   status?: string;
@@ -266,9 +269,20 @@ export default function RevisionDocentePage() {
                           <span className="text-xs text-slate-500">{formatDate(record.createdAt)}</span>
                         </div>
                         <p className="mt-1 text-sm text-slate-600 line-clamp-2">{record.summary}</p>
-                        <p className="mt-2 text-xs font-medium text-slate-500">
-                          Registrado por: {record.authorName}
-                        </p>
+                        <div className="mt-2 flex items-center gap-2 text-xs font-medium text-slate-500">
+                          <span>Registrado por:</span>
+                          <span className="font-bold text-slate-800">{record.authorName}</span>
+                          {record.authorDetails?.studentCode && (
+                            <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-mono">
+                              {record.authorDetails.studentCode}
+                            </span>
+                          )}
+                          {record.authorDetails?.universityCode && (
+                            <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-[10px] font-bold">
+                              {record.authorDetails.universityCode}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex flex-wrap gap-1.5 shrink-0">

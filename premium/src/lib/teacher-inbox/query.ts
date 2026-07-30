@@ -1,4 +1,6 @@
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
+import { resolveClinicalAuthor } from '@/lib/authors/resolveClinicalAuthor';
+import { ResolvedAuthor } from '@/types/clinicalAuthor';
 
 export interface InboxQuery {
   year: string;
@@ -16,6 +18,7 @@ export interface ReviewRecordItem {
   patientName: string;
   authorUid?: string;
   authorName: string;
+  authorDetails?: ResolvedAuthor;
   sessionAt?: string;
   createdAt?: string;
   status?: string;
@@ -59,7 +62,7 @@ export async function fetchServerInbox(query: InboxQuery) {
     }
 
     const evalsSnap = await evalsRef.get();
-    evalsSnap.forEach((doc: any) => {
+    for (const doc of evalsSnap.docs) {
       const data = doc.data() as any;
       const missing: string[] = [];
       const alerts: string[] = [];
@@ -73,13 +76,18 @@ export async function fetchServerInbox(query: InboxQuery) {
       if (alerts.length > 0) priority = 'P1';
       if (data.autoSynthesis?.trafficLight === 'Rojo') priority = 'P0';
 
+      const authorUid = data.audit?.createdBy || data.autorUid;
+      const rawAuthorName = data.clinicianResponsible || data.autorName;
+      const authorDetails = await resolveClinicalAuthor(authorUid, rawAuthorName);
+
       records.push({
         id: doc.id,
         kind: 'EVALUACION',
         patientId: data.usuariaId || 'ID_DESCONOCIDO',
         patientName: data.patientName || `Paciente (${(data.usuariaId || '').slice(0, 6)})`,
-        authorUid: data.audit?.createdBy,
-        authorName: data.clinicianResponsible || 'Autor no verificado',
+        authorUid,
+        authorName: authorDetails.displayName,
+        authorDetails,
         sessionAt: data.sessionAt,
         createdAt: data.createdAt,
         status: data.status,
@@ -88,7 +96,7 @@ export async function fetchServerInbox(query: InboxQuery) {
         alerts,
         priority
       });
-    });
+    }
   }
 
   // Query evolutions
@@ -104,7 +112,7 @@ export async function fetchServerInbox(query: InboxQuery) {
     }
 
     const evolsSnap = await evolsRef.get();
-    evolsSnap.forEach((doc: any) => {
+    for (const doc of evolsSnap.docs) {
       const data = doc.data() as any;
       const missing: string[] = [];
       const alerts: string[] = [];
@@ -118,13 +126,18 @@ export async function fetchServerInbox(query: InboxQuery) {
       if (alerts.length > 0) priority = 'P2';
       if (data.pain?.contradictionReason) priority = 'P1';
 
+      const authorUid = data.audit?.createdBy || data.autorUid;
+      const rawAuthorName = data.clinicianResponsible || data.autorName;
+      const authorDetails = await resolveClinicalAuthor(authorUid, rawAuthorName);
+
       records.push({
         id: doc.id,
         kind: 'EVOLUCION',
         patientId: data.usuariaId || 'ID_DESCONOCIDO',
         patientName: data.patientName || `Paciente (${(data.usuariaId || '').slice(0, 6)})`,
-        authorUid: data.audit?.createdBy || data.autorUid,
-        authorName: data.clinicianResponsible || data.autorName || 'Autor no verificado',
+        authorUid,
+        authorName: authorDetails.displayName,
+        authorDetails,
         sessionAt: data.sessionAt || data.fechaHoraAtencion,
         createdAt: data.createdAt,
         status: data.status || data.estado,
@@ -133,7 +146,7 @@ export async function fetchServerInbox(query: InboxQuery) {
         alerts,
         priority
       });
-    });
+    }
   }
 
   // Sort by createdAt descending
