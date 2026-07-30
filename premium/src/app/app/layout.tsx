@@ -195,6 +195,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             <MessageSquare className="w-4 h-4 shrink-0 text-rose-400" />
                             <span>Defensa Comisión</span>
                         </Link>
+
+                        <Link
+                            href="/app/entrenamiento-clinico"
+                            onClick={() => setIsSidebarOpen(false)}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                                isActive('/app/entrenamiento-clinico') && (!pathname.includes('tab=ANTIGRAVITY_AGENT'))
+                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900'
+                            }`}
+                        >
+                            <Activity className="w-4 h-4 shrink-0 text-purple-400" />
+                            <span>Entrenamiento Clínico EBM</span>
+                        </Link>
                     </div>
 
                     {/* Grupo 3: Solo Módulos Docentes (Oculto para Internos) */}
