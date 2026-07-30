@@ -30,7 +30,7 @@ export async function POST(req: Request) {
             case 'tools/list_active_students': {
                 const usersSnap = await adminDb.collection('users').get();
                 const students = usersSnap.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .map((doc: any) => ({ id: doc.id, ...doc.data() }))
                     .filter((u: any) => u.role === 'INTERNO');
                 return NextResponse.json({ result: { students } });
             }
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
                 const reviewsSnap = await adminDb.collection('agent_reviews')
                     .where('createdAt', '>', cursorTimestamp || '2026-01-01')
                     .get();
-                const changes = reviewsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const changes = reviewsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
                 return NextResponse.json({ result: { changes } });
             }
 
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
                 const snapshot = await adminDb.collection('agent_reviews')
                     .where('studentId', '==', studentId)
                     .get();
-                const history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const history = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
                 return NextResponse.json({ result: { history } });
             }
 
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
                     .orderBy('createdAt', 'desc')
                     .limit(20)
                     .get();
-                const calibration = decisionsSnap.docs.map(d => d.data());
+                const calibration = decisionsSnap.docs.map((d: any) => d.data());
                 return NextResponse.json({ result: { calibration } });
             }
 
