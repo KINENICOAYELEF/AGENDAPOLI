@@ -44,12 +44,37 @@ export function handleApiError(error: any, requestId: string) {
   console.error(`[API Error ${requestId}]:`, error);
 
   const message = error?.message || 'Error interno del servidor';
-  
-  if (message.includes('Unauthorized') || message.includes('token') || message.includes('Missing Bearer')) {
+  const code = error?.code || '';
+
+  // Auth errors — Firebase Admin and token verification errors
+  if (
+    message.includes('Unauthorized') ||
+    message.includes('token') ||
+    message.includes('Missing Bearer') ||
+    message.includes('Missing or invalid') ||
+    message.includes('Decoding Firebase ID token') ||
+    code === 'auth/id-token-expired' ||
+    code === 'auth/argument-error'
+  ) {
     return apiFailure('UNAUTHORIZED', 'Acceso no autorizado. Token inválido o ausente.', requestId, 401);
   }
-  if (message.includes('Forbidden') || message.includes('requiere rol')) {
+
+  // Permission / Role errors
+  if (
+    message.includes('Forbidden') ||
+    message.includes('Teacher role required') ||
+    message.includes('requiere rol')
+  ) {
     return apiFailure('FORBIDDEN', 'Acceso denegado. Se requieren permisos docentes.', requestId, 403);
+  }
+
+  // Firebase Admin credential / init errors
+  if (
+    message.includes('FIREBASE_ADMIN') ||
+    message.includes('credentials') ||
+    message.includes('credential')
+  ) {
+    return apiFailure('SERVICE_UNAVAILABLE', 'Servicio de autenticación no disponible temporalmente.', requestId, 503);
   }
 
   return apiFailure('INTERNAL_ERROR', 'No se pudo procesar la solicitud.', requestId, 500);
