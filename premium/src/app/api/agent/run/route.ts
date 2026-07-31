@@ -4,7 +4,7 @@
  * Inicia la ejecución background sin bloquear la respuesta Vercel/serverless.
  */
 
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { createAgentRun, updateAgentRun } from '@/lib/agent/runManager';
 import { runAgentInteraction, ACTIVE_AGENT_VERSION_ID } from '@/lib/agent/client';
 import { featureFlags } from '@/lib/agent/config';
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     }
 
     const payload = await req.json().catch(() => ({}));
-    const { prompt, context, triggeredBy } = payload || {};
+    const { prompt, context, triggeredBy, sync } = payload || {};
 
     const runId = await createAgentRun({
       triggeredBy: triggeredBy || 'manual',
@@ -61,8 +61,12 @@ export async function POST(req: Request) {
       }
     };
 
-    // Trigger non-blocking async execution
-    executeBackgroundRun();
+    if (sync) {
+      await executeBackgroundRun();
+    } else {
+      // Ensure background task completes even after response is sent on Vercel
+      after(executeBackgroundRun);
+    }
 
     return NextResponse.json({
       success: true,

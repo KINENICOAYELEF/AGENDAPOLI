@@ -34,20 +34,46 @@ export async function fetchStudentSimulationMetrics(studentId: string): Promise<
   const total = osceCount + defenseCount;
 
   let lastAttemptAt: string | undefined = undefined;
+  let totalWrittenScore = 0;
+  let writtenCount = 0;
+  let totalOralScore = 0;
+  let oralCount = 0;
 
   osceSnap.forEach((doc: any) => {
     const data = doc.data();
-    if (data.fechaInicio && (!lastAttemptAt || data.fechaInicio > lastAttemptAt)) {
-      lastAttemptAt = data.fechaInicio;
+    const d = data.fechaInicio || data.fechaCompleto || data.sessionAt || data.createdAt;
+    if (d && (!lastAttemptAt || d > lastAttemptAt)) {
+      lastAttemptAt = d;
+    }
+    const score = data.porcentajeGlobal ?? data.scorePuntaje ?? data.puntajeTotal;
+    if (typeof score === 'number') {
+      totalWrittenScore += score > 1 ? score / 100 : score;
+      writtenCount++;
     }
   });
 
   defenseSnap.forEach((doc: any) => {
     const data = doc.data();
-    if (data.createdAt && (!lastAttemptAt || data.createdAt > lastAttemptAt)) {
-      lastAttemptAt = data.createdAt;
+    const d = data.createdAt || data.sessionAt || data.fechaInicio;
+    if (d && (!lastAttemptAt || d > lastAttemptAt)) {
+      lastAttemptAt = d;
+    }
+    const score = data.notaDefensa ?? data.scoreOral ?? data.averageScore ?? data.puntaje;
+    if (typeof score === 'number') {
+      totalOralScore += score > 1 ? score / 100 : score;
+      oralCount++;
     }
   });
+
+  let concordance: number | undefined = undefined;
+  if (writtenCount > 0 && oralCount > 0) {
+    const avgWritten = totalWrittenScore / writtenCount;
+    const avgOral = totalOralScore / oralCount;
+    // Ratio of oral performance relative to written performance (capped at 1.0)
+    concordance = Math.min(1.0, Number((1 - Math.abs(avgWritten - avgOral)).toFixed(2)));
+  } else if (total > 0) {
+    concordance = 1.0;
+  }
 
   return {
     studentId,
@@ -55,7 +81,7 @@ export async function fetchStudentSimulationMetrics(studentId: string): Promise<
     voiceDefenseAttemptsCount: defenseCount,
     totalAttemptsCount: total,
     minimum15Completed: total >= 15,
-    oralVsWrittenConcordance: total > 0 ? 0.85 : undefined,
+    oralVsWrittenConcordance: concordance,
     lastAttemptAt,
   };
 }
