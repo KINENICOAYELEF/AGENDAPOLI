@@ -8,9 +8,19 @@ import { NextResponse } from 'next/server';
 import { createAgentRun, updateAgentRun } from '@/lib/agent/runManager';
 import { runAgentInteraction, ACTIVE_AGENT_VERSION_ID } from '@/lib/agent/client';
 import { featureFlags } from '@/lib/agent/config';
+import { requireTeacher } from '@/lib/server/firebaseAdmin';
 
 export async function POST(req: Request) {
   try {
+    const authHeader = req.headers.get('authorization');
+    const secret = process.env.AGENT_MCP_SECRET;
+    const token = authHeader ? authHeader.replace('Bearer ', '') : '';
+
+    if (!secret || token !== secret) {
+      // If not matching agent secret, require valid teacher token
+      await requireTeacher(authHeader);
+    }
+
     const payload = await req.json().catch(() => ({}));
     const { prompt, context, triggeredBy } = payload || {};
 

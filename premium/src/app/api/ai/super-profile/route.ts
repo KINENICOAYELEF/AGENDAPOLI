@@ -5,11 +5,30 @@ import { SIM_EVAL_SUPER_PROFILE_PROMPT } from '@/lib/ai/simuladorPrompts';
 import { SimSuperProfileSchema } from '@/lib/ai/simuladorSchemas';
 import { getSuperProfile, saveSuperProfile } from '@/services/superProfileService';
 import { jsonrepair } from 'jsonrepair';
+import { getAdminAuth } from '@/lib/server/firebaseAdmin';
 
 export async function POST(req: Request) {
     try {
+        const authHeader = req.headers.get('authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return NextResponse.json({ error: 'UNAUTHORIZED', message: 'Token de autenticación requerido.' }, { status: 401 });
+        }
+
+        const token = authHeader.replace('Bearer ', '');
+        const auth = getAdminAuth();
+        const decodedToken = await auth.verifyIdToken(token);
+
         const body = await req.json();
         const { action, userId, estudianteNombre, recentTranscript, recentErrors, agentOverride } = body;
+
+        // Ensure user can only update their own profile unless they are a DOCENTE
+        if (userId && userId !== decodedToken.uid) {
+            const db = (await import('@/lib/server/firebaseAdmin')).getAdminDb();
+            const callerDoc = await db.collection('users').doc(decodedToken.uid).get();
+            if (!callerDoc.exists || callerDoc.data()?.role !== 'DOCENTE') {
+                return NextResponse.json({ error: 'FORBIDDEN', message: 'No tienes permiso para consultar este perfil.' }, { status: 403 });
+            }
+        }
 
         if (!userId) {
             return NextResponse.json({ error: 'MISSING_USER_ID', message: 'userId es requerido.' }, { status: 400 });

@@ -34,6 +34,10 @@ async function sendTelegramMessage(chatId: string | number, text: string) {
 
 export async function POST(req: Request) {
   try {
+    if (!TELEGRAM_BOT_TOKEN) {
+      return NextResponse.json({ error: 'Bot token not configured' }, { status: 500 });
+    }
+
     // 1. Verificación de Secret Token del Webhook
     if (TELEGRAM_WEBHOOK_SECRET) {
       const secretHeader = req.headers.get('x-telegram-bot-api-secret-token');
@@ -51,8 +55,8 @@ export async function POST(req: Request) {
 
     const senderChatId = String(message.chat.id);
 
-    // 2. Control Estricto de Acceso Privado (Chat ID autorizado)
-    if (TELEGRAM_ALLOWED_CHAT_ID && senderChatId !== TELEGRAM_ALLOWED_CHAT_ID) {
+    // 2. Control Estricto de Acceso Privado (Chat ID autorizado) — Fail Closed
+    if (!TELEGRAM_ALLOWED_CHAT_ID || senderChatId !== TELEGRAM_ALLOWED_CHAT_ID) {
       await sendTelegramMessage(senderChatId, '⛔ *Acceso Denegado*: Asistente docente privado de Agenda Poli.');
       return NextResponse.json({ status: 'unauthorized' }, { status: 403 });
     }

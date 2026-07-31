@@ -16,6 +16,7 @@ export interface ReviewRecordItem {
   kind: 'EVALUACION' | 'EVOLUCION';
   patientId: string;
   patientName: string;
+  processId?: string;
   authorUid?: string;
   authorName: string;
   authorDetails?: ResolvedAuthor;
@@ -52,10 +53,7 @@ export async function fetchServerInbox(query: InboxQuery) {
   // Query evaluations
   if (!query.kind || query.kind === 'EVALUACION') {
     let evalsRef = db.collection(`programs/${year}/evaluaciones`)
-      .where('createdAt', '>=', fromTime)
-      .where('createdAt', '<=', toTime)
-      .orderBy('createdAt', 'desc')
-      .limit(limitCount);
+      .limit(limitCount * 2);
 
     if (query.studentId && query.studentId !== 'TODOS') {
       evalsRef = evalsRef.where('audit.createdBy', '==', query.studentId);
@@ -64,48 +62,50 @@ export async function fetchServerInbox(query: InboxQuery) {
     const evalsSnap = await evalsRef.get();
     for (const doc of evalsSnap.docs) {
       const data = doc.data() as any;
-      const missing: string[] = [];
-      const alerts: string[] = [];
+      const recordDate = data.sessionAt || data.audit?.createdAt || data.createdAt || data.fechaHoraAtencion;
+      
+      if (recordDate && recordDate >= fromTime && recordDate <= toTime) {
+        const missing: string[] = [];
+        const alerts: string[] = [];
 
-      if (data.status === 'DRAFT') alerts.push('Guardada como borrador');
-      if (!hasValue(data.interview)) missing.push('Anamnesis');
-      if (!hasValue(data.guidedExam)) missing.push('Examen físico');
-      if (!hasValue(data.p4_plan_structured)) missing.push('Plan terapéutico');
+        if (data.status === 'DRAFT') alerts.push('Guardada como borrador');
+        if (!hasValue(data.interview)) missing.push('Anamnesis');
+        if (!hasValue(data.guidedExam)) missing.push('Examen físico');
+        if (!hasValue(data.p4_plan_structured)) missing.push('Plan terapéutico');
 
-      let priority: 'P0' | 'P1' | 'P2' | 'P3' = 'P3';
-      if (alerts.length > 0) priority = 'P1';
-      if (data.autoSynthesis?.trafficLight === 'Rojo') priority = 'P0';
+        let priority: 'P0' | 'P1' | 'P2' | 'P3' = 'P3';
+        if (alerts.length > 0) priority = 'P1';
+        if (data.autoSynthesis?.trafficLight === 'Rojo') priority = 'P0';
 
-      const authorUid = data.audit?.createdBy || data.autorUid;
-      const rawAuthorName = data.clinicianResponsible || data.autorName;
-      const authorDetails = await resolveClinicalAuthor(authorUid, rawAuthorName);
+        const authorUid = data.audit?.createdBy || data.autorUid;
+        const rawAuthorName = data.clinicianResponsible || data.autorName;
+        const authorDetails = await resolveClinicalAuthor(authorUid, rawAuthorName);
 
-      records.push({
-        id: doc.id,
-        kind: 'EVALUACION',
-        patientId: data.usuariaId || 'ID_DESCONOCIDO',
-        patientName: data.patientName || `Paciente (${(data.usuariaId || '').slice(0, 6)})`,
-        authorUid,
-        authorName: authorDetails.displayName,
-        authorDetails,
-        sessionAt: data.sessionAt,
-        createdAt: data.createdAt,
-        status: data.status,
-        summary: safeText(data.clinicalSynthesis || data.p4_plan_structured?.diagnostico_kinesiologico_narrativo) || 'Evaluación registrada',
-        missing,
-        alerts,
-        priority
-      });
+        records.push({
+          id: doc.id,
+          kind: 'EVALUACION',
+          patientId: data.usuariaId || 'ID_DESCONOCIDO',
+          patientName: data.patientName || `Paciente (${(data.usuariaId || '').slice(0, 6)})`,
+          processId: data.procesoId || undefined,
+          authorUid,
+          authorName: authorDetails.displayName,
+          authorDetails,
+          sessionAt: data.sessionAt || recordDate,
+          createdAt: recordDate,
+          status: data.status,
+          summary: safeText(data.clinicalSynthesis || data.p4_plan_structured?.diagnostico_kinesiologico_narrativo) || 'Evaluación registrada',
+          missing,
+          alerts,
+          priority
+        });
+      }
     }
   }
 
   // Query evolutions
   if (!query.kind || query.kind === 'EVOLUCION') {
     let evolsRef = db.collection(`programs/${year}/evoluciones`)
-      .where('createdAt', '>=', fromTime)
-      .where('createdAt', '<=', toTime)
-      .orderBy('createdAt', 'desc')
-      .limit(limitCount);
+      .limit(limitCount * 2);
 
     if (query.studentId && query.studentId !== 'TODOS') {
       evolsRef = evolsRef.where('audit.createdBy', '==', query.studentId);
@@ -114,38 +114,43 @@ export async function fetchServerInbox(query: InboxQuery) {
     const evolsSnap = await evolsRef.get();
     for (const doc of evolsSnap.docs) {
       const data = doc.data() as any;
-      const missing: string[] = [];
-      const alerts: string[] = [];
+      const recordDate = data.sessionAt || data.fechaHoraAtencion || data.audit?.createdAt || data.createdAt;
 
-      if (data.status === 'DRAFT' || data.estado === 'BORRADOR') alerts.push('Guardada como borrador');
-      if (!hasValue(data.sessionGoal || data.objetivoSesion)) missing.push('Objetivo de sesión');
-      if (!hasValue(data.interventions)) missing.push('Intervenciones');
-      if (!hasValue(data.nextPlan)) missing.push('Plan próxima sesión');
+      if (recordDate && recordDate >= fromTime && recordDate <= toTime) {
+        const missing: string[] = [];
+        const alerts: string[] = [];
 
-      let priority: 'P0' | 'P1' | 'P2' | 'P3' = 'P3';
-      if (alerts.length > 0) priority = 'P2';
-      if (data.pain?.contradictionReason) priority = 'P1';
+        if (data.status === 'DRAFT' || data.estado === 'BORRADOR') alerts.push('Guardada como borrador');
+        if (!hasValue(data.sessionGoal || data.objetivoSesion)) missing.push('Objetivo de sesión');
+        if (!hasValue(data.interventions)) missing.push('Intervenciones');
+        if (!hasValue(data.nextPlan)) missing.push('Plan próxima sesión');
 
-      const authorUid = data.audit?.createdBy || data.autorUid;
-      const rawAuthorName = data.clinicianResponsible || data.autorName;
-      const authorDetails = await resolveClinicalAuthor(authorUid, rawAuthorName);
+        let priority: 'P0' | 'P1' | 'P2' | 'P3' = 'P3';
+        if (alerts.length > 0) priority = 'P2';
+        if (data.pain?.contradictionReason) priority = 'P1';
 
-      records.push({
-        id: doc.id,
-        kind: 'EVOLUCION',
-        patientId: data.usuariaId || 'ID_DESCONOCIDO',
-        patientName: data.patientName || `Paciente (${(data.usuariaId || '').slice(0, 6)})`,
-        authorUid,
-        authorName: authorDetails.displayName,
-        authorDetails,
-        sessionAt: data.sessionAt || data.fechaHoraAtencion,
-        createdAt: data.createdAt,
-        status: data.status || data.estado,
-        summary: safeText(data.sessionGoal || data.objetivoSesion) || 'Evolución registrada',
-        missing,
-        alerts,
-        priority
-      });
+        const authorUid = data.audit?.createdBy || data.autorUid;
+        const rawAuthorName = data.clinicianResponsible || data.autorName;
+        const authorDetails = await resolveClinicalAuthor(authorUid, rawAuthorName);
+
+        records.push({
+          id: doc.id,
+          kind: 'EVOLUCION',
+          patientId: data.usuariaId || 'ID_DESCONOCIDO',
+          patientName: data.patientName || `Paciente (${(data.usuariaId || '').slice(0, 6)})`,
+          processId: data.procesoId || undefined,
+          authorUid,
+          authorName: authorDetails.displayName,
+          authorDetails,
+          sessionAt: recordDate,
+          createdAt: recordDate,
+          status: data.status || data.estado,
+          summary: safeText(data.sessionGoal || data.objetivoSesion) || 'Evolución registrada',
+          missing,
+          alerts,
+          priority
+        });
+      }
     }
   }
 

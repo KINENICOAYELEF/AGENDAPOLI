@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { fetchServerInbox } from '@/lib/teacher-inbox/query';
+import { requireTeacher } from '@/lib/server/firebaseAdmin';
 
 export async function GET(req: Request) {
   try {
+    const authHeader = req.headers.get('authorization');
+    await requireTeacher(authHeader);
+
     const { searchParams } = new URL(req.url);
     const year = searchParams.get('year') || new Date().getFullYear().toString();
     const kind = searchParams.get('kind') as 'EVALUACION' | 'EVOLUCION' | undefined;

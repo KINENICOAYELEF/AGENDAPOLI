@@ -24,6 +24,8 @@ interface ProcesoTimelineProps {
     personaUsuariaId: string;
     personaUsuariaName: string;
     proceso: Proceso;
+    initialRecordId?: string;
+    initialRecordType?: string;
     onBack: () => void;
 }
 
@@ -31,7 +33,7 @@ type TimelineItem =
     | { type: 'evaluacion'; data: Evaluacion; date: Date }
     | { type: 'evolucion'; data: Evolucion; date: Date };
 
-export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso, onBack }: ProcesoTimelineProps) {
+export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso, initialRecordId, initialRecordType, onBack }: ProcesoTimelineProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
     const isAdmin = (user?.role as string) === 'ADMIN' || (user?.role as string) === 'DOCENTE';
@@ -58,28 +60,48 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
             const evolsRef = collection(db, "programs", globalActiveYear, "evoluciones");
 
             const qEvals = query(evalsRef, where("procesoId", "==", proceso.id));
-            const qEvols = query(evolsRef, where("procesoId", "==", proceso.id)); // also legacy users by id
+            const qEvols = query(evolsRef, where("procesoId", "==", proceso.id));
 
-            // We do parallel fetching
-            const [evalsSnap, evolsSnap] = await Promise.all([getDocs(qEvals), getDocs(qEvols)]);
+            const [snapEvals, snapEvols] = await Promise.all([
+                getDocs(qEvals),
+                getDocs(qEvols)
+            ]);
 
-            const evals = evalsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Evaluacion));
-            const evols = evolsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Evolucion));
+            const loadedItems: TimelineItem[] = [];
 
-            const combined: TimelineItem[] = [
-                ...evals.map(e => ({ type: 'evaluacion' as const, data: e, date: new Date(e.sessionAt) })),
-                ...evols.map(e => ({ type: 'evolucion' as const, data: e, date: new Date(e.sessionAt) }))
-            ];
-
-            // sort descending with ID tie-breaker for same-timestamp items
-            combined.sort((a, b) => {
-                const diff = b.date.getTime() - a.date.getTime();
-                if (diff !== 0) return diff;
-                return (b.data.id || '').localeCompare(a.data.id || '');
+            snapEvals.docs.forEach(docSnap => {
+                const data = docSnap.data() as Evaluacion;
+                const createdAt = (data as any).createdAt;
+                const d = data.sessionAt ? new Date(data.sessionAt) : (createdAt ? new Date(createdAt) : new Date());
+                loadedItems.push({ type: 'evaluacion', data: { ...data, id: docSnap.id }, date: d });
             });
-            setItems(combined);
-        } catch (error) {
-            console.error("Error cargando timeline:", error);
+
+            snapEvols.docs.forEach(docSnap => {
+                const data = docSnap.data() as Evolucion;
+                const createdAt = (data as any).createdAt;
+                const d = data.sessionAt ? new Date(data.sessionAt) : (createdAt ? new Date(createdAt) : new Date());
+                loadedItems.push({ type: 'evolucion', data: { ...data, id: docSnap.id }, date: d });
+            });
+
+            // Ordenar por fecha descendente
+            loadedItems.sort((a, b) => b.date.getTime() - a.date.getTime());
+            setItems(loadedItems);
+
+            // Auto-open exact record if initialRecordId matches
+            if (initialRecordId) {
+                const target = loadedItems.find(i => i.data.id === initialRecordId);
+                if (target) {
+                    if (target.type === 'evaluacion') {
+                        setSelectedEval(target.data);
+                        setView('readEval');
+                    } else if (target.type === 'evolucion') {
+                        setSelectedEvol(target.data);
+                        setView('editEvol');
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Error cargando timeline:", e);
         } finally {
             setLoading(false);
         }

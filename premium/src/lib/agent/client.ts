@@ -5,13 +5,10 @@
  */
 
 import { agentConfig, featureFlags } from './config';
-import { GoogleGenAI } from '@google/genai';
+import { callAntigravityAgent } from '@/lib/ai/antigravityClient';
 import { deidentifyText } from './deidentify';
 
 export const ACTIVE_AGENT_VERSION_ID = process.env.ANTIGRAVITY_AGENT_ID || 'agenda-clinical-v2-2026-08';
-
-const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
-const ai = new GoogleGenAI({ apiKey });
 
 export async function runAgentInteraction(prompt: string, context?: any) {
   if (!featureFlags.agentShadowMode && !featureFlags.agentWriteEnabled) {
@@ -34,18 +31,18 @@ ${prompt}
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: agentConfig.model,
-      contents: finalPrompt,
-      config: {
-        systemInstruction: agentConfig.system_instruction,
-      },
+    const interaction = await callAntigravityAgent({
+      agent: ACTIVE_AGENT_VERSION_ID,
+      systemInstruction: agentConfig.system_instruction,
+      prompt: finalPrompt,
     });
 
     return {
       status: 'success',
       agentVersion: ACTIVE_AGENT_VERSION_ID,
-      result: response.text,
+      interactionId: interaction.id,
+      result: interaction.textOutput,
+      thoughts: interaction.thoughts,
     };
   } catch (error: any) {
     console.error('Antigravity Agent execution error:', error);

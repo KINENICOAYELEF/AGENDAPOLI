@@ -16,6 +16,7 @@ const generateId = () => Date.now().toString(36) + Math.random().toString(36).su
 interface UserFormProps {
     initialData: PersonaUsuaria | null;
     initialAction?: string;
+    initialRecordParams?: Record<string, string>;
     onClose: () => void;
     onSaveSuccess: (savedUser: PersonaUsuaria, isNew: boolean) => void;
 }
@@ -23,7 +24,7 @@ interface UserFormProps {
 import { useAuth, AppUser } from "@/context/AuthContext";
 import { UsersService } from "@/services/users";
 
-export function PersonaUsuariaForm({ initialData, initialAction, onClose, onSaveSuccess }: UserFormProps) {
+export function PersonaUsuariaForm({ initialData, initialAction, initialRecordParams, onClose, onSaveSuccess }: UserFormProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
 
@@ -137,7 +138,7 @@ export function PersonaUsuariaForm({ initialData, initialAction, onClose, onSave
 
     // Control de Sub- vistas (Navegación esclava en modal)
     const [subView, setSubView] = useState<'main' | 'procesos'>(
-        (initialAction?.toLowerCase() === 'evolucionar' || initialAction?.toLowerCase() === 'procesos') && initialData?.id ? 'procesos' : 'main'
+        ((initialAction?.toLowerCase() === 'evolucionar' || initialAction?.toLowerCase() === 'procesos' || initialRecordParams?.recordId || initialRecordParams?.procesoId) && initialData?.id) ? 'procesos' : 'main'
     );
 
     // Estado interno del formulario
@@ -292,6 +293,7 @@ export function PersonaUsuariaForm({ initialData, initialAction, onClose, onSave
                 personaUsuariaName={formData.identity.fullName || ""}
                 remoteHistorySnapshot={formData.remoteHistory}
                 pacienteSnapshot={formData.identity}
+                initialRecordParams={initialRecordParams}
                 onBack={() => setSubView('main')}
             />
         );

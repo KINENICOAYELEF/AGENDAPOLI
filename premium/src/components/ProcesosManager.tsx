@@ -12,9 +12,10 @@ interface ProcesosManagerProps {
     personaUsuariaName: string;
     remoteHistorySnapshot?: any;
     pacienteSnapshot?: any;
+    initialRecordParams?: Record<string, string>;
     onBack: () => void;
 }
-export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHistorySnapshot, pacienteSnapshot, onBack }: ProcesosManagerProps) {
+export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHistorySnapshot, pacienteSnapshot, initialRecordParams, onBack }: ProcesosManagerProps) {
     const { globalActiveYear } = useYear();
 
     // router interno de este panel
@@ -37,8 +38,11 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHi
             const data = await ProcesosService.getByPersona(globalActiveYear, personaUsuariaId);
             setProcesos(data);
 
-            // Si existe un proceso activo, seleccionarlo directamente para ir al Timeline
-            const active = data.find(p => p.estado === 'ACTIVO') || data[0];
+            // Si se especificó un proceso por URL, buscarlo; de lo contrario seleccionar el activo
+            const targetProc = initialRecordParams?.procesoId 
+                ? data.find(p => p.id === initialRecordParams.procesoId) 
+                : null;
+            const active = targetProc || data.find(p => p.estado === 'ACTIVO') || data[0];
             if (active) {
                 setSelectedProceso(active);
                 setView('timeline');
@@ -90,6 +94,8 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHi
                     personaUsuariaId={personaUsuariaId}
                     personaUsuariaName={personaUsuariaName}
                     proceso={selectedProceso}
+                    initialRecordId={initialRecordParams?.recordId}
+                    initialRecordType={initialRecordParams?.recordType}
                     onBack={() => setView('lista')}
                 />
             </div>

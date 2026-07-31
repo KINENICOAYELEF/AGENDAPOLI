@@ -23,8 +23,8 @@ export async function resolveClinicalAuthor(
         const resolved: ResolvedAuthor = {
           uid: authorUid,
           displayName: data.displayName || data.nombreCompleto || data.email || 'Interno Registrado',
-          studentCode: data.studentCode || `INT-${authorUid.slice(0, 6).toUpperCase()}`,
-          universityCode: data.university || data.universityCode || 'UNAB',
+          studentCode: data.studentCode || undefined,
+          universityCode: data.university || data.universityCode || undefined,
           attributionStatus: 'VERIFIED',
         };
         authorCache.set(cacheKey, resolved);
@@ -40,8 +40,8 @@ export async function resolveClinicalAuthor(
     const resolved: ResolvedAuthor = {
       uid: authorUid || null,
       displayName: rawAuthorName,
-      studentCode: 'INT-LEGACY',
-      universityCode: 'UCH',
+      studentCode: undefined,
+      universityCode: undefined,
       attributionStatus: 'LEGACY_MATCH',
     };
     authorCache.set(cacheKey, resolved);

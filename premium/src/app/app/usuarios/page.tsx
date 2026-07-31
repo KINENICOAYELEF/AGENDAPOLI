@@ -41,6 +41,7 @@ export default function UsuariosPage() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<PersonaUsuaria | null>(null);
     const [initialAction, setInitialAction] = useState<string | undefined>(undefined);
+    const [initialRecordParams, setInitialRecordParams] = useState<Record<string, string> | undefined>(undefined);
 
     // Lista completa (FASE 70: sin paginación para evitar bug de usuarios invisibles)
     const [personasUsuarias, setPersonasUsuarias] = useState<PersonaUsuaria[]>([]);
@@ -120,6 +121,7 @@ export default function UsuariosPage() {
 
     const handleOpenFichaFromUrl = useCallback(async (id: string, params?: Record<string, string>) => {
         const action = params?.action;
+        setInitialRecordParams(params);
         
         // Try memory first
         setLoadingData(true);
@@ -404,7 +406,8 @@ export default function UsuariosPage() {
                             <PersonaUsuariaForm
                                 initialData={selectedUser}
                                 initialAction={initialAction}
-                                onClose={() => { setIsFormOpen(false); setInitialAction(undefined); }}
+                                initialRecordParams={initialRecordParams}
+                                onClose={() => { setIsFormOpen(false); setInitialAction(undefined); setInitialRecordParams(undefined); }}
                                 onSaveSuccess={handleUserSaved}
                             />
                         </div>

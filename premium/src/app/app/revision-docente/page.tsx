@@ -18,6 +18,7 @@ interface ReviewRecord {
   kind: RecordKind;
   patientId: string;
   patientName: string;
+  processId?: string;
   authorUid?: string;
   authorName: string;
   authorDetails?: ResolvedAuthor;
@@ -86,7 +87,12 @@ export default function RevisionDocentePage() {
         params.append("kind", kindFilter);
       }
 
-      const res = await fetch(`/api/teacher/inbox?${params.toString()}`);
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/teacher/inbox?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (!res.ok) {
         throw new Error(`HTTP error ${res.status}`);
       }
@@ -118,6 +124,8 @@ export default function RevisionDocentePage() {
     });
   }, [records, search]);
 
+  const [activeTab, setActiveTab] = useState<'REGISTROS' | 'AGENTE_IA'>('REGISTROS');
+
   const counts = useMemo(() => {
     return {
       p0: records.filter((r) => r.priority === "P0").length,
@@ -137,8 +145,38 @@ export default function RevisionDocentePage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-8">
-      {/* BANDEJA INTELIGENTE AGENTE (sombra / modo seguro) */}
-      <BandejaDocenteInteligente />
+      {/* SELECCIÓN DE PESTAÑA PRINCIPAL BANDEJA */}
+      <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
+        <button
+          onClick={() => setActiveTab('REGISTROS')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
+            activeTab === 'REGISTROS'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <span>📋 Registros Clínicos del Día</span>
+          <span className="ml-1 px-2 py-0.5 rounded-full bg-indigo-500/20 text-[10px]">
+            {records.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('AGENTE_IA')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
+            activeTab === 'AGENTE_IA'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <span>🤖 Hallazgos & Feedback IA</span>
+        </button>
+      </div>
+
+      {activeTab === 'AGENTE_IA' ? (
+        <BandejaDocenteInteligente />
+      ) : (
+        <>
 
       {/* ENCABEZADO Y PRESETS */}
       <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 border-t border-slate-200 pt-6">
@@ -377,6 +415,7 @@ export default function RevisionDocentePage() {
                   router.push(
                     buildClinicalRecordLink({
                       patientId: selected.patientId,
+                      processId: selected.processId,
                       recordId: selected.id,
                       recordType: selected.kind,
                       mode: 'readonly',
@@ -392,6 +431,8 @@ export default function RevisionDocentePage() {
           )}
         </aside>
       </div>
+      </>
+      )}
     </div>
   );
 }
