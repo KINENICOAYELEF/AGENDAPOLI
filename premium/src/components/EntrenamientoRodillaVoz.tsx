@@ -63,7 +63,7 @@ export default function EntrenamientoRodillaVoz() {
                 currentTopic, 
                 historicalErrors, 
                 profile?.estiloCognitivo || 'NEUTRO',
-                user?.displayName ? user.displayName.split(' ')[0] : 'Denisse'
+                user?.displayName ? user.displayName.split(' ')[0] : 'Estudiante'
               )
             : '',
         voiceName: 'Orion' // Tutor
@@ -339,6 +339,7 @@ export default function EntrenamientoRodillaVoz() {
         { id: 'gonartrosis', name: 'Gonartrosis', label: '1. Gonartrosis (Fisiopatología y Ejercicio)' },
         { id: 'artroplastia', name: 'Artroplastia (PTR)', label: '2. Artroplastia Total de Rodilla (Fases)' },
         { id: 'evaluacion', name: 'Evaluación y Reevaluación', label: '3. Reevaluación Especial (Cicatriz, Marcha y SLR)' },
+        { id: 'dpf', name: 'Dolor Patelofemoral', label: '4. Dolor Patelofemoral (Razonamiento y carga)' },
     ];
 
     const getCategoryProgress = (categoryName: string) => {
@@ -365,15 +366,19 @@ export default function EntrenamientoRodillaVoz() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
                 <div className="flex justify-between items-start mb-4">
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-800 mb-1">Módulo Especial: Rodilla (Artrosis y PTR)</h2>
+                        <h2 className="text-2xl font-bold text-slate-800 mb-1">Módulo Clínico: Rodilla</h2>
                         <p className="text-slate-600">
-                            Entrenamiento intensivo en base a goniometría, marcha, testeo muscular y examen físico rápido.
+                            Práctica de razonamiento clínico: entrevista, hipótesis, diferenciales, examen, dosis de carga y decisiones de derivación.
                         </p>
                     </div>
                     <div className="bg-cyan-50 border border-cyan-100 px-4 py-2 rounded-xl text-center">
                         <p className="text-xs font-bold text-cyan-500 uppercase tracking-wider">Interna</p>
-                        <p className="text-cyan-700 font-bold">Denisse Contreras</p>
+                        <p className="text-cyan-700 font-bold">{user?.displayName || 'Estudiante'}</p>
                     </div>
+                </div>
+
+                <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/70 px-4 py-3 text-sm text-indigo-900">
+                    <strong>Razonamiento clínico en cada práctica:</strong> hipótesis → dato de entrevista o examen que la fortalece/debilita → diferencial relevante → disfunción kinesiológica modificable → decisión segura.
                 </div>
                 
                 <div className="flex gap-4">

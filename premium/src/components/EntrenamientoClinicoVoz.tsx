@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useGeminiLive } from '../hooks/useGeminiLive';
 import { HIP_TOPICS, HipTopic } from '../utils/hipTopics';
+import { KNEE_TOPICS } from '../utils/kneeTopics';
+import EntrenamientoRodillaVoz from './EntrenamientoRodillaVoz';
 import { generateHipSocraticPrompt } from '../utils/hipPrompts';
 import { 
     getUserTrainingProfile, 
@@ -154,8 +156,8 @@ export default function EntrenamientoClinicoVoz() {
     });
 
     const bodyZones = [
-        { name: 'Cadera', active: true, topicCount: 32, badge: 'Disponible' },
-        { name: 'Rodilla', active: false, topicCount: 0, badge: 'Próximamente' },
+        { name: 'Cadera', active: true, topicCount: HIP_TOPICS.length, badge: 'Disponible' },
+        { name: 'Rodilla', active: true, topicCount: KNEE_TOPICS.length, badge: 'Disponible' },
         { name: 'Hombro', active: false, topicCount: 0, badge: 'Próximamente' },
         { name: 'Columna Lumbar', active: false, topicCount: 0, badge: 'Próximamente' },
         { name: 'Columna Cervical', active: false, topicCount: 0, badge: 'Próximamente' },
@@ -177,19 +179,32 @@ export default function EntrenamientoClinicoVoz() {
         setOpenCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
     };
 
-    const handleStartSession = async (topic: HipTopic) => {
+    const handleStartSession = (topic: HipTopic) => {
         setCurrentTopic(topic);
         setSessionState('CONNECTING');
         setTimer(0);
         clearTranscript();
-        try {
-            await connect();
-            setSessionState('IN_PROGRESS');
-        } catch (error) {
+    };
+
+    // El tema debe llegar primero al hook de voz. Conectar dentro del mismo
+    // click usaba el closure del tema anterior (por ejemplo c1.1 al elegir
+    // c1.4), por lo que la voz y la pantalla podían quedar desalineadas.
+    useEffect(() => {
+        if (sessionState !== 'CONNECTING' || connectionState !== 'disconnected') return;
+        connect().catch((error) => {
             console.error("Error al conectar Gemini Live:", error);
             setSessionState('IDLE');
+        });
+    }, [sessionState, connectionState, currentTopic.id, connect]);
+
+    useEffect(() => {
+        if (sessionState === 'CONNECTING' && connectionState === 'connected') {
+            setSessionState('IN_PROGRESS');
         }
-    };
+        if (sessionState === 'CONNECTING' && connectionState === 'error') {
+            setSessionState('IDLE');
+        }
+    }, [sessionState, connectionState]);
 
     const handleReconnect = async () => {
         setSessionState('CONNECTING');
@@ -379,7 +394,7 @@ export default function EntrenamientoClinicoVoz() {
                             Módulo de Simulación Clínica EBM
                         </span>
                         <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wider">
-                            32 Temas EBM Activos
+                            {HIP_TOPICS.length} Temas EBM Activos
                         </span>
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
@@ -388,6 +403,9 @@ export default function EntrenamientoClinicoVoz() {
                     </h1>
                     <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
                         Práctica interactiva socrática de razonamiento clínico basada en evidencia científica y guías internacionales.
+                    </p>
+                    <p className="mt-2 max-w-2xl text-xs font-medium text-indigo-800">
+                        En cada tema: hipótesis → dato que aumenta o reduce su peso → diferencial → disfunción kinesiológica modificable → decisión segura.
                     </p>
                 </div>
 
@@ -757,8 +775,13 @@ export default function EntrenamientoClinicoVoz() {
                                             </div>
                                         </div>
 
-                                        {/* Contenido de Zona Activa (Cadera) */}
+                                        {/* Contenido de zonas activas */}
                                         {zone.active && openZone === zone.name && (
+                                            zone.name === 'Rodilla' ? (
+                                                <div className="border-t border-slate-100 p-4 pt-5">
+                                                    <EntrenamientoRodillaVoz />
+                                                </div>
+                                            ) : (
                                             <div className="p-4 pt-0 border-t border-slate-100 space-y-4">
                                                 {/* Buscador de temas dentro de la zona */}
                                                 <div className="relative pt-3">
@@ -857,6 +880,7 @@ export default function EntrenamientoClinicoVoz() {
                                                     })}
                                                 </div>
                                             </div>
+                                            )
                                         )}
                                     </div>
                                 ))}
@@ -875,7 +899,7 @@ export default function EntrenamientoClinicoVoz() {
                                     </div>
                                     <div>
                                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Temas Completados</span>
-                                        <span className="text-xl font-black text-slate-900 block leading-tight">{completedTopicsCount} / 32</span>
+                                        <span className="text-xl font-black text-slate-900 block leading-tight">{completedTopicsCount} / {HIP_TOPICS.length}</span>
                                     </div>
                                 </div>
 

@@ -1,7 +1,7 @@
 export interface KneeTopic {
     id: string;
     nombre: string;
-    categoria: 'Gonartrosis' | 'Artroplastia (PTR)' | 'Evaluación y Reevaluación';
+    categoria: 'Gonartrosis' | 'Artroplastia (PTR)' | 'Evaluación y Reevaluación' | 'Dolor Patelofemoral' | 'LCA y retorno al deporte';
     contenidoBase: string;
     preguntasEtapa2: string[];
     casoEtapa3: string;
@@ -37,14 +37,14 @@ export const KNEE_TOPICS: KneeTopic[] = [
         categoria: "Gonartrosis",
         contenidoBase: `
 - No modificables: edad (principal), sexo femenino (rol de estrógenos en metabolismo del cartílago), lesiones previas (meniscectomía total aumenta riesgo ~5 veces; LCA genera cambios biomecánicos crónicos), genética.
-- Modificables: obesidad (mecánico: ~4 kg de carga por cada kg de peso por paso; inflamatorio: adipocinas proinflamatorias como leptina actúan directo en cartílago), debilidad de cuádriceps (factor de riesgo independiente, no solo consecuencia), carga laboral repetitiva, sedentarismo (cartílago se nutre por difusión del líquido sinovial; sin movimiento no hay nutrición), mala alineación (varo/valgo concentra carga en un compartimento).
+- Modificables: mayor adiposidad, baja capacidad de fuerza, carga laboral repetitiva, inactividad física y tolerancia reducida a la carga. No se explica el problema como una rodilla que "se seca" o un cartílago que deja de nutrirse: el foco clínico es recuperar capacidad y actividad de forma progresiva.
 - El ejercicio no "desgasta": mejora la capacidad de carga del tejido y reduce inflamación sistémica.
 - Caso integrado: Doña Carmen, 62 años, IMC 34, 20 años de trabajo con carga, ahora evita moverse "para no desgastarse más". Úsalo para mostrar cómo el sedentarismo es el factor activo más dañino en su caso.
 `,
         preguntasEtapa2: [
             "¿Qué diferencia práctica hay entre los factores de riesgo modificables y no modificables en la gonartrosis?",
             "Explica detalladamente la diferencia entre los mecanismos mecánicos e inflamatorios de la obesidad sobre la articulación de la rodilla.",
-            "¿Por qué el sedentarismo es nocivo para la nutrición del cartílago articular?"
+            "¿Cómo explicas, sin mitos sobre 'nutrir el cartílago', por qué la inactividad puede reducir la capacidad funcional y la tolerancia a la carga?"
         ],
         casoEtapa3: `"Don Rodrigo, 58 años, exfutbolista, IMC 29, meniscectomía parcial medial a los 35 años, trabaja sentado. Su hermano gemelo también tiene gonartrosis." Identifica y clasifica todos sus factores de riesgo. Propón cuáles puedes abordar desde la kinesiología y justifica cómo lo harás.`,
         preguntasEtapa4: [
@@ -109,7 +109,7 @@ export const KNEE_TOPICS: KneeTopic[] = [
         contenidoBase: `
 - Primera línea según OARSI 2019, NICE 2022, ACR 2021, EULAR 2023. Efecto comparable o superior a AINEs a mediano-largo plazo.
 - Mecanismos:
-  (1) Mecánico: movimiento mejora nutrición del cartílago por difusión del líquido sinovial; carga progresiva aumenta capacidad del tejido.
+  (1) Funcional: la exposición gradual al movimiento y a la carga mejora la capacidad para las tareas relevantes; no se prescribe ejercicio con la promesa de "reparar" o "alimentar" el cartílago.
   (2) Neuromuscular: cuádriceps más fuerte reduce carga en estructuras pasivas.
   (3) Antiinflamatorio: ejercicio aeróbico reduce mediadores sistémicos inflamatorios (IL-6 en bajas dosis tiene efecto antiinflamatorio).
   (4) Analgésico central: hipoalgesia inducida por ejercicio (HIE), activa sistema opioide endógeno y modulación descendente del dolor.
@@ -163,7 +163,7 @@ export const KNEE_TOPICS: KneeTopic[] = [
 - Nocebo: efecto negativo de comunicación amenazante. Mecanismo: activa el eje amígdala-HPA, aumenta amenaza percibida, inhibe vías descendentes inhibitorias del dolor, puede crear o amplificar síntomas reales. Frases frecuentes: "tiene la rodilla destruida", "el cartílago no se recupera", "con esa artrosis no puede ejercitarse".
 - PNE (Pain Neuroscience Education): enseña al paciente cómo funciona el dolor. Evidencia: reduce catastrofismo, mejora autoeficacia y adherencia al ejercicio. Reconceptualización: artrosis es manejable, movimiento es medicina, dolor no siempre = daño.
 - Autoeficacia: predictor fuerte del resultado funcional. Se construye con metas alcanzables, feedback positivo y experiencias de éxito graduales. Mecanismo: activa vías inhibitorias endógenas del dolor.
-- Comunicación anti-nocebo: frases que reducen amenaza y activan vías inhibitorias: "el movimiento nutre la articulación", "su sistema tiene más capacidad de la que cree".
+- Comunicación anti-nocebo: frases que reducen amenaza: "podemos dosificar el movimiento para recuperar capacidad", "su sistema puede adaptarse de forma gradual".
 - Caso integrado: paciente que dice "el médico me dijo que tengo la rodilla para la basura y que no puedo moverme". Primera sesión.
 `,
         preguntasEtapa2: [
@@ -305,7 +305,7 @@ export const KNEE_TOPICS: KneeTopic[] = [
         ],
         casoEtapa3: `"Día 4 post-PTR. El paciente presenta un déficit de extensión de 8° pasivos y camina con andador sin lograr el apoyo de talón en extensión terminal. Reporta dolor de 5/10 durante la marcha y presenta edema moderado." Planifica paso a paso tu intervención para abordar el déficit de extensión hoy.`,
         preguntasEtapa4: [
-            "¿Cómo altera una contractura permanente en flexo de 10° la demanda de fuerza sobre el cuádriceps contralateral durante la marcha prolongada?",
+            "Ante un déficit persistente de extensión, ¿qué datos te permiten diferenciar limitación pasiva articular, derrame/inhibición, dolor, adherencia postoperatoria u otra causa antes de elegir una intervención?",
             "Explica el mecanismo analgésico de la crioterapia a través del bloqueo de conducción nerviosa periférica y su efecto en los nociceptores.",
             "¿En qué consiste el principio de verticalización precoz y cuál es su efecto sobre las tasas de complicaciones sistémicas postoperatorias?"
         ]
@@ -328,7 +328,7 @@ export const KNEE_TOPICS: KneeTopic[] = [
         casoEtapa3: `"Semana 5 post-PTR. El paciente presenta 95° de flexión y extensión completa. Camina de forma independiente sin bastón dentro del box. Su fuerza de cuádriceps es de M3+. Declara que quiere ir caminando solo al almacén de su barrio a unas 3 cuadras." ¿Qué le respondes, bajo qué condiciones y cómo lo fundamentas?`,
         preguntasEtapa4: [
             "¿Cuál es el patrón de reclutamiento excéntrico de los flexores e extensores de rodilla al descender una pendiente inclinada?",
-            "¿Por qué el entrenamiento en cadena cinética cerrada ofrece una ventaja propioceptiva en comparación con el leg extension en cadena abierta?",
+            "¿Cómo eliges entre ejercicios en cadena abierta y cerrada según la tarea, el rango tolerado, la irritabilidad y el objetivo de fuerza, sin tratarlos como ejercicios 'buenos' o 'malos' por definición?",
             "Explica las características histológicas de la cicatriz articular en fase de remodelación temprana a la quinta semana postoperatoria."
         ]
     },
@@ -337,14 +337,14 @@ export const KNEE_TOPICS: KneeTopic[] = [
         nombre: "2.7 — Rehabilitación fase funcional post-PTR (semanas 6-12)",
         categoria: "Artroplastia (PTR)",
         contenidoBase: `
-- Objetivos: normalizar fuerza (LSI ≥80%), equilibrio, propiocepción y reentrenamiento funcional para AVD y actividades de bajo impacto.
+- Objetivos: recuperar fuerza, equilibrio y desempeño en tareas significativas, comparando con la línea basal y el lado contralateral cuando corresponda, no usando un único porcentaje como alta automática.
 - Bajo impacto: caminata, bicicleta, natación. Alto impacto: NO recomendadas por riesgo de desgaste acelerado del polietileno.
-- Propiocepción: la resección de los ligamentos y cápsula altera los mecanorreceptores articulares, requiriendo reentrenamiento neuromuscular.
+- El entrenamiento neuromuscular se orienta a confianza, control de tarea, fuerza y exposición progresiva. No se debe asumir una pérdida permanente de "propiocepción" solo por la cirugía.
 - Criterios de alta: independencia funcional, simetría de fuerza adecuada, rango funcional completo sin dolor severo, plan domiciliario asimilado.
 `,
         preguntasEtapa2: [
             "Explica por qué los deportes de impacto (como correr o tenis singles) están contraindicados permanentemente tras una PTR y cómo educarías al respecto.",
-            "¿Cómo se ve afectada la propiocepción de la rodilla tras la resección del LCA, LCP y la cápsula sinovial, y cómo abordas esta pérdida?",
+            "¿Cómo eliges y progresas tareas de equilibrio, fuerza y función tras una PTR usando desempeño, síntomas y objetivos de la persona, sin atribuir la limitación a una 'pérdida de propiocepción' no demostrada?",
             "¿Cuáles son las metas exactas que debe cumplir el paciente en fuerza, rango y testeo funcional para recibir un alta kinesiológica definitiva?"
         ],
         casoEtapa3: `"Semana 11 post-PTR. El paciente es independiente en sus actividades. Registra un TUG de 10.5 segundos y un 30-sec Chair Stand de 12 repeticiones. Al preguntarle cómo se siente, te dice: 'La rodilla no me duele, pero la siento extraña, como si fuera de madera y no me perteneciera'. Pide el alta." ¿Es momento de dar el alta funcional? Justifica tu respuesta.`,
@@ -407,7 +407,7 @@ export const KNEE_TOPICS: KneeTopic[] = [
 - Goniometría correcta: Paciente en decúbito supino. Fulcro en epicóndilo lateral, brazo fijo apunta a trocánter mayor, brazo móvil apunta a maleolo lateral.
 - Diagnóstico Diferencial del Déficit de Extensión (Clave para evitar bloqueos):
   (1) Lag de Extensión (Extensión Activa Deficiente): Ocurre cuando la extensión pasiva es completa (0° con ayuda del terapeuta), pero el paciente no es capaz de lograr o mantener activamente la extensión completa (ej: se queda en -10° activos). Indica inhibición/debilidad extrema del cuádriceps.
-  (2) Restricción Capsular o Articular: Ocurre cuando tanto la extensión pasiva como la activa están limitadas al mismo rango (ej: -15° pasivos y -15° activos). Indica rigidez de la cápsula posterior, acortamiento de isquiotibiales o artrofibrosis en desarrollo.
+  (2) Restricción pasiva de extensión: ocurre cuando extensión pasiva y activa están limitadas de forma similar (ej: -15° pasivos y -15° activos). Obliga a diferenciar derrame, dolor/guardia, restricción articular, adherencias postoperatorias o artrofibrosis; no se etiqueta automáticamente como "acortamiento".
 `,
         preguntasEtapa2: [
             "Explica el paso a paso exacto para realizar el diagnóstico diferencial entre un lag de extensión de cuádriceps y una limitación articular pasiva de la rodilla.",
@@ -517,6 +517,136 @@ export const KNEE_TOPICS: KneeTopic[] = [
             "¿Por qué interrogar sobre el dolor de pantorrilla tiene prioridad clínica antes de hacer la prueba de fuerza del cuádriceps?",
             "¿Cómo se justifica pedagógicamente limitar la anamnesis en una sesión de reevaluación funcional comparado con una evaluación de primera vez?",
             "¿Qué información sobre el cuádriceps te entrega saber que el paciente ya no usa bastón en interiores pero sí en la calle?"
+        ]
+    },
+    {
+        id: "k3.1",
+        nombre: "3.1 — Dolor patelofemoral: hipótesis y descarte",
+        categoria: "Dolor Patelofemoral",
+        contenidoBase: `
+- El dolor patelofemoral (DPF) es una presentación clínica, no una etiqueta que explique por sí sola la causa. Suele ser dolor retropatelar o peripatelar relacionado con sentarse, escaleras, sentadillas, correr o saltar.
+- La entrevista debe precisar inicio, cambio reciente de carga, irritabilidad, derrame, bloqueo, inestabilidad, dolor nocturno, síntomas sistémicos y objetivos de la persona.
+- El patrón compatible con DPF gana peso si el dolor se reproduce en tareas con carga de rodilla flexionada y no hay datos que orienten a una lesión aguda intraarticular u otra condición médica.
+- Derrame importante tras traumatismo, bloqueo verdadero, incapacidad de extender, fiebre, dolor de pantorrilla, dolor óseo nocturno o deterioro rápido cambian la prioridad: se suspende la hipótesis simple de DPF y se deriva o se amplía la evaluación.
+`,
+        preguntasEtapa2: [
+            "¿Qué datos de entrevista aumentan el peso de la hipótesis de DPF y qué datos la debilitan?",
+            "¿Cómo diferencias dolor anterior relacionado con carga de una presentación que exige descartar lesión aguda intraarticular?",
+            "Formula una disfunción kinesiológica modificable sin convertir el diagnóstico médico en la explicación completa."
+        ],
+        casoEtapa3: `"Estudiante de 20 años, dolor anterior de rodilla al bajar escaleras y al correr tras aumentar sus entrenamientos. No refiere traumatismo, derrame ni bloqueo." Construye hipótesis principal, dos diferenciales, datos faltantes y primera decisión de evaluación.`,
+        preguntasEtapa4: [
+            "¿Qué significa que un hallazgo aumente o disminuya la probabilidad de una hipótesis, en vez de confirmarla por sí solo?",
+            "¿Qué banderas cambian tu conducta antes de indicar ejercicios?",
+            "¿Por qué 'mal tracking' no debe usarse como diagnóstico suficiente?"
+        ]
+    },
+    {
+        id: "k3.2",
+        nombre: "3.2 — DPF: entrevista, carga y objetivos funcionales",
+        categoria: "Dolor Patelofemoral",
+        contenidoBase: `
+- Cuantifica las tareas relevantes: volumen, frecuencia, superficie, calzado si es pertinente, recuperación, sueño, contexto deportivo y qué actividad la persona quiere recuperar.
+- Un aumento brusco de volumen o intensidad puede apoyar una hipótesis de tolerancia de carga insuficiente, pero no sustituye la exploración ni demuestra causalidad única.
+- Evita centrar la entrevista en hallazgos anatómicos aislados. La conducta se guía por función, respuesta a la carga, examen y prioridades de la persona.
+- Define una meta observable: por ejemplo, bajar un piso de escaleras o correr 20 minutos con síntomas tolerables que vuelvan a la línea basal esperada.
+`,
+        preguntasEtapa2: [
+            "¿Qué preguntas permiten transformar 'me duele al correr' en una hipótesis de carga útil para dosificar?",
+            "¿Cómo diferencias una asociación temporal de una causa demostrada?",
+            "¿Qué resultado funcional elegirías y por qué sería relevante para esta persona?"
+        ],
+        casoEtapa3: `"Corredora recreativa aumentó de 15 a 35 km semanales en dos semanas. Dolor 4/10 al correr que desaparece al día siguiente; su objetivo es una carrera en ocho semanas." Propón información faltante y una primera modificación de carga sin indicar reposo absoluto.`,
+        preguntasEtapa4: [
+            "¿Qué datos hacen que una progresión de carga sea demasiado rápida?",
+            "¿Por qué la meta funcional debe negociar-se con la persona?",
+            "¿Qué diferencia hay entre dolor tolerable durante una tarea y una señal de alarma?"
+        ]
+    },
+    {
+        id: "k3.3",
+        nombre: "3.3 — DPF: examen físico e interpretación, no test mágicos",
+        categoria: "Dolor Patelofemoral",
+        contenidoBase: `
+- Observa una tarea significativa (sentadilla, step-down, subida/bajada, carrera si corresponde) y registra síntomas, rango, control, estrategia, fatiga y confianza.
+- Fuerza de rodilla y cadera, movilidad cuando sea pertinente y tolerancia a tareas aportan información para el tratamiento; ningún test aislado confirma DPF ni prescribe un ejercicio único.
+- Repetir una tarea comparable antes y después de una modificación puede ayudar a explorar una hipótesis, sin convertir una respuesta inmediata en prueba definitiva de causa.
+- El examen debe responder: ¿qué limita hoy la función?, ¿qué es modificable?, ¿qué hallazgo exige derivación o cambio de hipótesis?
+`,
+        preguntasEtapa2: [
+            "¿Qué observarías en un step-down y cómo evitarías sobreinterpretar un único movimiento?",
+            "¿Cómo relacionas fuerza, tolerancia de tarea y síntomas sin afirmar que una debilidad aislada 'causó' el DPF?",
+            "¿Qué hallazgos te obligan a abandonar una explicación kinesiológica simple?"
+        ],
+        casoEtapa3: `"En step-down, una paciente reproduce dolor 5/10 al quinto descenso; no hay derrame. Tras reducir altura, el dolor baja a 2/10 y mantiene el control." Explica qué aprendiste, qué no aprendiste aún y cómo usarías el dato.`,
+        preguntasEtapa4: [
+            "¿Por qué un cambio inmediato de dolor no prueba por sí solo una causa biomecánica?",
+            "¿Qué diferencia hay entre una medición de desempeño y un diagnóstico?",
+            "¿Cómo documentarías una reevaluación útil para tomar decisiones?"
+        ]
+    },
+    {
+        id: "k3.4",
+        nombre: "3.4 — DPF: ejercicio y dosificación contemporánea",
+        categoria: "Dolor Patelofemoral",
+        contenidoBase: `
+- El ejercicio de rodilla y/o cadera se selecciona por déficit de capacidad, tolerancia, preferencias y tarea objetivo. No se indica para "corregir" una forma corporal ni para recolocar permanentemente la patela.
+- Empieza con una dosis que permita aprendizaje y exposición exitosa; progresa volumen, rango, resistencia, velocidad o especificidad de tarea según respuesta clínica y objetivo.
+- La monitorización incluye síntomas durante/después, recuperación al día siguiente, derrame, desempeño y confianza. La respuesta debe interpretarse junto con el contexto, no con un único umbral universal.
+- Las ayudas temporales (por ejemplo, taping u ortesis) pueden considerarse como complemento si facilitan actividad; no reemplazan el plan activo ni se presentan como corrección estructural necesaria.
+`,
+        preguntasEtapa2: [
+            "¿Cómo eliges entre fortalecer rodilla, cadera o ambas sin seguir una receta fija?",
+            "¿Qué variable progresarías primero en una persona con buena fuerza pero poca tolerancia a bajar escaleras?",
+            "¿Cómo explicarías el rol limitado y temporal de un taping sin generar dependencia?"
+        ],
+        casoEtapa3: `"Paciente con DPF tolera sentadilla a caja sin dolor, pero presenta dolor al bajar escaleras. Su fuerza mejora, pero evita salir a caminar por temor." Diseña una progresión que incluya fuerza, exposición a la tarea y medición de confianza.`,
+        preguntasEtapa4: [
+            "¿Qué cambios de programa son razonables tras una exacerbación sin banderas rojas?",
+            "¿Por qué el reposo completo rara vez es la primera respuesta?",
+            "¿Qué indicador funcional te permitiría decidir que la progresión fue útil?"
+        ]
+    },
+    {
+        id: "k3.5",
+        nombre: "3.5 — DPF: diferenciales y seguridad clínica",
+        categoria: "Dolor Patelofemoral",
+        contenidoBase: `
+- El dolor anterior no autoriza a asumir DPF. Considera, según historia y exploración, patología tendinosa, dolor por grasa infrapatelar, inestabilidad patelofemoral, lesión osteocondral, enfermedad inflamatoria, dolor referido y presentaciones de mayor urgencia.
+- Un mecanismo de torsión con derrame temprano, bloqueo verdadero o sensación de inestabilidad repetida cambia el examen y puede justificar evaluación médica.
+- El rol kinesiológico incluye reconocer límites: explicar incertidumbre, documentar hallazgos y derivar oportunamente; no etiquetar ni tranquilizar en exceso.
+`,
+        preguntasEtapa2: [
+            "¿Qué diferencia clínica te haría considerar inestabilidad patelofemoral en lugar de un DPF no traumático?",
+            "¿Qué combinación de hallazgos tras una torsión exige reevaluar antes de entrenar?",
+            "¿Cómo comunicarías una derivación sin alarmar ni minimizar?"
+        ],
+        casoEtapa3: `"Adolescente refiere dolor anterior después de giro jugando fútbol, derrame aparecido esa tarde y dos episodios de sensación de salida de la rodilla." Ordena tus hipótesis y explica por qué no iniciarías una rutina genérica de DPF.`,
+        preguntasEtapa4: [
+            "¿Qué es un bloqueo verdadero y por qué importa?",
+            "¿Qué dato de historia tiene más peso que una prueba aislada en una lesión aguda?",
+            "¿Qué debe contener una derivación clínica breve y útil?"
+        ]
+    },
+    {
+        id: "k3.6",
+        nombre: "3.6 — DPF: educación, adherencia y retorno a actividad",
+        categoria: "Dolor Patelofemoral",
+        contenidoBase: `
+- Educar no es asegurar una explicación única: comunica que el dolor es real, que la imagen no siempre define la función y que la capacidad puede recuperarse con un plan graduado.
+- Construye una regla de autorregulación acordada: qué síntoma observar, qué cambio transitorio hacer, cuándo retomar progresión y qué señales requieren avisar o derivar.
+- El retorno se basa en la tarea objetivo, tolerancia de carga, desempeño suficiente, confianza y ausencia de señales de alarma; no solo en ausencia total de dolor en camilla.
+`,
+        preguntasEtapa2: [
+            "¿Cómo explicarías la incertidumbre clínica sin reducir la confianza de la persona?",
+            "¿Qué componentes debe tener una regla de autorregulación escrita para una deportista?",
+            "¿Qué diferencia hay entre alta de síntomas y retorno suficiente a una tarea deportiva?"
+        ],
+        casoEtapa3: `"La corredora ya camina y hace fuerza sin dolor, pero aún evita trotar por miedo. El examen no muestra banderas rojas." Propón un retorno gradual y una forma de medir tanto desempeño como confianza.`,
+        preguntasEtapa4: [
+            "¿Por qué la adherencia es una variable clínica y no solo un problema de voluntad?",
+            "¿Cómo usarías el feedback para fortalecer razonamiento autónomo de la estudiante?",
+            "¿Qué información revisarías antes de declarar alta?"
         ]
     }
 ];
