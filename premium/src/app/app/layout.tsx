@@ -241,6 +241,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
 
                             <Link
+                                href="/app/admin/rotaciones"
+                                onClick={() => setIsSidebarOpen(false)}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                    isActive('/app/admin/rotaciones') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                                }`}
+                            >
+                                <Calendar className="w-4 h-4 text-emerald-400" />
+                                <span>Rotaciones Clínicas</span>
+                            </Link>
+
+                            <Link
                                 href="/app/pasantia"
                                 onClick={() => setIsSidebarOpen(false)}
                                 className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
