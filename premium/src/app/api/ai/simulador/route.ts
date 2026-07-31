@@ -459,13 +459,18 @@ Evalúa el desempeño integral del estudiante (Construcción + Defensa Oral).
 
             // ─── CALL 7: Daily Training Evaluation ───
             case 'evaluate-training': {
-                const { transcript } = payload;
+                const { transcript, topicNombre, topicContenido, mode } = payload;
                 const cleanedTranscript = await cleanVoiceTranscript(transcript);
                 const userPrompt = `
+TEMA ENTRENADO: ${topicNombre || 'No informado'}
+MODO: ${mode || 'TUTOR'}
+CONTENIDO Y OBJETIVOS DEL TEMA:
+${topicContenido || 'No informado'}
+
 TRANSCRIPCIÓN COMPLETA DE LA SESIÓN DE ENTRENAMIENTO:
 ${cleanedTranscript}
 
-Evalúa la sesión y extrae el JSON requerido.
+Evalúa únicamente lo que era pertinente para este tema y modo; no deduzcas errores por contenidos que no se enseñaron ni evaluaron.
 `;
                 result = await executeAIAction({
                     screen: 'SIMULADOR',

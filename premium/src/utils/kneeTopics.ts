@@ -1,7 +1,9 @@
+import { KNEE_PRESCRIPTION_TOPICS } from './prescriptionTopics';
+
 export interface KneeTopic {
     id: string;
     nombre: string;
-    categoria: 'Gonartrosis' | 'Artroplastia (PTR)' | 'Evaluación y Reevaluación' | 'Dolor Patelofemoral' | 'LCA y retorno al deporte';
+    categoria: 'Gonartrosis' | 'Artroplastia (PTR)' | 'Evaluación y Reevaluación' | 'Dolor Patelofemoral' | 'LCA y retorno al deporte' | 'Menisco y Cartílago' | 'Tendón Patelar';
     contenidoBase: string;
     preguntasEtapa2: string[];
     casoEtapa3: string;
@@ -753,5 +755,6 @@ export const KNEE_TOPICS: KneeTopic[] = [
             "¿Por qué la exposición específica al deporte es una variable clínica?",
             "¿Cómo usarías una prueba funcional para generar una decisión y no solo una nota?"
         ]
-    }
+    },
+    ...KNEE_PRESCRIPTION_TOPICS
 ];

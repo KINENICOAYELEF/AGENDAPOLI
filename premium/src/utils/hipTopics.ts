@@ -1,3 +1,5 @@
+import { HIP_PRESCRIPTION_TOPICS } from './prescriptionTopics';
+
 export interface HipTopic {
     id: string;
     nombre: string;
@@ -1228,6 +1230,6 @@ export const HIP_TOPICS: HipTopic[] = [
             "¿Qué métricas de carga externa (ej: GPS, acelerometría) y carga interna (RPE acumulada) ayudan a monitorear la progresión de volumen e intensidad pre-competencia?",
             "¿Cómo influyen los déficits de control motor pélvico en el plano frontal y transversal durante la caída de un salto en el estrés de cizallamiento labral?"
         ]
-    }
+    },
+    ...HIP_PRESCRIPTION_TOPICS
 ];
-

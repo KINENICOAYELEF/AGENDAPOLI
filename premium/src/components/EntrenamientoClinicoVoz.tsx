@@ -204,15 +204,19 @@ export default function EntrenamientoClinicoVoz() {
         }
     }, [sessionState, connectionState]);
 
-    const handleReconnect = async () => {
+    const handleReconnect = () => {
+        // Cada canal de voz tiene un máximo de 10 minutos. La sesión y su
+        // transcripción siguen siendo la misma; solo comienza una nueva ronda.
+        disconnect();
+        setTimer(0);
         setSessionState('CONNECTING');
-        try {
-            await connect();
-            setSessionState('IN_PROGRESS');
-        } catch (error) {
-            console.error("Error al reconectar Gemini Live:", error);
-        }
     };
+
+    useEffect(() => {
+        if (sessionState === 'IN_PROGRESS' && timer >= 600 && connectionState === 'connected') {
+            disconnect();
+        }
+    }, [sessionState, timer, connectionState, disconnect]);
 
     const handleEndSession = async () => {
         disconnect();
@@ -237,7 +241,12 @@ export default function EntrenamientoClinicoVoz() {
                     body: JSON.stringify({
                         action: 'evaluate-training',
                         userId: user?.uid || 'guest',
-                        payload: { transcript: fullText }
+                        payload: {
+                            transcript: fullText,
+                            topicNombre: activeTopic.nombre,
+                            topicContenido: activeTopic.contenidoBase,
+                            mode
+                        }
                     })
                 });
 
@@ -293,6 +302,25 @@ export default function EntrenamientoClinicoVoz() {
             }
         } catch (err) {
             console.error("Error evaluando sesión con IA:", err);
+            // La evaluación puede fallar por red/cuota, pero una práctica que
+            // el alumno terminó nunca debe desaparecer por eso.
+            if (user) {
+                try {
+                    await saveTrainingSession(
+                        user.uid,
+                        activeTopic.id,
+                        notaCalculada,
+                        aspectosReforzar,
+                        radarObj,
+                        estiloCognitivo,
+                        fullText,
+                        fortalezas.length > 0 ? fortalezas : ["Sesión registrada; la evaluación automática no estuvo disponible."]
+                    );
+                    await loadInitialData();
+                } catch (saveErr) {
+                    console.error("Error guardando respaldo de sesión:", saveErr);
+                }
+            }
             setEvalResult({
                 topicId: activeTopic.id,
                 topicNombre: activeTopic.nombre,
