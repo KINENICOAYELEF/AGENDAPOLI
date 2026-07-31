@@ -10,7 +10,7 @@ import { deidentifyText } from './deidentify';
 
 export const ACTIVE_AGENT_VERSION_ID = process.env.ANTIGRAVITY_AGENT_ID || 'agenda-clinical-v2-2026-08';
 
-export async function runAgentInteraction(prompt: string, context?: any) {
+export async function runAgentInteraction(prompt: string, context?: any, teacherCalibration?: { preferredTone?: string }) {
   if (!featureFlags.agentShadowMode && !featureFlags.agentWriteEnabled) {
     console.log('[PR7 Client] Interaction skipped: featureFlags.agentShadowMode & agentWriteEnabled are false.');
     return {
@@ -20,9 +20,13 @@ export async function runAgentInteraction(prompt: string, context?: any) {
     };
   }
 
+  const toneInstruction = teacherCalibration?.preferredTone
+    ? `\nPreferencias del Docente: Utilizar un tono ${teacherCalibration.preferredTone} y conciso.`
+    : '';
+
   const deidentifiedContext = context ? deidentifyText(JSON.stringify(context)) : '';
   const finalPrompt = `
-[Versión Agente: ${ACTIVE_AGENT_VERSION_ID}]
+[Versión Agente: ${ACTIVE_AGENT_VERSION_ID}]${toneInstruction}
 Contexto Clínico Desidentificado:
 ${deidentifiedContext}
 

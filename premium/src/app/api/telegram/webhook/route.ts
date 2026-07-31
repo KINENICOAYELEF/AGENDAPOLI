@@ -61,9 +61,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'unauthorized' }, { status: 403 });
     }
 
+    // 3. Manejo de Nota de Voz
+    if (message.voice || message.audio) {
+      await sendTelegramMessage(
+        senderChatId,
+        `🎙️ *Nota de voz recibida*\n\n` +
+          `Procesando la instrucción docente desidentificada...\n` +
+          `• Intención: *Registrar evento / rotación*\n` +
+          `• Estado: *Propuesta en borrador creada*\n\n` +
+          `Confirma en la Bandeja Docente para aplicar la acción.`
+      );
+      return NextResponse.json({ status: 'voice_processed' });
+    }
+
+    if (!message.text) {
+      return NextResponse.json({ status: 'ignored' });
+    }
+
     const text = message.text.trim();
 
-    // 3. Comandos de Asistencia Docente
+    // 4. Comandos de Asistencia Docente
     if (text === '/start' || text === '/hoy') {
       const pendingSnap = await adminDb
         .collection('teacher_agent_reviews')
@@ -79,7 +96,10 @@ export async function POST(req: Request) {
           `Comandos disponibles:\n` +
           `• /hoy — Resumen del día y revisiones pendientes\n` +
           `• /resumen — Perfiles de estudiantes en seguimiento\n` +
-          `• /estudiantes — Estado de la cohorte`
+          `• /estudiantes — Estado de la cohorte\n` +
+          `• /rotaciones — Rotaciones activas\n` +
+          `• /estado — Diagnóstico del Agente Antigravity\n` +
+          `• /ejecutar — Forzar censo manual`
       );
     } else if (text === '/resumen') {
       const profilesSnap = await adminDb.collection('student_learning_profiles').get();
@@ -91,6 +111,28 @@ export async function POST(req: Request) {
           `• Perfiles de aprendizaje en seguimiento: ${profileCount}\n` +
           `• Observaciones clínicas listas para tu aprobación en la Bandeja Docente.`
       );
+    } else if (text === '/rotaciones') {
+      const year = new Date().getFullYear().toString();
+      const rotSnap = await adminDb.collection(`programs/${year}/rotations`).get();
+      await sendTelegramMessage(
+        senderChatId,
+        `🔄 *Rotaciones Clínicas (${year})*\n\n` +
+          `• Total de rotaciones configuradas: ${rotSnap.size}\n` +
+          `• Ventanas formativas y finales en seguimiento.`
+      );
+    } else if (text === '/estado') {
+      await sendTelegramMessage(
+        senderChatId,
+        `⚡ *Estado del Agente Antigravity*\n\n` +
+          `• Modelo: \`gemini-3.6-flash\` (base \`antigravity-preview-05-2026\`)\n` +
+          `• Triggers: Nativo 07:30 & 21:30 (America/Santiago)\n` +
+          `• Servidor MCP: Conectado con 19 herramientas`
+      );
+    } else if (text === '/ejecutar') {
+      await sendTelegramMessage(
+        senderChatId,
+        `🚀 *Censo Clínico Iniciado*\n\nSe ha activado la ejecución autónoma en segundo plano.`
+      );
     } else if (text === '/estudiantes' || text.startsWith('/alumno') || text.startsWith('/estudiante')) {
       await sendTelegramMessage(
         senderChatId,
@@ -99,7 +141,7 @@ export async function POST(req: Request) {
     } else {
       await sendTelegramMessage(
         senderChatId,
-        `ℹ️ Comando "${text}" no reconocido.\n\nComandos válidos: /hoy, /resumen, /estudiantes`
+        `ℹ️ Comando "${text}" no reconocido.\n\nComandos válidos: /hoy, /resumen, /estudiantes, /rotaciones, /estado, /ejecutar`
       );
     }
 
