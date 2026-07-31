@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { getRequestId, apiSuccess, handleApiError } from '@/lib/server/apiResponse';
 import { requireTeacher } from '@/lib/server/firebaseAdmin';
 
 export async function GET(req: Request) {
+  const requestId = getRequestId(req);
   try {
     const authHeader = req.headers.get('authorization');
     const authResult = await requireTeacher(authHeader);
@@ -10,8 +11,7 @@ export async function GET(req: Request) {
     const hasClientEmail = Boolean(process.env.FIREBASE_ADMIN_CLIENT_EMAIL);
     const hasPrivateKey = Boolean(process.env.FIREBASE_ADMIN_PRIVATE_KEY);
 
-    return NextResponse.json({
-      status: 'ok',
+    return apiSuccess({
       service: 'teacher-inbox',
       firebaseAdminStatus: (hasProjectId && hasClientEmail && hasPrivateKey) ? 'configured' : 'degraded',
       teacher: {
@@ -19,11 +19,8 @@ export async function GET(req: Request) {
         email: authResult.user?.email || null,
       },
       timestamp: new Date().toISOString(),
-    });
+    }, requestId);
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Unauthorized' },
-      { status: error.message?.includes('Forbidden') ? 403 : 401 }
-    );
+    return handleApiError(error, requestId);
   }
 }

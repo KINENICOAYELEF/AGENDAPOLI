@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server';
+import { getRequestId, apiSuccess, handleApiError } from '@/lib/server/apiResponse';
 import { fetchServerInbox } from '@/lib/teacher-inbox/query';
 import { requireTeacher } from '@/lib/server/firebaseAdmin';
 
 export async function GET(req: Request) {
+  const requestId = getRequestId(req);
   try {
     const authHeader = req.headers.get('authorization');
     await requireTeacher(authHeader);
@@ -27,9 +28,8 @@ export async function GET(req: Request) {
       studentId: studentId || undefined,
     });
 
-    return NextResponse.json(data);
+    return apiSuccess(data, requestId);
   } catch (error: any) {
-    console.error('Error fetching teacher inbox API:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return handleApiError(error, requestId);
   }
 }

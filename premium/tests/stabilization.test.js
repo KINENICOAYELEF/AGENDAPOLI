@@ -66,15 +66,22 @@ describe('Pruebas de Estructura de Datos y Contratos', () => {
     assert.strictEqual(validDecision.teacherId, 'teacher_123');
   });
 
-  test('Verifica estructura de ejecución de agente', () => {
-    const validRun = {
-      triggeredBy: 'cron_runner',
-      status: 'running',
-      startedAt: new Date().toISOString(),
-      agentVersion: 'agenda-clinical-v2-2026-08',
-      promptVersion: 'v2-2026',
+  test('Verifica estructura de respuesta API estandarizada ApiSuccess y ApiFailure (Fase 1)', () => {
+    const successPayload = {
+      ok: true,
+      data: { itemsCount: 5 },
+      requestId: 'req_12345',
     };
 
-    assert.strictEqual(validRun.agentVersion, 'agenda-clinical-v2-2026-08');
+    const failurePayload = {
+      ok: false,
+      error: { code: 'UNAUTHORIZED', message: 'Acceso no autorizado' },
+      requestId: 'req_67890',
+    };
+
+    assert.strictEqual(successPayload.ok, true);
+    assert.strictEqual(successPayload.requestId, 'req_12345');
+    assert.strictEqual(failurePayload.ok, false);
+    assert.strictEqual(failurePayload.error.code, 'UNAUTHORIZED');
   });
 });
