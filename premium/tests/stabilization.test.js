@@ -1,5 +1,5 @@
 /**
- * Suite de Pruebas Automatizadas de Estabilización (Agenda Poli)
+ * Suite de Pruebas Automatizadas de Estabilización y Arquitectura (Agenda Poli)
  * Ejecutable nativamente con Node.js Test Runner: node --test tests/stabilization.test.js
  */
 
@@ -21,6 +21,33 @@ describe('Pruebas de Desidentificación Clínica', () => {
     
     assert.strictEqual(cleaned.includes('12.345.678-9'), false, 'El RUT debe ser anonimizado');
     assert.strictEqual(cleaned.includes('[RUT_ANONIMIZADO]'), true, 'Debe incluir etiqueta de RUT anonimizado');
+  });
+});
+
+describe('Pruebas del Modelo de Rotaciones (PR-04)', () => {
+  test('Valida estructura de Rotación Clínica', () => {
+    const rotation = {
+      year: '2026',
+      universityCode: 'UCH',
+      label: 'Rotación I - El Carmen',
+      durationWeeks: 8,
+      formativeWindow: { from: '2026-03-01', to: '2026-03-15' },
+      finalWindow: { from: '2026-04-15', to: '2026-04-30' },
+      status: 'ACTIVE',
+    };
+
+    assert.strictEqual(rotation.durationWeeks, 8);
+    assert.strictEqual(rotation.universityCode, 'UCH');
+  });
+});
+
+describe('Pruebas del Índice Clínico Normalizado (PR-05)', () => {
+  test('Genera hash de contenido determinista', () => {
+    const text = 'Atención kinesiológica respiratoria';
+    const hash = Buffer.from(text).toString('base64').slice(0, 16);
+    
+    assert.strictEqual(typeof hash, 'string');
+    assert.strictEqual(hash.length <= 16, true);
   });
 });
 

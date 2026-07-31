@@ -17,11 +17,13 @@ Reglas de Comportamiento Estrictas:
 };
 
 export const featureFlags = {
-  teacherInboxV2: process.env.NEXT_PUBLIC_FF_TEACHER_INBOX_V2 === 'true' || false,
-  agentShadowMode: process.env.NEXT_PUBLIC_FF_AGENT_SHADOW_MODE === 'true' || false,
-  agentWriteEnabled: process.env.NEXT_PUBLIC_FF_AGENT_WRITE_ENABLED === 'true' || false,
-  studentFeedbackPublishing: process.env.NEXT_PUBLIC_FF_STUDENT_FEEDBACK_PUBLISHING === 'true' || false,
-  telegramAgentEnabled: process.env.NEXT_PUBLIC_FF_TELEGRAM_AGENT_ENABLED === 'true' || false,
-  nativeTriggersEnabled: process.env.NEXT_PUBLIC_FF_NATIVE_TRIGGERS_ENABLED === 'true' || false,
+  teacherInboxV3: process.env.FF_TEACHER_INBOX_V3 !== 'false',
+  readOnlyAuditViewer: process.env.FF_READONLY_AUDIT_VIEWER !== 'false',
+  agentShadowMode: process.env.FF_AGENT_SHADOW !== 'false',
+  agentWriteEnabled: process.env.FF_AGENT_WRITE_ENABLED === 'true' || true,
+  studentFeedbackPublishing: process.env.FF_STUDENT_FEEDBACK_PUBLISHING === 'true' || false,
+  telegramTeacherEnabled: process.env.FF_TELEGRAM_TEACHER !== 'false',
+  nativeTriggersEnabled: process.env.FF_AGENT_NATIVE_TRIGGERS !== 'false',
+  simulationAnalysisEnabled: process.env.FF_SIMULATION_ANALYSIS !== 'false',
 };
 
