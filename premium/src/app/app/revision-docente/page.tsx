@@ -6,10 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
 import { auth } from "@/lib/firebase";
 import { BandejaDocenteInteligente } from "@/components/revision-docente/BandejaDocenteInteligente";
-import {
-  fetchClientInbox,
-  type ClientInboxRecord,
-} from "@/lib/teacher-inbox/clientQuery";
+import type { ClientInboxRecord } from "@/lib/teacher-inbox/clientQuery";
 import { buildClinicalRecordLink } from "@/lib/navigation/clinicalRecordLink";
 
 type RecordKind = "EVALUACION" | "EVOLUCION";
@@ -96,18 +93,11 @@ export default function RevisionDocentePage() {
         const payload = data.data ?? data;
         loadedRecords = payload.records || [];
       } catch (serverError) {
-        console.warn(
-          "API docente no disponible; usando lectura Firebase autenticada.",
-          serverError,
-        );
-        const fallback = await fetchClientInbox({
-          year: globalActiveYear,
-          from: fromStr,
-          to: toStr,
-          limit: 50,
-          kind: kindFilter === "TODOS" ? undefined : kindFilter,
-        });
-        loadedRecords = fallback.records;
+        // Nunca descargamos colecciones clínicas completas desde el navegador como
+        // "respaldo": eso ignora el rango elegido y puede agotar la cuota de
+        // Firestore. La API docente ya está autenticada y aplica un límite.
+        console.error("API docente no disponible:", serverError);
+        throw new Error("La bandeja docente no está disponible temporalmente. No se realizó una lectura masiva de fichas; reintenta en unos minutos.");
       }
 
       setRecords(loadedRecords);

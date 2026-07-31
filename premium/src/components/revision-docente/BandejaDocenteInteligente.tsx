@@ -10,7 +10,7 @@ import {
   Sparkles,
   XCircle,
 } from "lucide-react";
-import { collection, doc, getDocs, setDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, limit, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { auth } from "@/lib/firebase";
 import type { TeacherAgentReview } from "@/lib/agent/contracts/review";
@@ -63,8 +63,12 @@ export function BandejaDocenteInteligente() {
     setNotice(null);
     try {
       const [reviewSnap, profileSnap] = await Promise.all([
-        getDocs(collection(db, "teacher_agent_reviews")),
-        getDocs(collection(db, "student_learning_profiles")),
+        getDocs(query(
+          collection(db, "teacher_agent_reviews"),
+          where("status", "==", "PENDING_TEACHER"),
+          limit(100),
+        )),
+        getDocs(query(collection(db, "student_learning_profiles"), limit(100))),
       ]);
 
       setReviews(reviewSnap.docs
@@ -72,7 +76,6 @@ export function BandejaDocenteInteligente() {
           id: snapshot.id,
           ...(snapshot.data() as TeacherAgentReview),
         }))
-        .filter((review) => review.status === "PENDING_TEACHER")
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
       setProfiles(
         Object.fromEntries(

@@ -107,8 +107,18 @@ export async function runCensusEngine() {
           // Validar contrato estricto Zod antes de persistir
           const validatedReview = TeacherAgentReviewSchema.parse(reviewPayload);
 
-          await db.collection('teacher_agent_reviews').add(validatedReview);
-          reviewsCreated++;
+          // ID determinista: ejecutar el censo dos veces no crea dos tareas para
+          // el mismo registro. `create` conserva cualquier decisión docente ya
+          // tomada y evita una lectura previa solo para deduplicar.
+          const reviewId = `census_${year}_${student.id}_${record.collection}_${record.id}`;
+          try {
+            await db.collection('teacher_agent_reviews').doc(reviewId).create(validatedReview);
+            reviewsCreated++;
+          } catch (writeError: any) {
+            if (writeError?.code !== 6 && writeError?.code !== 'already-exists') {
+              throw writeError;
+            }
+          }
         }
       }
 
