@@ -37,6 +37,17 @@ function formatDate(value: string) {
     : date.toLocaleString("es-CL", { dateStyle: "medium", timeStyle: "short" });
 }
 
+function explainAgentError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  if (message.includes("Missing FIREBASE_ADMIN credentials")) {
+    return "El censo automático aún requiere la credencial privada Firebase Admin en Vercel. La atención clínica y las fichas no se han modificado.";
+  }
+  if (message.includes("AGENT_CENSUS_DISABLED")) {
+    return "El censo está instalado pero deshabilitado por seguridad hasta completar su configuración privada.";
+  }
+  return message || "No se pudo iniciar el censo.";
+}
+
 /** Hallazgos privados: esta vista jamás envía mensajes ni modifica fichas clínicas. */
 export function BandejaDocenteInteligente() {
   const router = useRouter();
@@ -106,8 +117,8 @@ export function BandejaDocenteInteligente() {
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error || "No se pudo iniciar el censo.");
       setNotice("Censo iniciado. Los hallazgos aparecerán aquí al finalizar; no se envía nada a estudiantes.");
-    } catch (error: any) {
-      setNotice(error?.message || "No se pudo iniciar el censo.");
+    } catch (error) {
+      setNotice(explainAgentError(error));
     } finally {
       setRunning(false);
     }
