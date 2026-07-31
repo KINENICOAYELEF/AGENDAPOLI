@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
+import { auth } from "@/lib/firebase";
 import { BandejaDocenteInteligente } from "@/components/revision-docente/BandejaDocenteInteligente";
 import { featureFlags } from "@/lib/agent/config";
 
@@ -87,7 +88,11 @@ export default function RevisionDocentePage() {
         params.append("kind", kindFilter);
       }
 
-      const token = await user.getIdToken();
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        throw new Error("No se pudo obtener el token de autenticación del usuario actual");
+      }
+
       const res = await fetch(`/api/teacher/inbox?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -98,7 +103,8 @@ export default function RevisionDocentePage() {
       }
 
       const data = await res.json();
-      setRecords(data.records || []);
+      const payload = data.data ?? data;
+      setRecords(payload.records || []);
       setSelected(null);
     } catch (err: any) {
       console.error("Error cargando bandeja docente servidor:", err);
@@ -410,23 +416,34 @@ export default function RevisionDocentePage() {
                 </div>
               )}
 
-              <button
-                onClick={() =>
-                  router.push(
-                    buildClinicalRecordLink({
-                      patientId: selected.patientId,
-                      processId: selected.processId,
-                      recordId: selected.id,
-                      recordType: selected.kind,
-                      mode: 'readonly',
-                      returnTo: 'revision-docente',
-                    })
-                  )
-                }
-                className="mt-6 w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700"
-              >
-                Abrir Registro Exacto en Expediente
-              </button>
+              <div className="mt-6 space-y-2">
+                <button
+                  onClick={() =>
+                    router.push(`/app/revision-docente/registros/${selected.kind}/${selected.id}`)
+                  }
+                  className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20 transition-colors"
+                >
+                  🔍 Ver Registro en Modo Supervisión (Solo Lectura)
+                </button>
+
+                <button
+                  onClick={() =>
+                    router.push(
+                      buildClinicalRecordLink({
+                        patientId: selected.patientId,
+                        processId: selected.processId,
+                        recordId: selected.id,
+                        recordType: selected.kind,
+                        mode: 'readonly',
+                        returnTo: 'revision-docente',
+                      })
+                    )
+                  }
+                  className="w-full rounded-xl bg-slate-100 border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-200 transition-colors"
+                >
+                  📁 Abrir Expediente Completo en Ficha Clínicas
+                </button>
+              </div>
             </>
           )}
         </aside>
