@@ -10,6 +10,7 @@ import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { featureFlags } from './config';
 import { deidentifyText } from './deidentify';
 import { TeacherAgentReviewSchema } from './contracts/review';
+import { analyzeStudentLongitudinal } from './longitudinalAnalysis';
 
 function hasValue(val: unknown): boolean {
   if (Array.isArray(val)) return val.length > 0;
@@ -56,7 +57,8 @@ export async function runCensusEngine() {
       const allRecords = [
         ...evalsSnap.docs.map((d: any) => ({ id: d.id, collection: 'evaluaciones', ...d.data() })),
         ...evolsSnap.docs.map((d: any) => ({ id: d.id, collection: 'evoluciones', ...d.data() })),
-      ];
+      ].sort((a: any, b: any) => String(a.sessionAt || a.fechaHoraAtencion || a.audit?.createdAt || '')
+        .localeCompare(String(b.sessionAt || b.fechaHoraAtencion || b.audit?.createdAt || '')));
 
       recordsProcessed += allRecords.length;
 
@@ -135,6 +137,69 @@ export async function runCensusEngine() {
         },
         { merge: true }
       );
+
+      // El análisis generativo es un segundo nivel explícitamente habilitado.
+      // Nunca bloquea ni modifica la ficha: si falla, el censo estructural
+      // anterior sigue siendo válido y queda registrado de forma privada.
+      if (featureFlags.agentLlmAnalysisEnabled && allRecords.length > 0) {
+        const analysis = await analyzeStudentLongitudinal(student.id, allRecords);
+        if (analysis) {
+          const sourceReferences = analysis.evidence.flatMap((evidence) => {
+            const source = allRecords.find((record: any) =>
+              record.id === evidence.recordId && record.collection === evidence.collection,
+            );
+            if (!source) return [];
+            return [{
+              year,
+              collection: source.collection as 'evaluaciones' | 'evoluciones',
+              recordId: source.id,
+              fieldPath: evidence.section,
+              contentHash: Buffer.from(`${source.id}:${evidence.section}`).toString('hex').slice(0, 32),
+              redactedExcerpt: deidentifyText(evidence.excerpt).slice(0, 200),
+            }];
+          });
+
+          if (sourceReferences.length > 0) {
+            const reviewPayload = TeacherAgentReviewSchema.parse({
+              year,
+              studentId: student.id,
+              patientId: undefined,
+              sourceReferences,
+              observation: analysis.observation,
+              pedagogicalInference: `${analysis.pedagogicalInference}\n\nPregunta socrática: ${analysis.socraticQuestion}\nRecomendación: ${analysis.recommendation}`,
+              confidence: analysis.confidence,
+              priority: analysis.priority,
+              status: 'PENDING_TEACHER',
+              createdAt: new Date().toISOString(),
+            });
+            const evidenceVersion = Buffer.from(sourceReferences.map(reference => reference.recordId).sort().join('|'))
+              .toString('hex')
+              .slice(0, 20);
+            try {
+              await db.collection('teacher_agent_reviews')
+                .doc(`longitudinal_${year}_${student.id}_${evidenceVersion}`)
+                .create(reviewPayload);
+              reviewsCreated++;
+            } catch (writeError: any) {
+              if (writeError?.code !== 6 && writeError?.code !== 'already-exists') throw writeError;
+            }
+
+            await db.collection('student_learning_profiles').doc(student.id).set({
+              strengths: analysis.strengths,
+              improvementGaps: analysis.improvementGaps,
+              recurringErrorPatterns: analysis.recurringPattern
+                ? [{
+                    patternId: `llm_${evidenceVersion}`,
+                    description: analysis.recurringPattern,
+                    occurrences: sourceReferences.length,
+                    lastSeenAt: new Date().toISOString(),
+                  }]
+                : [],
+              lastUpdatedAt: new Date().toISOString(),
+            }, { merge: true });
+          }
+        }
+      }
     }
 
     console.log(

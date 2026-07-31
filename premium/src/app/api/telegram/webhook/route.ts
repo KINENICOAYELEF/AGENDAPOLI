@@ -15,6 +15,17 @@ import { adminDb } from '@/lib/server/firebaseAdmin';
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_ALLOWED_CHAT_ID = process.env.TELEGRAM_ALLOWED_CHAT_ID;
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://agendapoli.vercel.app';
+
+async function pendingReviewCounts() {
+  const base = adminDb.collection('teacher_agent_reviews').where('status', '==', 'PENDING_TEACHER');
+  const [total, p0, p1] = await Promise.all([
+    base.count().get(),
+    base.where('priority', '==', 'P0').count().get(),
+    base.where('priority', '==', 'P1').count().get(),
+  ]);
+  return { total: total.data().count, p0: p0.data().count, p1: p1.data().count };
+}
 
 async function sendTelegramMessage(chatId: string | number, text: string) {
   if (!TELEGRAM_BOT_TOKEN) {
@@ -81,17 +92,13 @@ export async function POST(req: Request) {
 
     // 4. Comandos de Asistencia Docente
     if (text === '/start' || text === '/hoy') {
-      const pendingSnap = await adminDb
-        .collection('teacher_agent_reviews')
-        .where('status', '==', 'PENDING_TEACHER')
-        .get();
-
-      const pendingCount = pendingSnap.size;
+      const pending = await pendingReviewCounts();
 
       await sendTelegramMessage(
         senderChatId,
         `🤖 *Agenda Poli — Asistente Docente*\n\n` +
-          `📌 *Revisiones pendientes en tu Bandeja:* ${pendingCount}\n\n` +
+          `📌 *Pendientes:* ${pending.total} · P0: ${pending.p0} · P1: ${pending.p1}\n` +
+          `🔎 [Abrir bandeja docente](${APP_URL}/app/revision-docente)\n\n` +
           `Comandos disponibles:\n` +
           `• /hoy — Resumen del día y revisiones pendientes\n` +
           `• /resumen — Perfiles de estudiantes en seguimiento\n` +
@@ -121,7 +128,7 @@ export async function POST(req: Request) {
           `• Ventanas formativas y finales en seguimiento.`
       );
     } else if (text === '/estado') {
-      const runsSnap = await adminDb.collection('agent_runs').limit(1).get();
+      const runsSnap = await adminDb.collection('agent_runs').orderBy('startedAt', 'desc').limit(1).get();
       let lastRunText = 'Sin ejecuciones registradas';
       if (!runsSnap.empty) {
         const lastRun = runsSnap.docs[0].data();
@@ -131,29 +138,37 @@ export async function POST(req: Request) {
       await sendTelegramMessage(
         senderChatId,
         `⚡ *Estado del Agente Antigravity*\n\n` +
-          `• Modelo: \`gemini-3.6-flash\`\n` +
+          `• Agente: \`antigravity-preview-05-2026\`\n` +
           `• Triggers: GitHub Actions (07:30 & 21:30 America/Santiago)\n` +
           `• Úl. Ejecución: ${lastRunText}`
       );
     } else if (text === '/ejecutar') {
+      const runRef = await adminDb.collection('agent_runs').add({
+        status: 'queued',
+        triggeredBy: 'telegram',
+        requestedBy: 'teacher',
+        startedAt: new Date().toISOString(),
+        requestedAt: new Date().toISOString(),
+        scope: 'private_census_and_longitudinal_analysis',
+      });
       await sendTelegramMessage(
         senderChatId,
-        `🚀 *Censo Clínico Solicitado*\n\n` +
-          `Se ha enviado el trigger de ejecución del censo. El agente procesará los registros pendientes.`
+        `🚀 *Censo Clínico en cola*\n\n` +
+          `• Solicitud: \`${runRef.id.slice(0, 8)}\`\n` +
+          `• Se ejecutará en el próximo ciclo programado o desde la Bandeja Docente.\n` +
+          `• No se enviará nada a estudiantes.`
       );
     } else if (text === '/pendientes') {
-      const pendingSnap = await adminDb
-        .collection('teacher_agent_reviews')
-        .where('status', '==', 'PENDING_TEACHER')
-        .get();
+      const pending = await pendingReviewCounts();
       await sendTelegramMessage(
         senderChatId,
         `📋 *Revisiones Pendientes*\n\n` +
-          `• Total en espera de revisión: ${pendingSnap.size}\n` +
-          `• Ingresa a tu Bandeja Docente para inspeccionar y aprobar.`
+          `• Total: ${pending.total}\n` +
+          `• P0 seguridad: ${pending.p0}\n` +
+          `• P1 atención: ${pending.p1}\n` +
+          `• [Abrir para revisar](${APP_URL}/app/revision-docente)`
       );
     } else if (text === '/errores') {
-      const yesterdayIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const errorSnap = await adminDb
         .collection('agent_execution_logs')
         .where('status', '==', 'ERROR')

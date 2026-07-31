@@ -23,6 +23,9 @@ export const featureFlags = {
   // La creación de hallazgos privados se habilita de forma explícita. Nunca
   // debe activarse solo por existir código desplegado.
   agentWriteEnabled: process.env.FF_AGENT_WRITE_ENABLED === 'true',
+  // El análisis generativo se habilita aparte del censo estructural para que
+  // el docente controle cuándo comienza a consumir la cuota de Antigravity.
+  agentLlmAnalysisEnabled: process.env.FF_AGENT_LLM_ANALYSIS === 'true',
   studentFeedbackPublishing: process.env.FF_STUDENT_FEEDBACK_PUBLISHING === 'true' || false,
   telegramTeacherEnabled: process.env.FF_TELEGRAM_TEACHER !== 'false',
   nativeTriggersEnabled: process.env.FF_AGENT_NATIVE_TRIGGERS !== 'false',

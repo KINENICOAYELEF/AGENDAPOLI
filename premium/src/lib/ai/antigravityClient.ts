@@ -4,6 +4,36 @@ export interface AntigravityInteractionOptions {
     agent?: string;
     prompt: string;
     systemInstruction?: string;
+    background?: boolean;
+}
+
+/** Extrae texto del formato oficial Interactions API y conserva compatibilidad
+ * con las respuestas anteriores que pudiera devolver el proveedor. */
+export function extractAntigravityTextOutput(data: any): string {
+    if (typeof data?.output_text === 'string') return data.output_text;
+    if (typeof data?.output?.text === 'string') return data.output.text;
+
+    const stepText = Array.isArray(data?.steps)
+        ? data.steps
+            .filter((step: any) => step?.type === 'model_output')
+            .flatMap((step: any) => Array.isArray(step.content) ? step.content : [])
+            .filter((content: any) => content?.type === 'text' && typeof content.text === 'string')
+            .map((content: any) => content.text)
+            .join('\n')
+        : '';
+    if (stepText) return stepText;
+
+    if (Array.isArray(data?.outputs)) {
+        const output = data.outputs
+            .filter((o: any) => o.type === 'text' || o.text)
+            .map((o: any) => o.text || (typeof o === 'string' ? o : JSON.stringify(o)))
+            .join('\n');
+        if (output) return output;
+    }
+    if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        return data.candidates[0].content.parts[0].text;
+    }
+    return typeof data === 'string' ? data : JSON.stringify(data);
 }
 
 export interface AntigravityInteractionResponse {
@@ -44,7 +74,8 @@ export async function callAntigravityAgent(options: AntigravityInteractionOption
         ],
         environment: {
             type: 'remote'
-        }
+        },
+        ...(options.background ? { background: true } : {}),
     };
 
     console.log(`[Antigravity REST Request] POST ${endpoint} -> Agent: ${agentName}`);
@@ -53,7 +84,8 @@ export async function callAntigravityAgent(options: AntigravityInteractionOption
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'x-goog-api-key': apiKey
+            'x-goog-api-key': apiKey,
+            'Api-Revision': '2026-05-20',
         },
         body: JSON.stringify(payload)
     });
@@ -66,21 +98,8 @@ export async function callAntigravityAgent(options: AntigravityInteractionOption
 
     const data = await response.json();
 
-    let textOutput = '';
+    const textOutput = extractAntigravityTextOutput(data);
     let thoughts = '';
-
-    if (Array.isArray(data.outputs)) {
-        textOutput = data.outputs
-            .filter((o: any) => o.type === 'text' || o.text)
-            .map((o: any) => o.text || (typeof o === 'string' ? o : JSON.stringify(o)))
-            .join('\n');
-    } else if (data.output?.text) {
-        textOutput = data.output.text;
-    } else if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        textOutput = data.candidates[0].content.parts[0].text;
-    } else {
-        textOutput = typeof data === 'string' ? data : JSON.stringify(data);
-    }
 
     if (data.thoughts) {
         thoughts = typeof data.thoughts === 'string' ? data.thoughts : JSON.stringify(data.thoughts);
