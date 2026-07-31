@@ -56,7 +56,8 @@ export function DebugOverlay() {
         setLogs([]);
     };
 
-    // 1. CONDICIÓN MAESTRA: Si no es DOCENTE, este componente desaparece de la app sin generar rastro.
+    // 1. CONDICIÓN MAESTRA: Ocultar en producción y si no es DOCENTE
+    if (process.env.NODE_ENV === 'production') return null;
     if (user?.role !== "DOCENTE") return null;
 
     if (!isOpen) {

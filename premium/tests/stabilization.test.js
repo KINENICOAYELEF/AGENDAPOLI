@@ -14,6 +14,18 @@ function deidentifyText(text) {
     .replace(/\b\d{7,8}[-kK0-9]\b/g, '[RUT_ANONIMIZADO]');
 }
 
+// Función helper de generación de links
+function buildClinicalRecordLink(params) {
+  const searchParams = new URLSearchParams();
+  searchParams.set('openFicha', params.patientId);
+  if (params.processId) searchParams.set('procesoId', params.processId);
+  if (params.recordType) searchParams.set('recordType', params.recordType);
+  if (params.recordId) searchParams.set('recordId', params.recordId);
+  if (params.mode) searchParams.set('mode', params.mode);
+  if (params.returnTo) searchParams.set('returnTo', params.returnTo);
+  return `/app/usuarios?${searchParams.toString()}`;
+}
+
 describe('Pruebas de Desidentificación Clínica', () => {
   test('deidentifyText remueve o anonimiza datos personales', () => {
     const rawInput = 'El paciente Juan Pérez (RUT 12.345.678-9) asistió a la sesión.';
@@ -48,6 +60,24 @@ describe('Pruebas del Índice Clínico Normalizado (PR-05)', () => {
     
     assert.strictEqual(typeof hash, 'string');
     assert.strictEqual(hash.length <= 16, true);
+  });
+});
+
+describe('Pruebas de Navegación y Enlaces Clínicos', () => {
+  test('buildClinicalRecordLink genera URL correcta para expediente en modo readonly', () => {
+    const link = buildClinicalRecordLink({
+      patientId: 'pat_123',
+      processId: 'proc_456',
+      recordId: 'rec_789',
+      recordType: 'EVALUACION',
+      mode: 'readonly',
+      returnTo: 'revision-docente',
+    });
+
+    assert.strictEqual(link.includes('openFicha=pat_123'), true);
+    assert.strictEqual(link.includes('procesoId=proc_456'), true);
+    assert.strictEqual(link.includes('mode=readonly'), true);
+    assert.strictEqual(link.includes('returnTo=revision-docente'), true);
   });
 });
 

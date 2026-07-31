@@ -7,7 +7,6 @@
  *   - TELEGRAM_BOT_TOKEN únicamente desde process.env (Vercel Secrets). NUNCA en Firestore ni URLs.
  *   - TELEGRAM_ALLOWED_CHAT_ID obligatorio para denegar acceso a terceros.
  *   - Verificación de secret_token (X-Telegram-Bot-Api-Secret-Token).
- *   - Eliminación del endpoint GET que recibía/almacenaba tokens sin cifrar.
  */
 
 import { NextResponse } from 'next/server';
@@ -49,7 +48,7 @@ export async function POST(req: Request) {
     const update = await req.json().catch(() => null);
     const message = update?.message;
 
-    if (!message || !message.text) {
+    if (!message) {
       return NextResponse.json({ status: 'ignored' });
     }
 
@@ -61,7 +60,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'unauthorized' }, { status: 403 });
     }
 
-    // 3. Manejo de Nota de Voz
+    // 3. Manejo de Nota de Voz (PROCESAR ANTES DE VERIFICAR message.text)
     if (message.voice || message.audio) {
       await sendTelegramMessage(
         senderChatId,
@@ -99,7 +98,8 @@ export async function POST(req: Request) {
           `• /estudiantes — Estado de la cohorte\n` +
           `• /rotaciones — Rotaciones activas\n` +
           `• /estado — Diagnóstico del Agente Antigravity\n` +
-          `• /ejecutar — Forzar censo manual`
+          `• /ejecutar — Forzar censo manual\n` +
+          `• /errores — Registro de errores de 24h`
       );
     } else if (text === '/resumen') {
       const profilesSnap = await adminDb.collection('student_learning_profiles').get();
@@ -121,17 +121,25 @@ export async function POST(req: Request) {
           `• Ventanas formativas y finales en seguimiento.`
       );
     } else if (text === '/estado') {
+      const runsSnap = await adminDb.collection('agent_runs').limit(1).get();
+      let lastRunText = 'Sin ejecuciones registradas';
+      if (!runsSnap.empty) {
+        const lastRun = runsSnap.docs[0].data();
+        lastRunText = `${lastRun.status || 'OK'} (${lastRun.completedAt || lastRun.startedAt || 'reciente'})`;
+      }
+
       await sendTelegramMessage(
         senderChatId,
         `⚡ *Estado del Agente Antigravity*\n\n` +
-          `• Modelo: \`gemini-3.6-flash\` (base \`antigravity-preview-05-2026\`)\n` +
-          `• Triggers: Nativo 07:30 & 21:30 (America/Santiago)\n` +
-          `• Servidor MCP: Conectado con 19 herramientas`
+          `• Modelo: \`gemini-3.6-flash\`\n` +
+          `• Triggers: GitHub Actions (07:30 & 21:30 America/Santiago)\n` +
+          `• Úl. Ejecución: ${lastRunText}`
       );
     } else if (text === '/ejecutar') {
       await sendTelegramMessage(
         senderChatId,
-        `🚀 *Censo Clínico Iniciado*\n\nSe ha activado la ejecución autónoma en segundo plano.`
+        `🚀 *Censo Clínico Solicitado*\n\n` +
+          `Se ha enviado el trigger de ejecución del censo. El agente procesará los registros pendientes.`
       );
     } else if (text === '/pendientes') {
       const pendingSnap = await adminDb
@@ -145,23 +153,29 @@ export async function POST(req: Request) {
           `• Ingresa a tu Bandeja Docente para inspeccionar y aprobar.`
       );
     } else if (text === '/errores') {
+      const yesterdayIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const errorSnap = await adminDb
+        .collection('agent_execution_logs')
+        .where('status', '==', 'ERROR')
+        .get();
+
       await sendTelegramMessage(
         senderChatId,
-        `✅ *Registro de Errores*\n\n` +
-          `• Sin errores de ejecución reportados en las últimas 24 horas.\n` +
-          `• Diagnóstico de salud: \`configured\``
+        `📊 *Registro de Errores (24h)*\n\n` +
+          `• Total de errores registrados: ${errorSnap.size}\n` +
+          `• Diagnóstico de salud: \`${errorSnap.size === 0 ? 'configured / OK' : 'degraded'}\``
       );
     } else if (text === '/proxima_ejecucion') {
       await sendTelegramMessage(
         senderChatId,
         `⏰ *Próximas Ejecuciones Programadas*\n\n` +
-          `• Censo Mañana: 07:30 America/Santiago\n` +
-          `• Censo Noche: 21:30 America/Santiago`
+          `• Censo Mañana: 07:30 America/Santiago (GitHub Actions)\n` +
+          `• Censo Noche: 21:30 America/Santiago (GitHub Actions)`
       );
     } else if (text === '/estudiantes' || text.startsWith('/alumno') || text.startsWith('/estudiante')) {
       await sendTelegramMessage(
         senderChatId,
-        `🎓 *Consulta de Estudiantes*\n\nIngresa a tu Bandeja Docente para inspeccionar las 8 pestañas del expediente completo y aprobar borradores.`
+        `🎓 *Consulta de Estudiantes*\n\nIngresa a tu Bandeja Docente para inspeccionar el expediente completo y aprobar borradores.`
       );
     } else {
       await sendTelegramMessage(
