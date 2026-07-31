@@ -81,23 +81,26 @@ export async function fetchServerInbox(query: InboxQuery) {
         const rawAuthorName = data.clinicianResponsible || data.autorName;
         const authorDetails = await resolveClinicalAuthor(authorUid, rawAuthorName);
 
+        const exactHref = `/app/revision-docente/registros/${doc.data().kind || 'EVALUACION'}/${doc.id}`;
+
         records.push({
           id: doc.id,
           kind: 'EVALUACION',
           patientId: data.usuariaId || 'ID_DESCONOCIDO',
           patientName: data.patientName || `Paciente (${(data.usuariaId || '').slice(0, 6)})`,
-          processId: data.procesoId || undefined,
-          authorUid,
+          processId: data.procesoId || 'SIN_PROCESO',
+          authorUid: authorUid || 'UID_DESCONOCIDO',
           authorName: authorDetails.displayName,
           authorDetails,
           sessionAt: data.sessionAt || recordDate,
           createdAt: recordDate,
-          status: data.status,
+          status: data.status === 'DRAFT' ? 'DRAFT' : 'CLOSED',
           summary: safeText(data.clinicalSynthesis || data.p4_plan_structured?.diagnostico_kinesiologico_narrativo) || 'Evaluación registrada',
           missing,
           alerts,
-          priority
-        });
+          priority: priority === 'P3' ? 'P2' : priority,
+          exactHref: `/app/revision-docente/registros/EVALUACION/${doc.id}`
+        } as any);
       }
     }
   }
@@ -138,18 +141,19 @@ export async function fetchServerInbox(query: InboxQuery) {
           kind: 'EVOLUCION',
           patientId: data.usuariaId || 'ID_DESCONOCIDO',
           patientName: data.patientName || `Paciente (${(data.usuariaId || '').slice(0, 6)})`,
-          processId: data.procesoId || undefined,
-          authorUid,
+          processId: data.procesoId || 'SIN_PROCESO',
+          authorUid: authorUid || 'UID_DESCONOCIDO',
           authorName: authorDetails.displayName,
           authorDetails,
           sessionAt: recordDate,
           createdAt: recordDate,
-          status: data.status || data.estado,
+          status: data.status === 'DRAFT' || data.estado === 'BORRADOR' ? 'DRAFT' : 'CLOSED',
           summary: safeText(data.sessionGoal || data.objetivoSesion) || 'Evolución registrada',
           missing,
           alerts,
-          priority
-        });
+          priority: priority === 'P3' ? 'P2' : priority,
+          exactHref: `/app/revision-docente/registros/EVOLUCION/${doc.id}`
+        } as any);
       }
     }
   }
