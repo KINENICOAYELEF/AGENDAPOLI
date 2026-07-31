@@ -161,6 +161,13 @@ service cloud.firestore {
     match /training_profiles/{userId} {
       // El estudiante lee y escribe su propio perfil. El Docente lee todos.
       allow read, write: if isAuthenticated() && (request.auth.uid == userId || isDocente());
+
+      // Historial inmutable de intentos: conserva transcripción, nota,
+      // modalidad y reconexiones para revisión del estudiante y docente.
+      match /sessions/{sessionId} {
+        allow read, create: if isAuthenticated() && (request.auth.uid == userId || isDocente());
+        allow update, delete: if isDocente();
+      }
     }
 
     // --------------------------------------------------------------------

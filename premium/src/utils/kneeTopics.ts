@@ -757,4 +757,6 @@ export const KNEE_TOPICS: KneeTopic[] = [
         ]
     },
     ...KNEE_PRESCRIPTION_TOPICS
-];
+].map(topic => topic.categoria === 'Evaluación y Reevaluación'
+    ? { ...topic, categoria: 'Artroplastia (PTR)' }
+    : topic) as KneeTopic[];

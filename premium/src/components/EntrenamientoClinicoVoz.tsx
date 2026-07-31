@@ -62,6 +62,8 @@ export default function EntrenamientoClinicoVoz() {
 
     const [searchQuery, setSearchQuery] = useState('');
     const [timer, setTimer] = useState(0);
+    const [sessionElapsed, setSessionElapsed] = useState(0);
+    const [reconnectCount, setReconnectCount] = useState(0);
 
     // Real AI Evaluation State
     const [evaluating, setEvaluating] = useState(false);
@@ -121,6 +123,7 @@ export default function EntrenamientoClinicoVoz() {
         if (sessionState === 'IN_PROGRESS') {
             interval = setInterval(() => {
                 setTimer(prev => prev + 1);
+                setSessionElapsed(prev => prev + 1);
             }, 1000);
         }
         return () => {
@@ -177,10 +180,13 @@ export default function EntrenamientoClinicoVoz() {
         setOpenCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
     };
 
-    const handleStartSession = (topic: TrainingTopic) => {
+    const handleStartSession = (topic: TrainingTopic, selectedMode: 'TUTOR' | 'EXAMEN' = mode) => {
         setCurrentTopic(topic);
+        setMode(selectedMode);
         setSessionState('CONNECTING');
         setTimer(0);
+        setSessionElapsed(0);
+        setReconnectCount(0);
         clearTranscript();
     };
 
@@ -193,7 +199,7 @@ export default function EntrenamientoClinicoVoz() {
             console.error("Error al conectar Gemini Live:", error);
             setSessionState('IDLE');
         });
-    }, [sessionState, connectionState, currentTopic.id, connect]);
+    }, [sessionState, connectionState, currentTopic.id, mode, connect]);
 
     useEffect(() => {
         if (sessionState === 'CONNECTING' && connectionState === 'connected') {
@@ -209,6 +215,7 @@ export default function EntrenamientoClinicoVoz() {
         // transcripción siguen siendo la misma; solo comienza una nueva ronda.
         disconnect();
         setTimer(0);
+        setReconnectCount(prev => prev + 1);
         setSessionState('CONNECTING');
     };
 
@@ -282,7 +289,13 @@ export default function EntrenamientoClinicoVoz() {
                     radarObj,
                     estiloCognitivo,
                     cleanedTranscriptText,
-                    fortalezas
+                    fortalezas,
+                    {
+                        topicNombre: activeTopic.nombre,
+                        mode,
+                        durationSeconds: sessionElapsed,
+                        reconnectCount
+                    }
                 );
 
                 // Disparo de síntesis del Super Perfil Longitudinal en segundo plano
@@ -314,7 +327,13 @@ export default function EntrenamientoClinicoVoz() {
                         radarObj,
                         estiloCognitivo,
                         fullText,
-                        fortalezas.length > 0 ? fortalezas : ["Sesión registrada; la evaluación automática no estuvo disponible."]
+                        fortalezas.length > 0 ? fortalezas : ["Sesión registrada; la evaluación automática no estuvo disponible."],
+                        {
+                            topicNombre: activeTopic.nombre,
+                            mode,
+                            durationSeconds: sessionElapsed,
+                            reconnectCount
+                        }
                     );
                     await loadInitialData();
                 } catch (saveErr) {
@@ -536,9 +555,9 @@ export default function EntrenamientoClinicoVoz() {
 
                         <div className="bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl text-right">
                             <span className={`text-2xl font-mono font-black ${timer >= 540 ? 'text-rose-400 animate-pulse' : 'text-indigo-400'}`}>
-                                {formatTime(timer)}
+                                {formatTime(timer)} / 10:00
                             </span>
-                            <span className="text-[10px] text-slate-500 block font-bold uppercase">Tiempo Transcurrido</span>
+                            <span className="text-[10px] text-slate-500 block font-bold uppercase">Ronda {reconnectCount + 1} · sesión {formatTime(sessionElapsed)}</span>
                         </div>
                     </div>
 
@@ -731,29 +750,26 @@ export default function EntrenamientoClinicoVoz() {
                     {/* TAB 1: TEMARIO Y PRÁCTICA (HUB MULTI-ZONA) */}
                     {activeTab === 'TEMARIO' && (
                         <div className="space-y-6">
-                            {/* Selector de Modo Tutor / Examen */}
-                            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                <div className="space-y-1">
-                                    <h3 className="text-sm font-bold text-slate-900">Modo de Práctica Activo</h3>
-                                    <p className="text-xs text-slate-500">Selecciona cómo deseas que el Tutor Orion interactúe durante la llamada.</p>
+                            {/* Elección explícita antes de abrir un tema. */}
+                            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                                <div>
+                                    <h3 className="text-base font-bold text-slate-900">¿Cómo quieres practicar hoy?</h3>
+                                    <p className="text-xs text-slate-500 mt-1">Elige una modalidad y luego selecciona un tema. La llamada dura hasta 10 minutos por ronda; reconectar conserva el avance.</p>
                                 </div>
-
-                                <div className="bg-slate-100 p-1 rounded-xl border border-slate-200 flex gap-1">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <button
                                         onClick={() => setMode('TUTOR')}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                            mode === 'TUTOR' ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200' : 'text-slate-600'
-                                        }`}
+                                        className={`text-left p-4 rounded-xl border-2 transition-all ${mode === 'TUTOR' ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'}`}
                                     >
-                                        Modo A: Tutor Formativo
+                                        <span className="flex items-center gap-2 text-sm font-black text-indigo-900"><BookOpen className="w-4 h-4" /> Aprender con Tutor</span>
+                                        <span className="mt-1 block text-xs text-slate-600">Explica, pregunta, confirma lo que entendió y corrige. Úsalo para repasar y resolver dudas.</span>
                                     </button>
                                     <button
                                         onClick={() => setMode('EXAMEN')}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                            mode === 'EXAMEN' ? 'bg-white text-rose-700 shadow-sm ring-1 ring-slate-200' : 'text-slate-600'
-                                        }`}
+                                        className={`text-left p-4 rounded-xl border-2 transition-all ${mode === 'EXAMEN' ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-100' : 'border-slate-200 hover:border-rose-300 hover:bg-slate-50'}`}
                                     >
-                                        Modo B: Examen Estricto
+                                        <span className="flex items-center gap-2 text-sm font-black text-rose-900"><ShieldCheck className="w-4 h-4" /> Rendir Mini Examen Oral</span>
+                                        <span className="mt-1 block text-xs text-slate-600">Pregunta sin pistas, confirma lo que entendió y genera una nota. Úsalo para comprobar preparación.</span>
                                     </button>
                                 </div>
                             </div>
@@ -876,10 +892,10 @@ export default function EntrenamientoClinicoVoz() {
 
                                                                                         <button
                                                                                             onClick={() => handleStartSession(t)}
-                                                                                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 self-start sm:self-auto shrink-0"
+                                                                                            className={`${mode === 'EXAMEN' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 self-start sm:self-auto shrink-0`}
                                                                                         >
-                                                                                            <Mic className="w-3.5 h-3.5" />
-                                                                                            <span>Iniciar Práctica</span>
+                                                                                            {mode === 'EXAMEN' ? <ShieldCheck className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                                                                                            <span>{mode === 'EXAMEN' ? 'Rendir mini examen' : 'Aprender con tutor'}</span>
                                                                                         </button>
                                                                                     </div>
 
@@ -983,6 +999,12 @@ export default function EntrenamientoClinicoVoz() {
                                                                         <span className="text-[10px] text-slate-400 block">{t.vecesCompletado ?? 1} intentos</span>
                                                                     </div>
                                                                 </div>
+
+                                                                {t.ultimaModalidad && (
+                                                                    <p className="text-[10px] font-semibold text-slate-500">
+                                                                        Último intento: {t.ultimaModalidad === 'EXAMEN' ? 'Mini examen oral' : 'Tutor formativo'} · {formatTime(t.ultimaDuracionSegundos || 0)} · {t.ultimasReconexiones || 0} reconexiones
+                                                                    </p>
+                                                                )}
 
                                                                 {t.ultimoTranscript && (
                                                                     <details className="text-xs text-slate-600 pt-1">
@@ -1096,6 +1118,12 @@ export default function EntrenamientoClinicoVoz() {
                                                                                     <span className="text-[10px] text-slate-400 block">{t.vecesCompletado ?? 1} intentos</span>
                                                                                 </div>
                                                                             </div>
+
+                                                                            {t.ultimaModalidad && (
+                                                                                <p className="text-[10px] font-semibold text-slate-500">
+                                                                                    Último intento: {t.ultimaModalidad === 'EXAMEN' ? 'Mini examen oral' : 'Tutor formativo'} · {formatTime(t.ultimaDuracionSegundos || 0)} · {t.ultimasReconexiones || 0} reconexiones
+                                                                                </p>
+                                                                            )}
 
                                                                             {t.ultimoTranscript && (
                                                                                 <details className="text-xs text-slate-600 pt-1">

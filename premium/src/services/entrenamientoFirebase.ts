@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { collection, doc, setDoc, getDoc, updateDoc, arrayUnion, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, updateDoc, addDoc, getDocs, query, where, Timestamp, serverTimestamp } from 'firebase/firestore';
 import { CLINICAL_TOPICS, ClinicalTopic } from '../utils/clinicalTopics';
 
 export interface RadarScores {
@@ -21,6 +21,16 @@ export interface TopicProgress {
     ultimoTranscript?: string | null;
     ultimoFeedback?: string[] | null;
     ultimoErroresDetalle?: string[] | null;
+    ultimaModalidad?: 'TUTOR' | 'EXAMEN';
+    ultimaDuracionSegundos?: number;
+    ultimasReconexiones?: number;
+}
+
+export interface TrainingSessionMetadata {
+    topicNombre: string;
+    mode: 'TUTOR' | 'EXAMEN';
+    durationSeconds: number;
+    reconnectCount: number;
 }
 
 export interface UserTrainingProfile {
@@ -103,7 +113,8 @@ export const saveTrainingSession = async (
     radarScores: RadarScores,
     nuevoEstiloCognitivo?: string,
     transcriptText?: string,
-    feedbackText?: string[]
+    feedbackText?: string[],
+    sessionMetadata?: TrainingSessionMetadata
 ) => {
     const profileRef = doc(db, 'training_profiles', userId);
     const profile = await getUserTrainingProfile(userId);
@@ -139,7 +150,10 @@ export const saveTrainingSession = async (
         radarUltimo: radarScores,
         ultimoTranscript: transcriptText || topicData.ultimoTranscript || null,
         ultimoFeedback: feedbackText || topicData.ultimoFeedback || null,
-        ultimoErroresDetalle: errores || topicData.ultimoErroresDetalle || null
+        ultimoErroresDetalle: errores || topicData.ultimoErroresDetalle || null,
+        ultimaModalidad: sessionMetadata?.mode || topicData.ultimaModalidad,
+        ultimaDuracionSegundos: sessionMetadata?.durationSeconds ?? topicData.ultimaDuracionSegundos,
+        ultimasReconexiones: sessionMetadata?.reconnectCount ?? topicData.ultimasReconexiones
     };
 
     profile.temas[topicId] = updatedTopicData;
@@ -170,6 +184,30 @@ export const saveTrainingSession = async (
     }
 
     await updateDoc(profileRef, updates);
+
+    // Historial inmutable: permite a estudiante y docente revisar intentos
+    // anteriores sin reescribir la última práctica del tema.
+    if (sessionMetadata) {
+        try {
+            await addDoc(collection(profileRef, 'sessions'), {
+                topicId,
+                topicNombre: sessionMetadata.topicNombre,
+                mode: sessionMetadata.mode,
+                durationSeconds: sessionMetadata.durationSeconds,
+                reconnectCount: sessionMetadata.reconnectCount,
+                puntaje,
+                errores,
+                feedback: feedbackText || [],
+                radarScores,
+                transcriptText: transcriptText || null,
+                createdAt: serverTimestamp()
+            });
+        } catch (historyError) {
+            // El progreso principal ya se guardó arriba. No duplicarlo si la
+            // regla de Firestore aún no permite la subcolección de historial.
+            console.error('No se pudo guardar el historial detallado:', historyError);
+        }
+    }
 };
 
 // Algoritmo de Repetición Espaciada y Camino Personal
