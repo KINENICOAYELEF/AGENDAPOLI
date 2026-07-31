@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useGeminiLive } from '../hooks/useGeminiLive';
 import { HIP_TOPICS, HipTopic } from '../utils/hipTopics';
-import { KNEE_TOPICS } from '../utils/kneeTopics';
-import EntrenamientoRodillaVoz from './EntrenamientoRodillaVoz';
+import { KNEE_TOPICS, KneeTopic } from '../utils/kneeTopics';
 import { generateHipSocraticPrompt } from '../utils/hipPrompts';
+import { generateKneeSocraticPrompt } from '../utils/kneePrompts';
 import { 
     getUserTrainingProfile, 
     getDetailedStudentTrainingProfiles, 
@@ -22,6 +22,8 @@ import {
     ChevronRight, ChevronDown, Search, Sparkles, AlertTriangle, FileText, 
     History, X, Award, Calendar, Clock, ArrowRight, ArrowLeft, BookOpen, Layers, Users, ShieldCheck, Filter, User
 } from 'lucide-react';
+
+type TrainingTopic = HipTopic | KneeTopic;
 
 export default function EntrenamientoClinicoVoz() {
     const { user } = useAuth();
@@ -39,7 +41,7 @@ export default function EntrenamientoClinicoVoz() {
     const [sessionState, setSessionState] = useState<'IDLE' | 'CONNECTING' | 'IN_PROGRESS' | 'COMPLETED'>('IDLE');
     
     // Topic & Mode selection
-    const [currentTopic, setCurrentTopic] = useState<HipTopic>(HIP_TOPICS[0]);
+    const [currentTopic, setCurrentTopic] = useState<TrainingTopic>(HIP_TOPICS[0]);
     const [mode, setMode] = useState<'TUTOR' | 'EXAMEN'>('TUTOR');
 
     // UI Accordion States - Todos colapsados por defecto para una vista limpia
@@ -142,44 +144,40 @@ export default function EntrenamientoClinicoVoz() {
         transcript,
         clearTranscript
     } = useGeminiLive({
-        systemInstruction: currentTopic 
-            ? generateHipSocraticPrompt(
-                currentTopic, 
+        systemInstruction: currentTopic.id.startsWith('k')
+            ? generateKneeSocraticPrompt(
+                currentTopic as KneeTopic,
+                myProfile?.temas[currentTopic.id]?.erroresHistoricos || [],
+                myProfile?.estiloCognitivo || 'NEUTRO',
+                user?.displayName || 'Estudiante',
+                mode
+              )
+            : generateHipSocraticPrompt(
+                currentTopic as HipTopic,
                 myProfile?.temas[currentTopic.id]?.erroresHistoricos || [], 
                 myProfile?.estiloCognitivo || 'NEUTRO',
                 user?.displayName ? user.displayName.split(' ')[0] : 'Docente',
                 mode,
                 superProfile?.miniPromptDinamico
-              )
-            : '',
+              ),
         voiceName: 'Puck'
     });
 
     const bodyZones = [
-        { name: 'Cadera', active: true, topicCount: HIP_TOPICS.length, badge: 'Disponible' },
-        { name: 'Rodilla', active: true, topicCount: KNEE_TOPICS.length, badge: 'Disponible' },
-        { name: 'Hombro', active: false, topicCount: 0, badge: 'Próximamente' },
-        { name: 'Columna Lumbar', active: false, topicCount: 0, badge: 'Próximamente' },
-        { name: 'Columna Cervical', active: false, topicCount: 0, badge: 'Próximamente' },
-        { name: 'Tobillo y Pie', active: false, topicCount: 0, badge: 'Próximamente' },
-        { name: 'Codo y Muñeca', active: false, topicCount: 0, badge: 'Próximamente' }
-    ];
-
-    const categories = [
-        'Coxartrosis', 
-        'Artroplastia (PTC)', 
-        'Evaluación Post-Artroplastia', 
-        'FAI y Labrum', 
-        'Displasia e Inestabilidad', 
-        'Dolor Lateral de Cadera', 
-        'Dolor Inguinal y Extraarticular'
+        { name: 'Cadera', active: true, topicCount: HIP_TOPICS.length, badge: 'Disponible', topics: HIP_TOPICS },
+        { name: 'Rodilla', active: true, topicCount: KNEE_TOPICS.length, badge: 'Disponible', topics: KNEE_TOPICS },
+        { name: 'Hombro', active: false, topicCount: 0, badge: 'Próximamente', topics: [] as TrainingTopic[] },
+        { name: 'Columna Lumbar', active: false, topicCount: 0, badge: 'Próximamente', topics: [] as TrainingTopic[] },
+        { name: 'Columna Cervical', active: false, topicCount: 0, badge: 'Próximamente', topics: [] as TrainingTopic[] },
+        { name: 'Tobillo y Pie', active: false, topicCount: 0, badge: 'Próximamente', topics: [] as TrainingTopic[] },
+        { name: 'Codo y Muñeca', active: false, topicCount: 0, badge: 'Próximamente', topics: [] as TrainingTopic[] }
     ];
 
     const toggleCategory = (cat: string) => {
         setOpenCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
     };
 
-    const handleStartSession = (topic: HipTopic) => {
+    const handleStartSession = (topic: TrainingTopic) => {
         setCurrentTopic(topic);
         setSessionState('CONNECTING');
         setTimer(0);
@@ -359,14 +357,15 @@ export default function EntrenamientoClinicoVoz() {
     const selectedStudentView = studentViews.find(s => s.profile?.userId === selectedStudentId) || studentViews[0];
 
     // Helper: Filtrar ÚNICAMENTE temas EBM de este módulo y agruparlos por Categoría
-    const ebmTopicSet = new Set(HIP_TOPICS.map(t => t.id));
+    const allTrainingTopics: TrainingTopic[] = [...HIP_TOPICS, ...KNEE_TOPICS];
+    const ebmTopicSet = new Set(allTrainingTopics.map(t => t.id));
     const groupTemasByCategory = (temasObj?: Record<string, TopicProgress>) => {
         if (!temasObj) return {};
         const ebmTemas = Object.values(temasObj).filter(t => ebmTopicSet.has(t.topicId));
-        const grouped: Record<string, { topicProg: TopicProgress; topicInfo: HipTopic }[]> = {};
+        const grouped: Record<string, { topicProg: TopicProgress; topicInfo: TrainingTopic }[]> = {};
         
         ebmTemas.forEach((t) => {
-            const topicInfo = HIP_TOPICS.find(ht => ht.id === t.topicId);
+            const topicInfo = allTrainingTopics.find(topic => topic.id === t.topicId);
             if (topicInfo) {
                 const cat = topicInfo.categoria;
                 if (!grouped[cat]) grouped[cat] = [];
@@ -394,7 +393,7 @@ export default function EntrenamientoClinicoVoz() {
                             Módulo de Simulación Clínica EBM
                         </span>
                         <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wider">
-                            {HIP_TOPICS.length} Temas EBM Activos
+                            {HIP_TOPICS.length + KNEE_TOPICS.length} Temas EBM Activos
                         </span>
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
@@ -775,13 +774,8 @@ export default function EntrenamientoClinicoVoz() {
                                             </div>
                                         </div>
 
-                                        {/* Contenido de zonas activas */}
+                                        {/* Un único flujo visual para cada zona activa. */}
                                         {zone.active && openZone === zone.name && (
-                                            zone.name === 'Rodilla' ? (
-                                                <div className="border-t border-slate-100 p-4 pt-5">
-                                                    <EntrenamientoRodillaVoz />
-                                                </div>
-                                            ) : (
                                             <div className="p-4 pt-0 border-t border-slate-100 space-y-4">
                                                 {/* Buscador de temas dentro de la zona */}
                                                 <div className="relative pt-3">
@@ -797,8 +791,8 @@ export default function EntrenamientoClinicoVoz() {
 
                                                 {/* Sub-acordeones por Categoría */}
                                                 <div className="space-y-3">
-                                                    {categories.map((cat) => {
-                                                        const catTopics = HIP_TOPICS.filter(t => 
+                                                    {[...new Set(zone.topics.map(t => t.categoria))].map((cat) => {
+                                                        const catTopics = zone.topics.filter(t =>
                                                             t.categoria === cat &&
                                                             (searchQuery === '' || t.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || t.contenidoBase.toLowerCase().includes(searchQuery.toLowerCase()))
                                                         );
@@ -880,7 +874,6 @@ export default function EntrenamientoClinicoVoz() {
                                                     })}
                                                 </div>
                                             </div>
-                                            )
                                         )}
                                     </div>
                                 ))}
@@ -899,7 +892,7 @@ export default function EntrenamientoClinicoVoz() {
                                     </div>
                                     <div>
                                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Temas Completados</span>
-                                        <span className="text-xl font-black text-slate-900 block leading-tight">{completedTopicsCount} / {HIP_TOPICS.length}</span>
+                                        <span className="text-xl font-black text-slate-900 block leading-tight">{completedTopicsCount} / {HIP_TOPICS.length + KNEE_TOPICS.length}</span>
                                     </div>
                                 </div>
 

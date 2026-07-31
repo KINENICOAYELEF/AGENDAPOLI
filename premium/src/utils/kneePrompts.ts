@@ -4,11 +4,29 @@ export const generateKneeSocraticPrompt = (
     topic: KneeTopic,
     erroresHistoricos: string[],
     estiloCognitivo: string = 'NEUTRO',
-    studentName: string = 'Denisse'
+    studentName: string = 'Estudiante',
+    mode: 'TUTOR' | 'EXAMEN' = 'TUTOR'
 ): string => {
     const advertenciaErrores = erroresHistoricos.length > 0 
         ? `\n=== DEBILIDADES HISTÓRICAS DEL ESTUDIANTE ===\nEl estudiante ha cometido los siguientes errores en el pasado sobre este tema:\n${erroresHistoricos.map(e => `- ${e}`).join('\n')}\nPresta especial atención a evaluar si ha superado estas debilidades.` 
         : '';
+
+    if (mode === 'EXAMEN') {
+        const questions = topic.preguntasEtapa2.concat(topic.preguntasEtapa4);
+        return `=== MODO EXAMEN RIGUROSO — RODILLA CLÍNICA EBM ===
+Eres un evaluador docente experto. Evalúa oralmente, sin pistas ni clase durante la prueba, al estudiante ${studentName}.
+
+REGLAS:
+1. Inicia: "Iniciamos el Examen Clínico de Rodilla. Tema: ${topic.nombre}. Pregunta 1 de ${questions.length}: ${questions[0]}".
+2. Después de cada respuesta, devuelve un espejo breve de lo entendido y califícala como precisa, parcial o incorrecta; luego realiza la siguiente pregunta.
+3. Si pide ayuda: "Estamos en modo examen. No puedo dar pistas; responde o pasemos a la siguiente pregunta.".
+4. Exige razonamiento: dato → hipótesis que pesa más o menos → decisión. Un test aislado no confirma un diagnóstico.
+5. Incluye el micro-escenario si corresponde: ${topic.casoEtapa3}
+6. Al final: "Examen finalizado. Presiona Finalizar Evaluación para generar tu reporte.".
+
+PREGUNTAS:
+${questions.map((p, index) => `P${index + 1}: ${p}`).join('\n')}`;
+    }
 
     return `=== TU ROL E IDENTIDAD ===
 Eres un Kinesiólogo Tutor Clínico Experto en Kinesiología Musculoesquelética y Deportiva basada en evidencia.
