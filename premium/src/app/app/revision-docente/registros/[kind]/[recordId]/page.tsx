@@ -116,8 +116,8 @@ export default function VisorRegistroSoloLecturaPage() {
             </div>
           </div>
 
-          {/* DETALLES DE AUTORÍA REAL */}
-          <div className="bg-indigo-50/40 border border-indigo-100 rounded-2xl p-4 flex items-center justify-between">
+          {/* DETALLES DE AUTORÍA REAL Y BOTÓN DE SALIDA */}
+          <div className="bg-indigo-50/40 border border-indigo-100 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black">
                 <UserCheck className="w-5 h-5" />
@@ -132,7 +132,49 @@ export default function VisorRegistroSoloLecturaPage() {
                 </p>
               </div>
             </div>
+
+            {/* SEPARACIÓN CLARA: ENLACE PARA SALIR MODO SUPERVISIÓN Y EDITAR */}
+            {recordData.usuariaId && (
+              <button
+                onClick={() => router.push(`/app/usuarios?id=${recordData.usuariaId}&procesoId=${recordData.procesoId || ''}`)}
+                className="text-xs font-bold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-3 py-2 rounded-xl transition-colors shrink-0 shadow-xs"
+              >
+                <span>Abrir Expediente Completo (Salir de Modo Supervisión) ↗</span>
+              </button>
+            )}
           </div>
+
+          {/* ALERTAS Y CAMPOS FALTANTES */}
+          {(recordData.alerts?.length > 0 || recordData.missing?.length > 0) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {recordData.alerts?.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-1">
+                  <h4 className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    <span>Alertas Registradas</span>
+                  </h4>
+                  <ul className="text-xs text-amber-800 list-disc list-inside space-y-0.5">
+                    {recordData.alerts.map((a: string, idx: number) => (
+                      <li key={idx}>{a}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {recordData.missing?.length > 0 && (
+                <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-1">
+                  <h4 className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+                    <FileText className="w-4 h-4 text-rose-600" />
+                    <span>Campos Faltantes</span>
+                  </h4>
+                  <ul className="text-xs text-rose-800 list-disc list-inside space-y-0.5">
+                    {recordData.missing.map((m: string, idx: number) => (
+                      <li key={idx}>{m}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* RESUMEN CLÍNICO */}
           <div className="space-y-4">
