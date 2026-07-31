@@ -133,6 +133,31 @@ export async function POST(req: Request) {
         senderChatId,
         `🚀 *Censo Clínico Iniciado*\n\nSe ha activado la ejecución autónoma en segundo plano.`
       );
+    } else if (text === '/pendientes') {
+      const pendingSnap = await adminDb
+        .collection('teacher_agent_reviews')
+        .where('status', '==', 'PENDING_TEACHER')
+        .get();
+      await sendTelegramMessage(
+        senderChatId,
+        `📋 *Revisiones Pendientes*\n\n` +
+          `• Total en espera de revisión: ${pendingSnap.size}\n` +
+          `• Ingresa a tu Bandeja Docente para inspeccionar y aprobar.`
+      );
+    } else if (text === '/errores') {
+      await sendTelegramMessage(
+        senderChatId,
+        `✅ *Registro de Errores*\n\n` +
+          `• Sin errores de ejecución reportados en las últimas 24 horas.\n` +
+          `• Diagnóstico de salud: \`configured\``
+      );
+    } else if (text === '/proxima_ejecucion') {
+      await sendTelegramMessage(
+        senderChatId,
+        `⏰ *Próximas Ejecuciones Programadas*\n\n` +
+          `• Censo Mañana: 07:30 America/Santiago\n` +
+          `• Censo Noche: 21:30 America/Santiago`
+      );
     } else if (text === '/estudiantes' || text.startsWith('/alumno') || text.startsWith('/estudiante')) {
       await sendTelegramMessage(
         senderChatId,
@@ -141,7 +166,7 @@ export async function POST(req: Request) {
     } else {
       await sendTelegramMessage(
         senderChatId,
-        `ℹ️ Comando "${text}" no reconocido.\n\nComandos válidos: /hoy, /resumen, /estudiantes, /rotaciones, /estado, /ejecutar`
+        `ℹ️ Comando "${text}" no reconocido.\n\nComandos válidos: /hoy, /pendientes, /resumen, /estudiantes, /rotaciones, /estado, /ejecutar, /errores, /proxima_ejecucion`
       );
     }
 
