@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth, AppUser } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
@@ -51,7 +51,9 @@ export default function DashboardPage() {
 
     // Cargar alertas específicas para el interno en sesión
     useEffect(() => {
-        if (!globalActiveYear || !user) return;
+        // Estas tarjetas se muestran únicamente a internos. Evitar que cada
+        // visita docente descargue evoluciones y personas usuarias completas.
+        if (!globalActiveYear || !user || user.role !== 'INTERNO') return;
 
         const fetchInternAlerts = async () => {
             try {
@@ -80,30 +82,24 @@ export default function DashboardPage() {
                 setTodayCompletedCount(completedCount);
                 setUnevolvedTodayCitas(myTodayCitas.filter(c => c.status === 'SCHEDULED'));
 
-                // 2. Cargar personas usuarias activas para validar existencia y nombres reales
-                const usersRef = collection(db, "programs", globalActiveYear, "personasUsuarias");
-                const snapUsers = await getDocs(usersRef);
-                const validUsersMap: Record<string, string> = {};
-                snapUsers.docs.forEach(uDoc => {
-                    const uData = uDoc.data();
-                    validUsersMap[uDoc.id] = uData.identity?.fullName || uData.nombreCompleto || 'Paciente';
-                });
-
-                // 3. Evoluciones recientes con Feedback Docente o Borradores sin cerrar
+                // 2. Evoluciones del interno actual. El campo audit.createdBy es
+                // el campo normalizado que escriben los formularios actuales;
+                // limitar la consulta impide que el dashboard lea todo el año.
                 const evolsRef = collection(db, "programs", globalActiveYear, "evoluciones");
-                const snapEvols = await getDocs(evolsRef);
+                const snapEvols = await getDocs(query(
+                    evolsRef,
+                    where("audit.createdBy", "==", user.uid),
+                    limit(100),
+                ));
                 
                 const feedbackItems: any[] = [];
                 const yesterdayItems: any[] = [];
 
                 snapEvols.docs.forEach(d => {
                     const data = d.data() as Evolucion;
-                    const isMyEvol = (data as any).clinicianResponsibleUid === user.uid || (data as any).clinicianResponsible === user.uid || data.audit?.createdBy === user.uid;
                     const pid = (data as any).personaUsuariaId || (data as any).usuariaId || '';
                     
-                    // Si el paciente fue eliminado o no existe en la BD, se descarta para no dejar huérfanos
-                    if (isMyEvol && pid && validUsersMap[pid]) {
-                        const realName = validUsersMap[pid];
+                    if (pid) {
 
                         // Feedback docente real (docenteComment o docenteFeedback)
                         const realFeedback = (data as any).docenteComment || (data as any).docenteFeedback;
@@ -111,7 +107,7 @@ export default function DashboardPage() {
                             feedbackItems.push({
                                 id: d.id,
                                 usuariaId: pid,
-                                usuariaName: realName,
+                                usuariaName: (data as any).usuariaName || 'Persona usuaria',
                                 feedback: realFeedback,
                                 date: data.sessionAt || ''
                             });
@@ -127,15 +123,45 @@ export default function DashboardPage() {
                             yesterdayItems.push({
                                 id: d.id,
                                 usuariaId: pid,
-                                usuariaName: realName,
+                                usuariaName: (data as any).usuariaName || 'Persona usuaria',
                                 date: formattedDate
                             });
                         }
                     }
                 });
 
-                setDocenteFeedbackList(feedbackItems.slice(0, 5));
-                setYesterdayDrafts(yesterdayItems.slice(0, 5));
+                // Resolver nombres solo para los avisos que realmente se van a
+                // mostrar (máximo 10), en vez de cargar toda la colección.
+                const visibleFeedback = feedbackItems.slice(0, 5);
+                const visibleDrafts = yesterdayItems.slice(0, 5);
+                const visiblePatientIds = Array.from(new Set([
+                    ...visibleFeedback.map(item => item.usuariaId),
+                    ...visibleDrafts.map(item => item.usuariaId),
+                ].filter(Boolean)));
+                const patientNames = new Map<string, string>();
+                await Promise.all(visiblePatientIds.map(async (patientId) => {
+                    const patientSnap = await getDoc(doc(
+                        db,
+                        "programs",
+                        globalActiveYear,
+                        "usuarias",
+                        patientId,
+                    ));
+                    if (patientSnap.exists()) {
+                        const patient = patientSnap.data();
+                        patientNames.set(
+                            patientId,
+                            patient.identity?.fullName || patient.nombreCompleto || "Persona usuaria",
+                        );
+                    }
+                }));
+
+                const withResolvedNames = (items: any[]) => items.map(item => ({
+                    ...item,
+                    usuariaName: patientNames.get(item.usuariaId) || item.usuariaName,
+                }));
+                setDocenteFeedbackList(withResolvedNames(visibleFeedback));
+                setYesterdayDrafts(withResolvedNames(visibleDrafts));
 
             } catch (err) {
                 console.error("Error cargando alertas de interno:", err);

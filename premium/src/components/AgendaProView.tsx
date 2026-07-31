@@ -68,7 +68,14 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                 q = query(citasRef, where("date", "==", dayStr));
             } else if (viewMode === 'SEMANA') {
                 const start = startOfWeek(baseDate, { weekStartsOn: 1 });
-                q = query(citasRef, where("date", ">=", format(start, 'yyyy-MM-dd')));
+                const end = addDays(start, 6);
+                // La vista semanal no debe consultar todas las citas futuras y
+                // recortarlas en el navegador: ambas cotas son del mismo campo.
+                q = query(
+                    citasRef,
+                    where("date", ">=", format(start, 'yyyy-MM-dd')),
+                    where("date", "<=", format(end, 'yyyy-MM-dd')),
+                );
             } else {
                 q = query(citasRef);
             }
