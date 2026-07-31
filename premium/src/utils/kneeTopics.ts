@@ -648,5 +648,110 @@ export const KNEE_TOPICS: KneeTopic[] = [
             "¿Cómo usarías el feedback para fortalecer razonamiento autónomo de la estudiante?",
             "¿Qué información revisarías antes de declarar alta?"
         ]
+    },
+    {
+        id: "k4.1",
+        nombre: "4.1 — LCA: mecanismo, entrevista y urgencias",
+        categoria: "LCA y retorno al deporte",
+        contenidoBase: `
+- Tras una lesión sin contacto con desaceleración, giro o aterrizaje, la hipótesis de lesión de LCA puede ganar peso si hubo derrame temprano, sensación de inestabilidad o un "pop". Ningún elemento aislado confirma el diagnóstico.
+- La entrevista debe precisar mecanismo, tiempo del derrame, capacidad inmediata de continuar, episodios de bloqueo, inestabilidad, lesiones previas, deporte y objetivo de retorno.
+- Considera lesiones asociadas: menisco, cartílago, MCL, lesión osteocondral o compromiso neurovascular según mecanismo y signos. Un bloqueo verdadero, gran derrame, dolor desproporcionado o compromiso neurovascular cambia la urgencia y la derivación.
+`,
+        preguntasEtapa2: [
+            "¿Qué datos del mecanismo y de la evolución aumentan el peso de una lesión de LCA?",
+            "¿Qué diferenciales debes mantener abiertos tras un giro con derrame?",
+            "¿Qué hallazgo cambia tu decisión de evaluación o derivación inmediata?"
+        ],
+        casoEtapa3: `"Futbolista cae tras cambio de dirección, nota pop y derrame en pocas horas. Puede caminar, pero refiere que la rodilla 'se le va'." Formula hipótesis, datos faltantes y conducta segura antes de hablar de retorno.`,
+        preguntasEtapa4: [
+            "¿Por qué el mecanismo orienta pero no confirma una lesión?",
+            "¿Qué diferencia hay entre inestabilidad percibida y un diagnóstico estructural confirmado?",
+            "¿Qué debe documentarse al derivar?"
+        ]
+    },
+    {
+        id: "k4.2",
+        nombre: "4.2 — LCA: examen y lectura de hallazgos",
+        categoria: "LCA y retorno al deporte",
+        contenidoBase: `
+- El examen integra derrame, rango activo/pasivo, extensión, tolerancia a carga, marcha, fuerza, pruebas de estabilidad cuando estén indicadas y función. Se interpreta dentro de la fase y de la historia.
+- Una prueba de laxitud positiva requiere competencia técnica y contexto; no sustituye el razonamiento sobre lesión asociada, irritabilidad, objetivos ni necesidad de confirmación médica.
+- Diferencia la restricción activa de la pasiva: dolor, derrame e inhibición pueden limitar la activación sin demostrar por sí mismos una lesión nueva.
+`,
+        preguntasEtapa2: [
+            "¿Qué secuencia de examen es más segura en una rodilla aguda e irritable?",
+            "¿Cómo interpretas una limitación de extensión activa versus pasiva?",
+            "¿Qué información añade el derrame a tu hipótesis y a la dosificación?"
+        ],
+        casoEtapa3: `"A una semana de lesión, la persona tiene derrame leve, extensión pasiva casi completa y no logra extensión activa terminal." Explica hipótesis para la limitación, qué medirías y qué conclusión sería prematura.`,
+        preguntasEtapa4: [
+            "¿Por qué un test especial no debe enseñarse como veredicto aislado?",
+            "¿Qué hallazgos obligan a posponer pruebas funcionales exigentes?",
+            "¿Cómo registrarías el cambio de derrame entre sesiones?"
+        ]
+    },
+    {
+        id: "k4.3",
+        nombre: "4.3 — LCA: prehabilitación y decisiones compartidas",
+        categoria: "LCA y retorno al deporte",
+        contenidoBase: `
+- Antes de una posible reconstrucción, se busca controlar derrame e irritabilidad, recuperar extensión, mejorar marcha, fuerza y confianza según tolerancia. Estos son objetivos funcionales, no una carrera contra un calendario.
+- La decisión quirúrgica y el retorno al deporte pertenecen a una conversación interdisciplinaria. La kinesiología aporta desempeño, síntomas, metas, adherencia y preparación; no promete un resultado ni indica cirugía por cuenta propia.
+- La educación debe evitar miedo: la lesión requiere una rehabilitación seria y progresiva, pero no convierte a la persona en frágil ni define su identidad deportiva.
+`,
+        preguntasEtapa2: [
+            "¿Por qué extensión, derrame, marcha y fuerza son datos útiles antes de hablar de fases avanzadas?",
+            "¿Qué información aportarías al equipo para una decisión compartida?",
+            "¿Cómo distinguirías una meta de retorno de un criterio clínico actual?"
+        ],
+        casoEtapa3: `"Deportista quiere operar 'lo antes posible' y volver en tres meses. Tiene derrame, marcha en flexión y mucha ansiedad." Prioriza tu evaluación, educación y los límites de lo que puedes prometer.`,
+        preguntasEtapa4: [
+            "¿Por qué el calendario no basta para progresar?",
+            "¿Cómo afecta la adherencia a la interpretación de un progreso lento?",
+            "¿Qué lenguaje evita tanto el nocebo como la falsa seguridad?"
+        ]
+    },
+    {
+        id: "k4.4",
+        nombre: "4.4 — LCA: progresión de fuerza, tareas y exposición",
+        categoria: "LCA y retorno al deporte",
+        contenidoBase: `
+- Progresa desde el estado clínico actual hacia tareas relevantes: fuerza, control de movimiento, desaceleración, saltos, cambios de dirección y exposición específica al deporte cuando la fase y la respuesta lo permitan.
+- La calidad de movimiento se observa junto con síntomas, derrame, fuerza, rendimiento, fatiga y confianza. No se usa como una estética de "alineación perfecta" ni como único predictor de seguridad.
+- Modifica una variable por vez cuando sea posible (volumen, velocidad, complejidad, superficie o incertidumbre de tarea) para interpretar respuesta y construir tolerancia.
+`,
+        preguntasEtapa2: [
+            "¿Qué datos necesitas antes de introducir un cambio de dirección?",
+            "¿Cómo progresas una tarea sin usar solo el tiempo postoperatorio?",
+            "¿Por qué conviene modificar una variable a la vez?"
+        ],
+        casoEtapa3: `"Persona con buena sentadilla bilateral desea volver a fútbol. Aún presenta derrame al día siguiente de correr y evita desacelerar." Decide qué no progresarías todavía, qué medirías y qué entrenarías primero.`,
+        preguntasEtapa4: [
+            "¿Qué diferencia hay entre capacidad física y preparación para una tarea deportiva?",
+            "¿Cómo usar la respuesta al día siguiente sin convertirla en una regla rígida?",
+            "¿Qué factor psicosocial puede modificar la exposición?"
+        ]
+    },
+    {
+        id: "k4.5",
+        nombre: "4.5 — LCA: retorno al deporte y reducción de riesgo",
+        categoria: "LCA y retorno al deporte",
+        contenidoBase: `
+- Retornar es un proceso, no un alta binaria. Integra estado de la rodilla, fuerza, pruebas funcionales pertinentes, exposición gradual, confianza, demandas del deporte y decisión compartida con equipo y persona.
+- Ningún porcentaje de simetría, hop test o mes del calendario garantiza seguridad por sí solo. Las pruebas se usan como una batería contextualizada, con calidad técnica y comparación con metas relevantes.
+- Los programas preventivos basados en ejercicio combinan trabajo neuromuscular, fuerza, salto/aterrizaje y tareas específicas, con buena implementación y adherencia; no prometen eliminar todo riesgo.
+`,
+        preguntasEtapa2: [
+            "¿Por qué un solo test aprobado no autoriza automáticamente el retorno?",
+            "¿Qué dimensiones incluirías en una batería de retorno?",
+            "¿Cómo explicarías reducción de riesgo sin prometer prevención absoluta?"
+        ],
+        casoEtapa3: `"Jugadora supera una prueba de salto, pero reporta miedo alto y no ha entrenado con oposición ni fatiga." Decide si el dato basta, qué falta explorar y cómo se lo comunicarías.`,
+        preguntasEtapa4: [
+            "¿Qué diferencia hay entre retorno a participación, retorno a deporte y retorno a rendimiento?",
+            "¿Por qué la exposición específica al deporte es una variable clínica?",
+            "¿Cómo usarías una prueba funcional para generar una decisión y no solo una nota?"
+        ]
     }
 ];

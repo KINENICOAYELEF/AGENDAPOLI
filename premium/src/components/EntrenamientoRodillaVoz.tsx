@@ -340,6 +340,7 @@ export default function EntrenamientoRodillaVoz() {
         { id: 'artroplastia', name: 'Artroplastia (PTR)', label: '2. Artroplastia Total de Rodilla (Fases)' },
         { id: 'evaluacion', name: 'Evaluación y Reevaluación', label: '3. Reevaluación Especial (Cicatriz, Marcha y SLR)' },
         { id: 'dpf', name: 'Dolor Patelofemoral', label: '4. Dolor Patelofemoral (Razonamiento y carga)' },
+        { id: 'lca', name: 'LCA y retorno al deporte', label: '5. LCA y retorno al deporte (decisiones y progresión)' },
     ];
 
     const getCategoryProgress = (categoryName: string) => {
