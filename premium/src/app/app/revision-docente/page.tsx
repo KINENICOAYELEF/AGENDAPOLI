@@ -6,31 +6,16 @@ import { useAuth } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
 import { auth } from "@/lib/firebase";
 import { BandejaDocenteInteligente } from "@/components/revision-docente/BandejaDocenteInteligente";
-import { featureFlags } from "@/lib/agent/config";
-
-import { ResolvedAuthor } from "@/types/clinicalAuthor";
+import {
+  fetchClientInbox,
+  type ClientInboxRecord,
+} from "@/lib/teacher-inbox/clientQuery";
 import { buildClinicalRecordLink } from "@/lib/navigation/clinicalRecordLink";
 
 type RecordKind = "EVALUACION" | "EVOLUCION";
 type DateRangePreset = "HOY" | "AYER" | "7DIAS" | "HISTORICO";
 
-interface ReviewRecord {
-  id: string;
-  kind: RecordKind;
-  patientId: string;
-  patientName: string;
-  processId?: string;
-  authorUid?: string;
-  authorName: string;
-  authorDetails?: ResolvedAuthor;
-  sessionAt?: string;
-  createdAt?: string;
-  status?: string;
-  summary: string;
-  missing: string[];
-  alerts: string[];
-  priority: "P0" | "P1" | "P2" | "P3";
-}
+type ReviewRecord = ClientInboxRecord;
 
 function formatDate(value?: string) {
   if (!value) return "Fecha no registrada";
@@ -88,27 +73,48 @@ export default function RevisionDocentePage() {
         params.append("kind", kindFilter);
       }
 
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) {
-        throw new Error("No se pudo obtener el token de autenticación del usuario actual");
+      let loadedRecords: ReviewRecord[];
+
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) {
+          throw new Error(
+            "No se pudo obtener el token de autenticación del usuario actual",
+          );
+        }
+
+        const res = await fetch(`/api/teacher/inbox?${params.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error ${res.status}`);
+        }
+
+        const data = await res.json();
+        const payload = data.data ?? data;
+        loadedRecords = payload.records || [];
+      } catch (serverError) {
+        console.warn(
+          "API docente no disponible; usando lectura Firebase autenticada.",
+          serverError,
+        );
+        const fallback = await fetchClientInbox({
+          year: globalActiveYear,
+          from: fromStr,
+          to: toStr,
+          limit: 50,
+          kind: kindFilter === "TODOS" ? undefined : kindFilter,
+        });
+        loadedRecords = fallback.records;
       }
 
-      const res = await fetch(`/api/teacher/inbox?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) {
-        throw new Error(`HTTP error ${res.status}`);
-      }
-
-      const data = await res.json();
-      const payload = data.data ?? data;
-      setRecords(payload.records || []);
+      setRecords(loadedRecords);
       setSelected(null);
-    } catch (err: any) {
-      console.error("Error cargando bandeja docente servidor:", err);
-      setError("No pudimos cargar la bandeja desde el servidor. Reintenta.");
+    } catch (err: unknown) {
+      console.error("Error cargando bandeja docente:", err);
+      setError("No pudimos cargar la bandeja docente. Reintenta.");
     } finally {
       setLoading(false);
     }
@@ -192,7 +198,7 @@ export default function RevisionDocentePage() {
           </div>
           <h1 className="text-3xl font-black tracking-tight text-slate-900">Bandeja docente</h1>
           <p className="mt-2 text-slate-600 max-w-2xl">
-            Consultas incrementales optimizadas en servidor. Mostrando actividad seleccionada en Chile (America/Santiago).
+            Mostrando la actividad del rango seleccionado en Chile (America/Santiago).
           </p>
         </div>
 
@@ -279,7 +285,7 @@ export default function RevisionDocentePage() {
         <section className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
           {loading ? (
             <div className="p-12 text-center text-slate-500 animate-pulse">
-              Consultando registros en servidor...
+              Consultando registros clínicos...
             </div>
           ) : filteredRecords.length === 0 ? (
             <div className="p-12 text-center text-slate-500">
