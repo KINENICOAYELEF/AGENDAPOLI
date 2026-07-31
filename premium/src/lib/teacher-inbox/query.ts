@@ -39,6 +39,59 @@ function hasValue(val: unknown): boolean {
   return Boolean(val);
 }
 
+function normalizeRecordDate(value: any): string | undefined {
+  if (typeof value === 'string') return value;
+  if (value instanceof Date) return value.toISOString();
+  if (value && typeof value.toDate === 'function') return value.toDate().toISOString();
+  if (value && typeof value.seconds === 'number') return new Date(value.seconds * 1000).toISOString();
+  return undefined;
+}
+
+function isInsideRange(value: unknown, fromIso: string, toIso: string): boolean {
+  const normalized = normalizeRecordDate(value);
+  if (!normalized) return false;
+  const instant = new Date(normalized).getTime();
+  return !Number.isNaN(instant) && instant >= new Date(fromIso).getTime() && instant <= new Date(toIso).getTime();
+}
+
+async function loadRecentRecords(
+  db: ReturnType<typeof getAdminDb>,
+  year: string,
+  collectionName: 'evaluaciones' | 'evoluciones',
+  fromIso: string,
+  toIso: string,
+  limitCount: number,
+  studentId?: string,
+) {
+  // Los formularios actuales usan sessionAt; fechaHoraAtencion conserva las
+  // fichas antiguas. Cada consulta es acotada por fecha antes de llegar al
+  // servidor, en vez de leer una colección completa y filtrarla después.
+  const dateFields = ['sessionAt', 'fechaHoraAtencion'];
+  const snapshots = await Promise.all(dateFields.map(async (field) => {
+    let ref: any = db.collection(`programs/${year}/${collectionName}`)
+      .where(field, '>=', fromIso)
+      .where(field, '<=', toIso)
+      .limit(limitCount);
+    if (studentId && studentId !== 'TODOS') {
+      ref = ref.where('audit.createdBy', '==', studentId);
+    }
+    try {
+      return await ref.get();
+    } catch (error) {
+      // Si un campo legado tiene tipos incompatibles, el campo normalizado
+      // sigue entregando resultados sin disparar una lectura masiva.
+      console.warn(`No se pudo consultar ${collectionName}.${field}:`, error);
+      return { docs: [] };
+    }
+  }));
+
+  const unique = new Map<string, any>();
+  snapshots.flatMap(snapshot => snapshot.docs).forEach((snapshot: any) => {
+    unique.set(snapshot.id, snapshot);
+  });
+  return Array.from(unique.values());
+}
+
 export async function fetchServerInbox(query: InboxQuery) {
   const db = getAdminDb();
   const limitCount = query.limit || 50;
@@ -52,19 +105,14 @@ export async function fetchServerInbox(query: InboxQuery) {
 
   // Query evaluations
   if (!query.kind || query.kind === 'EVALUACION') {
-    let evalsRef = db.collection(`programs/${year}/evaluaciones`)
-      .limit(limitCount * 2);
-
-    if (query.studentId && query.studentId !== 'TODOS') {
-      evalsRef = evalsRef.where('audit.createdBy', '==', query.studentId);
-    }
-
-    const evalsSnap = await evalsRef.get();
-    for (const doc of evalsSnap.docs) {
+    const evalDocs = await loadRecentRecords(
+      db, year, 'evaluaciones', fromTime, toTime, limitCount, query.studentId,
+    );
+    for (const doc of evalDocs) {
       const data = doc.data() as any;
       const recordDate = data.sessionAt || data.audit?.createdAt || data.createdAt || data.fechaHoraAtencion;
       
-      if (recordDate && recordDate >= fromTime && recordDate <= toTime) {
+      if (isInsideRange(recordDate, fromTime, toTime)) {
         const missing: string[] = [];
         const alerts: string[] = [];
 
@@ -92,8 +140,8 @@ export async function fetchServerInbox(query: InboxQuery) {
           authorUid: authorUid || 'UID_DESCONOCIDO',
           authorName: authorDetails.displayName,
           authorDetails,
-          sessionAt: data.sessionAt || recordDate,
-          createdAt: recordDate,
+          sessionAt: normalizeRecordDate(data.sessionAt || recordDate),
+          createdAt: normalizeRecordDate(recordDate),
           status: data.status === 'DRAFT' ? 'DRAFT' : 'CLOSED',
           summary: safeText(data.clinicalSynthesis || data.p4_plan_structured?.diagnostico_kinesiologico_narrativo) || 'Evaluación registrada',
           missing,
@@ -107,19 +155,14 @@ export async function fetchServerInbox(query: InboxQuery) {
 
   // Query evolutions
   if (!query.kind || query.kind === 'EVOLUCION') {
-    let evolsRef = db.collection(`programs/${year}/evoluciones`)
-      .limit(limitCount * 2);
-
-    if (query.studentId && query.studentId !== 'TODOS') {
-      evolsRef = evolsRef.where('audit.createdBy', '==', query.studentId);
-    }
-
-    const evolsSnap = await evolsRef.get();
-    for (const doc of evolsSnap.docs) {
+    const evolDocs = await loadRecentRecords(
+      db, year, 'evoluciones', fromTime, toTime, limitCount, query.studentId,
+    );
+    for (const doc of evolDocs) {
       const data = doc.data() as any;
       const recordDate = data.sessionAt || data.fechaHoraAtencion || data.audit?.createdAt || data.createdAt;
 
-      if (recordDate && recordDate >= fromTime && recordDate <= toTime) {
+      if (isInsideRange(recordDate, fromTime, toTime)) {
         const missing: string[] = [];
         const alerts: string[] = [];
 
@@ -145,8 +188,8 @@ export async function fetchServerInbox(query: InboxQuery) {
           authorUid: authorUid || 'UID_DESCONOCIDO',
           authorName: authorDetails.displayName,
           authorDetails,
-          sessionAt: recordDate,
-          createdAt: recordDate,
+          sessionAt: normalizeRecordDate(recordDate),
+          createdAt: normalizeRecordDate(recordDate),
           status: data.status === 'DRAFT' || data.estado === 'BORRADOR' ? 'DRAFT' : 'CLOSED',
           summary: safeText(data.sessionGoal || data.objetivoSesion) || 'Evolución registrada',
           missing,
