@@ -42,17 +42,17 @@ export const HIP_TOPICS: HipTopic[] = [
         categoria: "Coxartrosis",
         contenidoBase: `
 - Factores no modificables: edad, sexo, genética, lesiones de la infancia (Legg-Calvé-Perthes, displasia del desarrollo, deslizamiento epifisario femoral) y variaciones anatómicas de cobertura (ángulo Wiberg / alfa).
-- Factores modificables: sobrecarga mecánica repetitiva, obesidad (mecanismo mecánico de aumento de JRF - Joint Reaction Force, e inflamatorio por adipoquinas sistémicas), debilidad de abductores de cadera y sedentarismo.
-- Nutrición articular: el cartílago coxofemoral se nutre por imbibición del líquido sinovial mediante ciclos intermitentes de carga y descarga; la inmovilidad acelera la degradación tisular.
+- Factores modificables relevantes para salud y función: exposición a cargas no dosificadas, obesidad (mecanismos mecánicos y metabólicos), baja capacidad muscular y baja actividad física. No explican por sí solos el dolor ni determinan el pronóstico individual.
+- El intercambio de líquido sinovial y la carga cíclica son fisiología articular básica. En clínica, la indicación de actividad y ejercicio se fundamenta principalmente en función, tolerancia, salud general y evidencia de beneficio; no se promete "nutrir" ni regenerar cartílago.
 - Caso integrado: Don Gonzalo, 58 años, ex-agricultor con antecedente de displasia leve no tratada, IMC 31. Presenta dolor rígido matinal.
 `,
         preguntasEtapa2: [
             "Diferencia los mecanismos mecánicos e inflamatorios/metabólicos por los cuales la obesidad incrementa el riesgo de progresión de la coxartrosis.",
-            "¿Por qué la falta de carga cíclica (sedentarismo) altera la nutrición y homeostasis del cartílago articular de la cadera?",
+            "¿Cómo explicarías que el movimiento dosificado puede mejorar función y confianza sin prometer regenerar cartílago ni atribuir el dolor solo a la imagen?",
             "¿Cómo influyen las secuelas de afecciones infantiles (como displasia o Perthes) en la distribución de tensiones sobre el acetábulo?",
             "¿Qué rol juega la debilidad del glúteo medio como factor de riesgo funcional en la progresión de la artrosis de cadera?"
         ],
-        casoEtapa3: `"Don Mario, 62 años, trabaja de chofer de camión 10 horas al día, IMC 33, sedentario. Refiere que evita caminar 'para no gastar la articulación que le queda'." Fundamenta clínicamente por qué el sedentarismo es más nocivo para su cartílago que la caminata dosificada y cómo se lo explicas.`,
+        casoEtapa3: `"Don Mario, 62 años, trabaja de chofer de camión 10 horas al día, IMC 33, sedentario. Refiere que evita caminar 'para no gastar la articulación que le queda'." Fundamenta por qué una caminata dosificada puede ser razonable para su función y salud, cómo monitorizarías la respuesta y qué no le prometerías.`,
         preguntasEtapa4: [
             "¿Qué son las adipoquinas (ej. leptina, adiponectina) y cuál es su impacto catabólico directo sobre los condrocitos?",
             "¿Cuántas veces el peso corporal se multiplica en la articulación coxofemoral durante la fase de apoyo monopodal de la marcha?",
@@ -135,7 +135,7 @@ export const HIP_TOPICS: HipTopic[] = [
         nombre: "1.6 — Fortalecimiento específico y recuperación funcional",
         categoria: "Coxartrosis",
         contenidoBase: `
-- Musculatura clave a entrenar: Glúteo Medio (estabilizador frontal de pelvis en marcha), Glúteo Mayor (extensor y centrado dinámico de cabeza femoral), Rotadores Profundos (obturadores, gemelos, cuadrado femoral que estabilizan la articulación) y Cuádriceps/Isquiosurales.
+- Musculatura clave a entrenar según la tarea: glúteo medio y mayor, cuádriceps, isquiosurales y otros grupos que limiten la función. La contribución de los rotadores profundos puede describirse como control de movimiento, pero no debe asumirse que un supuesto "descentrado" sea la causa del dolor.
 - Progresión por fases e irritabilidad:
   1. Fase de Baja Carga / Alta Irritabilidad: Isométricos en posición neutra (abducción en decúbito supino/lateral sin aducción compresiva).
   2. Fase de Carga Moderada: Cadena cerrada bi-podal (Sit-to-Stand con banda, puente glúteo).
@@ -146,7 +146,7 @@ export const HIP_TOPICS: HipTopic[] = [
             "¿Por qué el fortalecimiento del glúteo medio en posición neutra es prioritario antes de progresar a ejercicios con rangos extremos de aducción?",
             "Explica la secuencia de progresión de cargas musculares desde contracciones isométricas analgésicas hasta ejercicios dinámicos unipodales en la cadera.",
             "¿Cómo reeducas el patrón de Sit-to-Stand (pararse de la silla) para reducir la fuerza de reacción articular de la cadera en pacientes con artrosis moderada?",
-            "¿Cuál es el rol biomecánico de los rotadores profundos de cadera en el centrado dinámico de la cabeza femoral dentro del acetábulo?"
+            "¿Cómo integrarías fuerza, control de tarea y tolerancia a la carga al decidir qué musculatura entrenar, sin atribuir el dolor a un único mecanismo biomecánico?"
         ],
         casoEtapa3: `"Don Pedro, 69 años, coxartrosis derecha. Al realizar una abducción en decúbito lateral presenta un 'clunk' doloroso 6/10 y compensa flexionando la cadera y rotando el tronco hacia atrás." Diagnostica la compensación y propón 2 alternativas para fortalecer el abductor en una posición más segura hoy.`,
         preguntasEtapa4: [
@@ -163,7 +163,7 @@ export const HIP_TOPICS: HipTopic[] = [
 - Uso de bastón / bastón canadiense: DEBE utilizarse en la mano CONTRALATERAL a la cadera dolorosa.
   - Mecanismo biomecánico: al apoyar el bastón en el lado contralateral, el latísimo del lomo y los flexores del brazo generan un momento que reduce la fuerza de contracción requerida por el glúteo medio afectado, reduciendo la Fuerza de Reacción Articular (JRF) hasta en un 50%.
 - Adaptación de la vida diaria: elevar la altura de sillas/inodoros para evitar flexión >90° en fases de alta irritabilidad, evitar cruzar las piernas (aducción extrema) y distribuir cargas en compras.
-- Desmitificación del lenguaje nocebo: erradicar términos infundidores de miedo como "hueso contra hueso", "cadera gastada" o "chatarra articular". Reemplazar por "articulación con capacidad de adaptación", "sensibilidad tisular manejable" y "el movimiento nutre el cartílago".
+- Desmitificación del lenguaje nocebo: evitar términos infundidores de miedo como "hueso contra hueso", "cadera gastada" o "chatarra articular". Reemplazar por "articulación con capacidad de adaptación", "síntomas que podemos monitorizar" y "movimiento y ejercicio dosificados para recuperar función".
 `,
         preguntasEtapa2: [
             "Explica biomecánicamente por qué el bastón debe usarse en la mano CONTRALATERAL a la cadera lesionada y cuánta carga articular alivia.",
@@ -293,7 +293,7 @@ export const HIP_TOPICS: HipTopic[] = [
 - Luxación Protésica: acortamiento repentino de la extremidad con rotación interna fija (luxación posterior) o rotación externa (luxación anterior) y dolor severo e incapacidad total de apoyo.
 - Dismetría de Extremidades (LLD - Leg Length Discrepancy):
   - Real / Estructural: por colocación del vástago/centro articular.
-  - Aparente / Funcional: secundaria a espasmo del cuadrado lumbar, contractura en aducción o basculación pélvica adaptativa. Re requiere evaluación a las 6-12 semanas antes de recetar realces en el calzado.
+  - Aparente / Funcional: puede relacionarse con postura, basculación pélvica, protección por dolor, rango disponible o patrón de marcha. Debe reevaluarse tras la recuperación inicial antes de considerar un realce; no se atribuye automáticamente a una "contractura".
 `,
         preguntasEtapa2: [
             "Describe la prueba de Wells para TVP y los signos físicos que exigen la suspensión inmediata de la sesión kinesiológica post-PTC.",
@@ -315,7 +315,7 @@ export const HIP_TOPICS: HipTopic[] = [
         contenidoBase: `
 - Fase Aguda Hospitalaria (Días 0-3): control de dolor/edema, prevención de TVP (ejercicios circulatorios de tobillo/bomba muscular), transferencias básicas (cama a silla), bipedestación y marcha con andador/bastones canadiense.
 - Fase Subaguda Domiciliaria/Ambulatoria (Semanas 1-6): independencia en transferencias, retiro progresivo de bastones a marcha independiente, ganancia de rango funcional (flexión a 90°, extensión a 0°), fortalecimiento de abductores y extensores de cadera, reeducación del patrón de marcha.
-- Fase Funcional y Retorno Activo (Semanas 6-12+): simetría de carga unipodal (LSI ≥80%), abducción en bipedestación sin Trendelenburg, subir y bajar escaleras de forma alternada, retorno a actividades recreativas de bajo impacto (caminata, bicicleta, natación, golf).
+- Fase Funcional y Retorno Activo (orientativamente desde semana 6): progresión de carga unipodal, marcha y escaleras según desempeño, síntomas, objetivos y restricciones del cirujano. El LSI y otros tests aportan información, pero no son un alta automática.
 - Outcome Measures: HOOS (Hip disability and Osteoarthritis Outcome Score), Forgotten Joint Score (FJS-12), TUG, 30s Chair Stand Test.
 `,
         preguntasEtapa2: [
@@ -377,7 +377,7 @@ export const HIP_TOPICS: HipTopic[] = [
         casoEtapa3: `"Semana 4 post-PTC. El paciente camina en paralelo sin bastón pero arrastra el pie operado en la fase de oscilación por falta de flexión activa de cadera y balancea la pelvis lateralmente." Diagnostica la deficiencia de la marcha y propone 2 ejercicios para corregirla.`,
         preguntasEtapa4: [
             "¿Por qué los step-ups laterales de baja altura estimulan mejor el control frontal de la pelvis que la abducción en decúbito lateral?",
-            "¿Qué nivel de fuerza en la escala de Daniels (MMT) debe alcanzar el glúteo medio para autorizar la marcha independiente sin bastón?",
+            "¿Qué combinación de estabilidad, dolor, calidad de marcha, seguridad y función usarías para decidir el retiro progresivo del bastón?",
             "¿Cómo afecta la restricción de movilidad del flexor de cadera (Iliopsoas) al patrón de extensión en la fase de despegue de la marcha?"
         ]
     },
@@ -386,18 +386,18 @@ export const HIP_TOPICS: HipTopic[] = [
         nombre: "2.8 — Rehabilitación funcional: desde semana 6",
         categoria: "Artroplastia (PTC)",
         contenidoBase: `
-- Objetivos: optimizar la simetría de fuerza (LSI ≥85%), propiocepción y control dinámico unipodal, retorno a las AVD avanzadas, reintegro laboral y deportes de bajo impacto.
+- Objetivos: mejorar fuerza, desempeño y confianza en tareas relevantes; comparar con línea basal y lado contralateral cuando sea apropiado, sin convertir un LSI aislado en criterio de alta.
 - Ejercicios avanzados: peso muerto rumano unipodal asistido, estocadas cortas, prensa de piernas, trabajo en plano inestable (Bosu/Tabla de balance), reentrenamiento de agilidad y caminata a ritmo rápido.
-- Actividades permitidas/recomendadas (Bajo Impacto): caminata nórdica, natación (estilo croma/espalda; patada de pecho contraindicada en fases iniciales por RE), bicicleta de ruta/estática, golf, dobles en tenis.
-- Actividades NO recomendadas / Contraindicadas (Alto Impacto): fútbol, básquetbol, carreras de larga distancia (maratón), esquí agresivo, artes marciales de contacto (riesgo de desgaste del polietileno, luxación o aflojamiento aséptico).
+- Actividades de menor impacto que suelen preferirse: caminata, natación una vez cicatrizada la herida y autorizado por el equipo, bicicleta, golf y deportes de raqueta de menor demanda. La elección debe respetar abordaje, estabilidad, evolución y recomendación del cirujano.
+- Las actividades de alto impacto o contacto requieren una conversación individualizada sobre exposición, riesgos, metas y recomendación quirúrgica; no se resuelven con una prohibición idéntica para todas las personas.
 `,
         preguntasEtapa2: [
-            "¿Por qué la patada de pecho en natación está contraindicada en los primeros meses post-PTC posterolateral?",
-            "Describe una batería de ejercicios de control propioceptivo y equilibrio unipodal para la fase funcional (semanas 6-12).",
-            "¿Qué actividades deportivas son consideradas seguras (bajo impacto) y cuáles no recomendadas (alto impacto) tras una PTC?",
+            "¿Qué variables del abordaje, indicaciones quirúrgicas, rango tolerado y síntomas revisarías antes de indicar una patada de pecho u otro gesto de rotación?",
+            "Describe una batería de ejercicios de equilibrio, fuerza y tareas unipodales para la fase funcional y cómo progresarías según respuesta.",
+            "¿Cómo conversarías sobre actividades de menor y mayor impacto tras una PTC sin usar reglas universales, incorporando la indicación del cirujano?",
             "¿Cuáles son los criterios funcionales para autorizar la conducción de automóviles (pierna derecha operada vs izquierda operada)?"
         ],
-        casoEtapa3: `"Semana 10 post-PTC. Paciente de 58 años muy activo pide autorización para volver a trotar 5 km diarios en asfalto y jugar tenis singles." Fundamenta clínicamente la respuesta educando sobre el desgaste de polietileno y ofrece alternativas deportivas.`,
+        casoEtapa3: `"Semana 10 post-PTC. Paciente de 58 años muy activo pide autorización para volver a trotar 5 km diarios en asfalto y jugar tenis singles." Fundamenta una conversación de decisión compartida: estado funcional, exposición progresiva, posibles riesgos, indicación del cirujano y alternativas mientras se completa la recuperación.`,
         preguntasEtapa4: [
             "¿Cómo se relaciona la tasa de desgaste del polietileno por millón de ciclos con el tipo de actividad de alto impacto?",
             "¿Cuál es el tiempo promedio de reacción de frenado en conducción de automóvil que se normaliza a las 6 semanas post-PTC derecha?",
@@ -525,7 +525,7 @@ export const HIP_TOPICS: HipTopic[] = [
   - Test de Apoyo Unipodal (Single Leg Stance Test): mantener equilibrio sobre pierna operada durante 30 segundos sin inclinación de tronco ni caída pélvica.
   - Test 30-Second Chair Stand: número de repeticiones completas de ponerse de pie y sentarse en 30 segundos.
   - Test TUG (Timed Up and Go): tiempo para levantarse de silla, caminar 3 metros, girar y volver a sentarse (normativo post-PTC <10 segundos).
-  - Limb Symmetry Index (LSI): porcentaje de simetría de fuerza/desempeño = (Puntaje Operado / Puntaje Sano) x 100. Meta de alta: LSI ≥85%.
+  - Limb Symmetry Index (LSI): porcentaje de simetría de fuerza/desempeño = (Puntaje Operado / Puntaje Sano) x 100. Es un dato complementario: se interpreta con la línea basal, desempeño funcional, síntomas y objetivos, no como meta universal de alta.
 `,
         preguntasEtapa2: [
             " Describe cómo aislás la evaluación de fuerza MMT del Glúteo Mayor desactivando la acción dominante de los isquiotibiales en camilla.",
@@ -571,7 +571,7 @@ export const HIP_TOPICS: HipTopic[] = [
         nombre: "4.2 — Fisiopatología y diagnóstico del FAI sintomático",
         categoria: "FAI y Labrum",
         contenidoBase: `
-- Consenso de Warwick (2016) sobre Síndrome de FAI: Requiere OBLIGATORIAMENTE la triada clínica:
+- Consenso de Warwick (2016) sobre Síndrome de FAI: su diagnóstico se apoya en la integración de síntomas, signos clínicos e imagen cuando corresponda; ninguna dimensión aislada confirma el diagnóstico.
   1. Síntomas del paciente (dolor inguinal/cadera relacionado con el movimiento o la postura).
   2. Signos físicos positivos a la exploración (restringido rango en flexión/RI + pruebas provocativas dolorosas).
   3. Hallazgos en imágenes compatibles (Radiografía AP pelvis / Falso perfil / Resonancia).
@@ -627,10 +627,10 @@ export const HIP_TOPICS: HipTopic[] = [
   1. FADIR Test (Flexión 90°, Aducción, Rotación Interna): provoca contacto entre cuello femoral y reborde acetabular anterosuperior. Alta Sensibilidad (90-99%), pero Baja Especificidad. (Excelente para DESCARTAR si es negativo; si es positivo no confirma FAI por sí solo).
   2. FABER Test / Patrick Test (Flexión, Abducción, Rotación Externa): mide dolor/distancia rodilla-camilla. Dolor anterior = sacroilíaca o cadera intraarticular; dolor posterior = sacroilíaca.
   3. Log Roll Test (Rotación pasiva interna/externa de extremidad extendida en supino): evalúa irritabilidad capsular intraarticular sin comprimir bordes óseos.
-  4. Test de Thomas / Modified Thomas Test: evalúa acortamiento/irritabilidad del iliopsoas y recto anterior.
+  4. Test de Thomas / Modified Thomas Test: explora la posición y tolerancia a extensión de cadera/rodilla; no diagnostica por sí solo "acortamiento" ni identifica la fuente del dolor.
 - Estudio de Imagen:
   - Radiografía de Pelvis AP + Proyección de Dunn 45°/90°: para medir Ángulo Alfa (Cam), Ángulo Wiberg (Pincer/Displasia) y retroversión.
-  - Artro-Resonancia Magnética (Artro-RM con gadolinio intraarticular): Gold standard para visualizar desgarros del labrum y defectos del cartílago.
+  - Artro-Resonancia Magnética (Artro-RM con gadolinio intraarticular): estudio que puede aportar información sobre labrum y cartílago cuando la pregunta clínica y la derivación médica lo justifican; sus hallazgos se interpretan junto a la clínica, no como diagnóstico aislado.
 `,
         preguntasEtapa2: [
             "Describe la maniobra de FADIR test, su sensibilidad/especificidad clínica y la forma correcta de interpretar un resultado positivo.",
@@ -680,19 +680,19 @@ export const HIP_TOPICS: HipTopic[] = [
   - Fase 1: Protección de la Reparación y Cicatrización Capsular (Semanas 0 a 3-4): uso de muletas con carga parcial (20-30% peso corporal), prevención de adherencias capsulares (movilización pasiva precoz en CPM o bicicleta sin resistencia), restricción estricta de extensión extrema y RE pasiva si hubo sutura capsular.
   - Fase 2: Ganancia de Rango Completo e Independencia de Marcha (Semanas 4 a 8): retiro de muletas, activación progresiva de glúteos en cadena cerrada, control lumbopélvico.
   - Fase 3: Fuerza Avanzada y Control Neuromuscular (Semanas 8 a 12): estocadas, peso muerto, agilidad.
-  - Fase 4: Retorno Deportivo / Criterios de alta (Semanas 12 a 24+): pruebas funcionales unipodales, agilidad multi-direccional, test Y-Balance, LSI ≥90%.
+  - Fase 4: Retorno Deportivo / Criterios de progresión (orientativamente semanas 12 a 24+): exposición gradual a tareas del deporte, fuerza y pruebas funcionales relevantes, síntomas, confianza y autorización del equipo tratante. El LSI es una pieza de la decisión, no un umbral único.
 `,
         preguntasEtapa2: [
             "¿Por qué se prefiere la REPARACIÓN / REINSERCIÓN del labrum acetabular mediante anclas sobre la labrectomía (resección)?",
             " Describe las precauciones de movimiento y carga de peso durante las primeras 3 semanas post-artroscopia con reparación labral y sutura capsular.",
             "¿Cómo previenes la formación de adherencias capsulares tempranas entre el labrum reparado y la cápsula sin vulnerar la reparación?",
-            "¿Cuáles son los criterios funcionales objetivos (LSI, agilidad, dolor) para autorizar el retorno al deporte de pivoteo (semanas 16-24)?"
+            "¿Qué conjunto de datos —tolerancia a carga, fuerza, pruebas funcionales relevantes, confianza, demanda del deporte y autorización médica— integrarías para progresar al deporte de pivoteo?"
         ],
         casoEtapa3: `"Semana 2 post-artroscopia de cadera (reparación labral + osteocondroplastia Cam). El paciente acude sin muletas porque 'ya no siente dolor' y estuvo haciendo extensiones activas de cadera pesadas en su casa." Evalúa el riesgo sobre la cápsula/labrum y re-establece las precauciones.`,
         preguntasEtapa4: [
             "¿Qué es la plicatura capsular artroscópica y en qué tipo de pacientes (ej. microinestabilidad / laxitud) está indicada?",
             "¿Cuál es el riesgo de desarrollar osificación heterotópica post-artroscopia de cadera y qué profilaxis farmacológica se utiliza (ej: Naproxeno)?",
-            "¿Qué test funcional (ej: Single Leg Hop Test para cadera) debe cumplir un LSI ≥90% antes del retorno competitivo?"
+            "¿Qué pruebas funcionales son pertinentes para ese deporte y por qué una prueba o un porcentaje aislado no basta para decidir un retorno competitivo?"
         ]
     },
 
@@ -735,10 +735,10 @@ export const HIP_TOPICS: HipTopic[] = [
         preguntasEtapa2: [
             "¿Qué es la microinestabilidad de cadera y qué diferencia existe entre una inestabilidad traumática versus una por atrición capsular?",
             "Explica cómo se utiliza la Escala de Beighton para evaluar la hipermovilidad sistémica y su impacto en la cadera.",
-            "¿Por qué en pacientes con microinestabilidad está CONTRAINDICADO realizar estiramientos pasivos agresivos de cápsula/cadera?",
-            "¿Cuál es el rol de los rotadores profundos de cadera como centradores dinámicos de la cabeza femoral en estadios de laxitud capsular?"
+            "¿Por qué en una persona con sospecha de microinestabilidad conviene evitar al inicio estiramientos agresivos o de fin de rango que reproduzcan síntomas, y cómo decidirías la dosis de movilidad?",
+            "¿Cómo plantearías fuerza, control de tarea y exposición progresiva en una persona con laxitud capsular, sin atribuir el dolor a un único supuesto de 'centrado' femoral?"
         ],
-        casoEtapa3: `"Bailarina de 19 años con Beighton Score 7/9. Consulta por dolor inguinal y sensación de que la cadera 'se desencaja' al hacer extensiones. Su profesor le pide que estire más la cadera abriendo de piernas." Justifica clínicamente por qué debes contraindicar ese estiramiento y cuál es tu plan.`,
+        casoEtapa3: `"Bailarina de 19 años con Beighton Score 7/9. Consulta por dolor inguinal y sensación de que la cadera 'se desencaja' al hacer extensiones. Su profesor le pide que estire más la cadera abriendo de piernas." Explica por qué no indicarías de entrada mayor amplitud sin evaluación, qué datos buscarías y cómo priorizarías fuerza, control y exposición gradual.`,
         preguntasEtapa4: [
             "¿Qué prueba clínica específica (ej. Abduction-Hyperextension-External Rotation Test / AHRE test) evalúa la inestabilidad anterior de cadera?",
             "¿Por qué el músculo Iliopsoas incrementa su actividad electromiográfica de coactivación en pacientes con microinestabilidad anterior como mecanismo protector?",
@@ -779,16 +779,16 @@ export const HIP_TOPICS: HipTopic[] = [
 - Tratamiento Conservador kinesiológico en Displasia / Microinestabilidad:
   - Pilar 1: Estabilización Dinámica de alta exigencia (reforzar Glúteo Medio, Mayor, Obturadores, Cuadrado Femoral y Abdominales profundos para actuar como 'cápsula muscular artificial').
   - Pilar 2: PROHIBICIÓN ABSOLUTA de estiramientos pasivos de cadera en rangos finales.
-  - Pilar 3: Reeducación propioceptiva y de control postural en bipedestación evitando la hiperextensión de cadera en reposo ('hanging on hip ligaments').
+  - Pilar 3: entrenamiento de control postural y de tareas en bipedestación, evitando depender de posiciones de fin de rango que provoquen síntomas.
 - Osteotomía Periacetabular (PAO - Periacetabular Osteotomy de Ganz):
   - Cirugía preservadora mayor en displasia moderada/severa sin artrosis avanzada. Consiste en realizar cortes óseos alrededor del acetábulo para reorientarlo y aumentar la cobertura sobre la cabeza femoral.
   - Rehabilitación Post-PAO: protección estricta de carga de peso (carga parcial 20-30% con 2 muletas por 6-8 semanas hasta consolidación ósea), consolidación de la osteotomía, ganancia gradual de rango y fortalecimiento agresivo posterior.
 `,
         preguntasEtapa2: [
-            "Cuáles son los pilares del tratamiento kinesiológico conservador en la microinestabilidad de cadera y por qué se contraindican los estiramientos pasivos?",
+            "¿Cuáles son los pilares del tratamiento kinesiológico conservador en la microinestabilidad y cómo dosificarías movilidad sin agravar síntomas?",
             "¿En qué consiste la Osteotomía Periacetabular (PAO) de Ganz y cuáles son sus indicaciones quirúrgicas?",
             " Explica la progresión de carga de peso y precauciones biomecánicas durante las primeras 8 semanas post-PAO.",
-            "¿Cómo entrenas el centrado dinámico femoral mediante coactivación de rotadores profundos en pacientes con displasia?"
+            "¿Cómo planteas fuerza, control de tarea y exposición progresiva en una persona con displasia, sin atribuir el dolor a un único supuesto de 'centrado' femoral?"
         ],
         casoEtapa3: `"Paciente de 25 años sometida a Osteotomía Periacetabular (PAO) izquierda hace 4 semanas. Acude a la consulta apoyando todo el peso sin muletas porque se siente fuerte. Trae dolor en la zona de las osteotomías." Evalúa la conducta de la paciente y explica el riesgo de no consolidación.`,
         preguntasEtapa4: [
@@ -892,7 +892,7 @@ export const HIP_TOPICS: HipTopic[] = [
 - Diagnóstico por Imagen: Resonancia Magnética o Ecografía de alta resolución.
 - Manejo Kinesiológico y Quirúrgico:
   - Desgarros Parciales (<50% del espesor): Tratamiento conservador intensivo de manejo de carga, fortalecimiento del glúteo menor, tensor de la fascia lata y glúteo mayor compensatorio.
-  - Desgarros Completos / Masivos (>50% o avulsión completa): Criterio de reparación quirúrgica (re-inserción del tendón glutéalo con anclas suturadas al trocánter).
+  - Desgarros completos o avulsiones pueden requerir valoración traumatológica. La indicación quirúrgica depende de síntomas, función, retracción, calidad tendinosa, demanda y decisión especializada; un porcentaje aislado no decide por sí solo.
   - Rehabilitación Post-Reparación Glutéala: uso de muletas con carga parcial por 6 semanas, restricción estricta de aducción activa/pasiva y abducción activa contra gravedad durante 6-8 semanas para proteger las suturas.
 `,
         preguntasEtapa2: [
@@ -1039,7 +1039,7 @@ export const HIP_TOPICS: HipTopic[] = [
         preguntasEtapa2: [
             "Explica el concepto de compresión tendinosa en la Tendinopatía Proximal de Isquiosurales al aumentar la flexión de cadera.",
             "¿Por qué la queja clínica de 'dolor al estar sentado en sillas duras' (pain on sitting) es patognomónica de esta tendinopatía?",
-            "¿Por qué los estiramientos tradicionales de isquiosurales (tocarse las puntas de los pies) están estrictamente CONTRAINDICADOS en la fase reactiva?",
+            "¿Por qué un estiramiento intenso de isquiosurales puede ser mal tolerado en una fase reactiva y cómo usarías síntomas y respuesta posterior para decidir si modificarlo o evitarlo transitoriamente?",
             "Describe la progresión de ejercicios de carga desde isométricos en rango neutro hasta el retorno al sprint de velocidad."
         ],
         casoEtapa3: `"Maratonista de 34 años consulta por dolor en el pliegue glúteo inferior derecho que le impide sentarse a trabajar en su oficina y aumenta al dar la zancada larga corriendo. Llevaba 3 semanas haciendo estiramientos pasivos profundos de isquiosurales sin mejora." Ajusta el manejo de carga y elimina el factor compresivo.`,
@@ -1094,7 +1094,7 @@ export const HIP_TOPICS: HipTopic[] = [
   - Fase 1 (Aguda): CRIO / compresión local, isométricos tempranos indoloro (≤2/10).
   - Fase 2 (Regenerativa): fortalecimiento isotónico HSR progresivo, control neuromuscular de pelvis.
   - Fase 3 (Funcional): ejercicios excéntricos de alta velocidad, carrera de aceleración/desaceleración.
-  - Criterios de RTP: ausencia completa de dolor en palpación y contracción máxima, LSI de fuerza ≥90-95%, aprobación de la batería de pruebas de campo sin aprensión.
+  - Criterios de RTP: progresión sin aumento clínicamente relevante de síntomas, capacidad de realizar tareas específicas, fuerza y pruebas funcionales pertinentes, preparación psicológica y exposición gradual. La simetría ayuda a interpretar el caso, pero no sustituye esta integración.
 `,
         preguntasEtapa2: [
             " Explica la clasificación de lesiones musculares BAMIC (Miofascial vs Miotendinosa vs Intratendinosa) y su impacto en el tiempo de retorno al deporte.",
@@ -1164,7 +1164,7 @@ export const HIP_TOPICS: HipTopic[] = [
         preguntasEtapa4: [
             "¿Qué secuelas morfológicas a largo plazo (ej. deformidad en empuñadura de pistola / Cam FAI) genera una epifisiolisis no diagnosticada a tiempo?",
             "¿Cuál es el protocolo de manejo conservador y progresión de carga tras una avulsión de la EIAA en un velocista de 15 años?",
-            "¿Por qué el dolor referido a la cara anterior de la rodilla en niños siempre debe obligar a examinar la articulación coxofemoral?"
+            "¿Por qué el dolor anterior de rodilla en niños o adolescentes debe hacer considerar y, si la presentación lo sugiere, examinar también la cadera?"
         ]
     },
 
@@ -1209,7 +1209,7 @@ export const HIP_TOPICS: HipTopic[] = [
 - Batería de Evaluación Objetiva Multidimensional:
   1. Dinamometría Isométrica de Mano (Hand-Held Dynamometry - HHD):
      - Medición objetiva del torque abductor, aductor y flexor de cadera en N·m/kg.
-     - Criterio de simetría: LSI (Limb Symmetry Index) ≥90-95% en comparación con la extremidad sana previa.
+     - Simetría: el LSI aporta comparación con la extremidad contralateral, pero debe interpretarse con la línea basal, la función, los síntomas, las demandas deportivas y el tiempo de exposición.
      - Ratio Aductor/Abductor: debe ser de al menos 80-100% para prevenir pubalgias y re-lesiones aductores.
   2. Cuestionarios Validados PROMs (Patient-Reported Outcome Measures):
      - iHOT-33 (International Hip Outcome Tool) o HOOS (Hip disability and Osteoarthritis Outcome Score) >85-90 puntos.
@@ -1219,8 +1219,8 @@ export const HIP_TOPICS: HipTopic[] = [
      - Pruebas de desaceleración brusca y cambios de dirección (ej: Y-Balance Test, T-Test) monitoreadas sin mecanismos de compensación pélvica.
 `,
         preguntasEtapa2: [
-            " Explica por qué el LSI (Limb Symmetry Index) de fuerza abductora y aductora mediante dinamometría es superior a la escala manual de Daniels en la toma de decisión de RTP.",
-            "¿Cuál es el valor mínimo recomendado del cuestionario iHOT-33 y de la escala Hip-RSI para autorizar el retorno competitivo en atletas intervenidos de FAI?",
+            "Explica qué aporta la dinamometría frente a la escala manual de Daniels y cómo evitarías usar un LSI aislado para decidir RTP.",
+            "¿Cómo integrarías iHOT-33, Hip-RSI, fuerza, pruebas funcionales, tolerancia a la exposición y demanda deportiva al decidir retorno competitivo?",
             " Explica la batería de saltos unilaterales (Hop Tests) aplicados a la articulación de la cadera y qué aspectos cualitativos deben observarse además de la distancia alcanzada.",
             "¿De qué manera el ratio de fuerza aductor/abductor influye en el riesgo de recidiva de dolor inguinal en deportistas de cambio de dirección?"
         ],

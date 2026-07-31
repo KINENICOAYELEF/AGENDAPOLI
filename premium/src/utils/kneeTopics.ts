@@ -86,7 +86,7 @@ export const KNEE_TOPICS: KneeTopic[] = [
         contenidoBase: `
 - Anamnesis: localización del dolor (medial más frecuente), comportamiento mecánico vs. inflamatorio (rigidez matinal ≤30 min en gonartrosis; >1 hora sugiere AR u otra sistémica), actividades que agravan, historia de carga y lesiones, tratamientos previos, banderas psicosociales (sueño, miedo al movimiento, estado anímico).
 - Inspección: alineación en carga (varo = gonartrosis medial; valgo = lateral), atrofia de cuádriceps (perimetría), marcha antálgica o Trendelenburg.
-- Palpación diferencial clave: interlínea medial/lateral (articular o meniscal) vs. 3 cm distal a interlínea medial (bursa anserina, frecuentemente confundida). Peloteo rotuliano = derrame activo = contraindica carga alta ese día. Calor local = sinovitis activa.
+- Palpación diferencial clave: interlínea medial/lateral (articular o meniscal) vs. 3 cm distal a interlínea medial (bursa anserina, frecuentemente confundida). El peloteo rotuliano sugiere derrame; se interpreta junto a dolor, calor, evolución y función para ajustar la carga, no como prohibición automática. Calor local o aumento marcado de derrame ameritan reevaluar irritabilidad y descartar causas relevantes.
 - Rango articular: extensión completa más crítica que flexión máxima (sin extensión: marcha ineficiente). End-feel duro = osteofitos (no mejora con movilización). End-feel firme capsular = puede mejorar. Flexión mínima AVD: 90-110°.
 - Evaluación funcional: TUG >12 seg = limitación significativa; >20 seg = alto riesgo caídas. 30-sec Chair Stand = fuerza funcional EEII. KOOS/WOMAC: outcome measures validados. Tampa Scale for Kinesiophobia (TSK >37/68 = significativo).
 - Hipótesis diferenciales si cambian los hallazgos: rigidez >1h → AR; dolor 3 cm distal → bursa anserina; dolor nocturno intenso de inicio súbito → osteonecrosis; fiebre + calor extremo → artritis séptica (urgencia).
@@ -275,7 +275,7 @@ export const KNEE_TOPICS: KneeTopic[] = [
         contenidoBase: `
 - Fase aguda (0-2 semanas): dolor, edema y temperatura local, cicatrización, rango activo/pasivo temprano (extensión completa prioritaria), activación del cuádriceps, deambulación asistida.
 - Fase subaguda (2-6 semanas): progresión de flexión (meta: 90° a las 2 semanas, 110°-120° al mes), fuerza de cuádriceps/isquiotibiales, control dinámico de cadera y rodilla en CC.
-- Fase funcional (6-12+ semanas): asimetría de fuerza (LSI goal ≥80%), equilibrio, propiocepción y reentrenamiento de AVD.
+- Fase funcional (6-12+ semanas): fuerza, equilibrio y reentrenamiento de AVD; el LSI puede orientar la comparación, pero no es una meta universal ni un criterio aislado de alta.
 - Outcome measures: Oxford Knee Score (OKS, específico), Forgotten Joint Score (FJS-12), KOOS, TUG, 30-sec Chair Stand.
 `,
         preguntasEtapa2: [
@@ -286,8 +286,8 @@ export const KNEE_TOPICS: KneeTopic[] = [
         casoEtapa3: `"Semana 6 post-PTR. El paciente puede subir escaleras de forma alternada apoyándose en la baranda, pero baja descendiendo un escalón a la vez, apoyando siempre el miembro sano primero. Manifiesta temor de que 'la rodilla falle'." Evalúa los componentes neuromuscular y de confianza funcional de esta limitación y explícaselo.`,
         preguntasEtapa4: [
             "¿Qué rango mínimo de flexión pasiva de rodilla requiere un paciente para sentarse en una silla estándar sin inclinar el tronco hacia adelante?",
-            "¿Qué mide el Forgotten Joint Score (FJS-12) y por qué se considera el gold standard para evaluar el éxito de la integración de la prótesis?",
-            "¿Qué es el Limb Symmetry Index (LSI) y por qué la simetría de fuerza es más determinante para el alta que el valor absoluto de fuerza?"
+            "¿Qué mide el Forgotten Joint Score (FJS-12), qué dimensión aporta y por qué conviene combinarlo con dolor, función y objetivos de la persona?",
+            "¿Qué es el Limb Symmetry Index (LSI) y cómo lo integrarías con desempeño funcional, síntomas y línea basal al decidir una progresión?"
         ]
     },
     {
@@ -340,14 +340,14 @@ export const KNEE_TOPICS: KneeTopic[] = [
         categoria: "Artroplastia (PTR)",
         contenidoBase: `
 - Objetivos: recuperar fuerza, equilibrio y desempeño en tareas significativas, comparando con la línea basal y el lado contralateral cuando corresponda, no usando un único porcentaje como alta automática.
-- Bajo impacto: caminata, bicicleta, natación. Alto impacto: NO recomendadas por riesgo de desgaste acelerado del polietileno.
+- Bajo impacto: caminata, bicicleta y natación suelen ser alternativas razonables. El alto impacto suele desaconsejarse tras PTR por el riesgo acumulado sobre el implante, pero la recomendación concreta corresponde al equipo quirúrgico y al contexto individual.
 - El entrenamiento neuromuscular se orienta a confianza, control de tarea, fuerza y exposición progresiva. No se debe asumir una pérdida permanente de "propiocepción" solo por la cirugía.
 - Criterios de alta: independencia funcional, simetría de fuerza adecuada, rango funcional completo sin dolor severo, plan domiciliario asimilado.
 `,
         preguntasEtapa2: [
-            "Explica por qué los deportes de impacto (como correr o tenis singles) están contraindicados permanentemente tras una PTR y cómo educarías al respecto.",
+            "Explica por qué las actividades de alto impacto suelen desaconsejarse tras una PTR y cómo tendrías una conversación individualizada que incluya riesgos, metas y la recomendación del cirujano.",
             "¿Cómo eliges y progresas tareas de equilibrio, fuerza y función tras una PTR usando desempeño, síntomas y objetivos de la persona, sin atribuir la limitación a una 'pérdida de propiocepción' no demostrada?",
-            "¿Cuáles son las metas exactas que debe cumplir el paciente en fuerza, rango y testeo funcional para recibir un alta kinesiológica definitiva?"
+            "¿Qué conjunto de datos de función, síntomas, desempeño, autonomía y objetivos usarías para decidir alta o continuidad, evitando una lista rígida de números?"
         ],
         casoEtapa3: `"Semana 11 post-PTR. El paciente es independiente en sus actividades. Registra un TUG de 10.5 segundos y un 30-sec Chair Stand de 12 repeticiones. Al preguntarle cómo se siente, te dice: 'La rodilla no me duele, pero la siento extraña, como si fuera de madera y no me perteneciera'. Pide el alta." ¿Es momento de dar el alta funcional? Justifica tu respuesta.`,
         preguntasEtapa4: [
@@ -383,10 +383,10 @@ export const KNEE_TOPICS: KneeTopic[] = [
         nombre: "2.9 — Inspección y cicatriz a los 3 meses (Evaluación Postural)",
         categoria: "Evaluación y Reevaluación",
         contenidoBase: `
-- La evaluación postural estática a los 3 meses de la PTR debe seguir un checklist rígido: (1) Inspección del alineamiento en carga en bipedestación (¿distribuye el peso de forma simétrica o hace descarga inconsciente?), (2) Presencia de edema residual, (3) Estado cicatrizal y evaluación de la movilidad patelar.
-- Movilidad patelar: Es obligatoria evaluar a los 3 meses. Debe evaluarse el deslizamiento pasivo de la patela en 4 direcciones (superior, inferior, medial y lateral). Si la patela está adherida, bloquea mecánicamente tanto el final de la extensión como el inicio de la flexión.
-- Edema residual: Se evalúa mediante palpación y la prueba de fluctuación (signo del témpano o de la ola). A los 3 meses, un edema moderado indica sinovitis por sobrecarga mecánica o falta de tolerancia a la carga.
-- Cicatriz: Buscar adherencias fasciales que restrinjan el plano subdérmico. La restricción cicatrizal limita el rango de flexión activa.
+- La evaluación postural a los 3 meses puede usar un checklist: distribución de carga, edema, cicatriz, rango y movilidad patelar cuando sea pertinente para la limitación observada.
+- Movilidad patelar: explorar el deslizamiento pasivo en relación con síntomas, rango y calidad de movimiento. Una diferencia de movilidad no demuestra por sí sola que sea la causa del déficit.
+- Edema residual: evaluar con palpación y, si se requiere, prueba de fluctuación. Un aumento de edema se interpreta con dolor, calor, evolución, carga reciente y banderas de seguridad; no equivale automáticamente a sinovitis por sobrecarga.
+- Cicatriz: observar movilidad del plano subdérmico y su relación funcional. La intervención se justifica por una limitación concreta, no solo por el aspecto de la cicatriz.
 `,
         preguntasEtapa2: [
             "¿Cómo evalúas clínicamente la movilidad patelar en sus 4 direcciones y por qué influye directamente en el rango de rodilla?",
@@ -396,7 +396,7 @@ export const KNEE_TOPICS: KneeTopic[] = [
         casoEtapa3: `"Evaluas a una paciente de 12 semanas post-PTR. Al mirarla de pie, notas que apoya el peso predominantemente en la pierna sana y mantiene la rodilla operada en leve flexión (descarga postural). La cicatriz se ve consolidada pero retráctil." Dime paso a paso tu checklist de inspección física en camilla para esta paciente.`,
         preguntasEtapa4: [
             "¿Por qué el deslizamiento superior de la patela es mecánicamente indispensable para lograr la extensión terminal activa de la rodilla?",
-            "¿Qué es la fluctuación del líquido articular y cómo altera mecánicamente la propiocepción del cuádriceps mediante receptores capsulares?",
+            "¿Qué es la fluctuación del líquido articular y cómo puede asociarse a inhibición muscular o menor desempeño, sin atribuirlo de forma automática a un mecanismo receptor específico?",
             "¿Cómo afecta una cicatriz adherida en la cara anterior de la rodilla al deslizamiento tisular durante la flexión máxima activa?"
         ]
     },
@@ -428,7 +428,7 @@ export const KNEE_TOPICS: KneeTopic[] = [
         nombre: "2.11 — Observación Dinámica de la Marcha y Compensaciones",
         categoria: "Evaluación y Reevaluación",
         contenidoBase: `
-- A los 3 meses, el paciente debe caminar de forma independiente sin ayudas técnicas, con un patrón simétrico.
+- A los 3 meses se espera progresión hacia marcha más independiente y eficiente, pero la necesidad de ayuda técnica y el patrón se interpretan según evolución, seguridad, dolor, comorbilidades y objetivos.
 - Compensaciones patológicas que la alumna debe identificar de inmediato:
   (1) Marcha con rodilla rígida (Stiff-Knee Gait): El paciente no realiza flexión de rodilla durante la fase de oscilación ni extensión terminal en el contacto inicial. Camina "en bloque" para evitar la carga en extensión. Indica debilidad de cuádriceps o miedo a la inestabilidad.
   (2) Lag de extensión en fase de apoyo (Marcha en flexo): La rodilla permanece en leve flexión durante todo el apoyo medio, sobrecargando el cuádriceps y limitando la fase de despegue de dedos.
@@ -491,7 +491,7 @@ export const KNEE_TOPICS: KneeTopic[] = [
         casoEtapa3: `"Paciente de 3 meses post-PTR realiza el 30-Second Chair Stand Test. Logra completar 8 repeticiones y en las últimas dos necesita apoyarse sobre sus muslos con las manos. En el TUG registra un tiempo de 13.8 segundos." Analiza clínicamente estos resultados y describe cómo influyen en tu pauta terapéutica.`,
         preguntasEtapa4: [
             "¿Por qué la prueba de sentarse y pararse demanda tanto control excéntrico de los cuádriceps y glúteos?",
-            "¿Cómo influye la propiocepción deficiente en la velocidad y el giro del test TUG?",
+            "¿Qué factores —fuerza, dolor, confianza, equilibrio, estrategia de giro y entorno— pueden influir en el tiempo y giro del TUG?",
             "¿Cuál es el valor mínimo de repeticiones en el 30CST que predice independencia en actividades de la vida diaria en adultos mayores?"
         ]
     },
