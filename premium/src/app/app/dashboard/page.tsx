@@ -9,7 +9,7 @@ import { Cita, Evolucion } from "@/types/clinica";
 import { AgendaProView } from "@/components/AgendaProView";
 import { AgendaGridView } from "@/components/AgendaGridView";
 import { UsersService } from "@/services/users";
-import { format, subDays } from "date-fns";
+import { addDays, format, startOfWeek, subDays } from "date-fns";
 import Link from "next/link";
 import { 
     Calendar, 
@@ -34,6 +34,7 @@ export default function DashboardPage() {
     const [gridCitas, setGridCitas] = useState<(Cita & { internName?: string })[]>([]);
     const [gridLoading, setGridLoading] = useState(false);
     const [gridScope, setGridScope] = useState<string>('TODAS');
+    const [gridWeekOffset, setGridWeekOffset] = useState(0);
     const [internosList, setInternosList] = useState<AppUser[]>([]);
 
     // Alertas y Notificaciones Específicas del Interno
@@ -179,16 +180,20 @@ export default function DashboardPage() {
             setGridLoading(true);
             try {
                 const citasRef = collection(db, "programs", globalActiveYear, "citas");
+                const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+                const rangeStart = addDays(weekStart, gridWeekOffset * 7);
+                const rangeEnd = addDays(rangeStart, 4);
+                // La grilla visualiza una sola semana laboral: consultarla por
+                // rango de fecha evita descargar cada cita histórica o futura.
+                const snap = await getDocs(query(
+                    citasRef,
+                    where("date", ">=", format(rangeStart, "yyyy-MM-dd")),
+                    where("date", "<=", format(rangeEnd, "yyyy-MM-dd")),
+                ));
                 const activeStatuses = ["SCHEDULED", "COMPLETED", "NO_SHOW"];
-                let allCitas: (Cita & { internName?: string })[] = [];
-
-                for (const status of activeStatuses) {
-                    const q = query(citasRef, where("status", "==", status));
-                    const snap = await getDocs(q);
-                    snap.docs.forEach(d => {
-                        allCitas.push({ id: d.id, ...d.data() } as Cita);
-                    });
-                }
+                let allCitas = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() } as Cita & { internName?: string }))
+                    .filter(cita => activeStatuses.includes(cita.status));
 
                 const nameMap: Record<string, string> = {};
                 const internNameMap: Record<string, string> = {};
@@ -245,7 +250,7 @@ export default function DashboardPage() {
         };
 
         fetchGridData();
-    }, [layoutMode, globalActiveYear, user, gridScope, internosList]);
+    }, [layoutMode, globalActiveYear, user, gridScope, internosList, gridWeekOffset]);
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
@@ -393,7 +398,12 @@ export default function DashboardPage() {
                             )}
                         </select>
                     </div>
-                    <AgendaGridView citas={gridCitas} loading={gridLoading} />
+                    <AgendaGridView
+                        citas={gridCitas}
+                        loading={gridLoading}
+                        weekOffset={gridWeekOffset}
+                        onWeekOffsetChange={setGridWeekOffset}
+                    />
                 </div>
             )}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { format, startOfWeek, addDays, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { Cita } from "@/types/clinica";
@@ -9,6 +9,8 @@ import Link from "next/link";
 interface AgendaGridViewProps {
     citas: (Cita & { internName?: string })[];
     loading: boolean;
+    weekOffset: number;
+    onWeekOffsetChange: (nextOffset: number) => void;
 }
 
 // Horarios desde las 10:00 hasta las 16:00 (7 horas)
@@ -30,8 +32,7 @@ const STATUS_LABELS: Record<string, string> = {
     SUSPENDED: "Suspendida",
 };
 
-export function AgendaGridView({ citas, loading }: AgendaGridViewProps) {
-    const [weekOffset, setWeekOffset] = useState(0);
+export function AgendaGridView({ citas, loading, weekOffset, onWeekOffsetChange }: AgendaGridViewProps) {
 
     // Semana actual + offset
     const weekStart = useMemo(() => {
@@ -81,20 +82,20 @@ export function AgendaGridView({ citas, loading }: AgendaGridViewProps) {
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
                         <button
-                            onClick={() => setWeekOffset(prev => prev - 1)}
+                            onClick={() => onWeekOffsetChange(weekOffset - 1)}
                             className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
                             title="Semana anterior"
                         >
                             <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                         </button>
                         <button
-                            onClick={() => setWeekOffset(0)}
+                            onClick={() => onWeekOffsetChange(0)}
                             className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm border ${weekOffset === 0 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-indigo-50 hover:border-indigo-200'}`}
                         >
                             Hoy
                         </button>
                         <button
-                            onClick={() => setWeekOffset(prev => prev + 1)}
+                            onClick={() => onWeekOffsetChange(weekOffset + 1)}
                             className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
                             title="Semana siguiente"
                         >
