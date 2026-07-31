@@ -110,7 +110,7 @@ export async function fetchServerInbox(query: InboxQuery) {
     );
     for (const doc of evalDocs) {
       const data = doc.data() as any;
-      const recordDate = data.sessionAt || data.audit?.createdAt || data.createdAt || data.fechaHoraAtencion;
+      const recordDate = data.sessionAt || data.fechaHoraAtencion || data.audit?.createdAt || data.createdAt;
       
       if (isInsideRange(recordDate, fromTime, toTime)) {
         const missing: string[] = [];
