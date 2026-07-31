@@ -8,7 +8,10 @@ import { agentConfig, featureFlags } from './config';
 import { callAntigravityAgent } from '@/lib/ai/antigravityClient';
 import { deidentifyText } from './deidentify';
 
-export const ACTIVE_AGENT_VERSION_ID = process.env.ANTIGRAVITY_AGENT_ID || 'agenda-clinical-v2-2026-08';
+// El identificador enviado a Google debe ser el agente publicado, no un alias
+// interno de la plataforma. El alias puede conservarse en los metadatos del run.
+export const ACTIVE_AGENT_VERSION_ID =
+  process.env.ANTIGRAVITY_AGENT_ID || agentConfig.base_agent;
 
 export async function runAgentInteraction(prompt: string, context?: any, teacherCalibration?: { preferredTone?: string }) {
   if (!featureFlags.agentShadowMode && !featureFlags.agentWriteEnabled) {
@@ -59,4 +62,3 @@ ${prompt}
 }
 
 export const runAgent = runAgentInteraction;
-

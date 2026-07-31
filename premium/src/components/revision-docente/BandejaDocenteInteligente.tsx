@@ -1,315 +1,236 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Sparkles, CheckCircle2, XCircle, Edit3, MessageSquare, AlertTriangle, Send, RefreshCw, UserCheck, Award, BookOpen, Layers } from 'lucide-react';
-import { AgentReview, StudentLearningProfile } from '@/types/agentDataFoundation';
-import { collection, getDocs, doc, updateDoc, setDoc, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { useAuth } from '@/context/AuthContext';
-import { FichaAlumnoCompletaModal } from './FichaAlumnoCompletaModal';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  FileText,
+  RefreshCw,
+  Sparkles,
+  XCircle,
+} from "lucide-react";
+import { collection, doc, getDocs, setDoc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
+import type { TeacherAgentReview } from "@/lib/agent/contracts/review";
+import type { StudentLearningProfile } from "@/types/agentDataFoundation";
 
+type ReviewWithId = TeacherAgentReview & { id: string };
+type ProfileDisplay = StudentLearningProfile & { displayName?: string };
+
+const priorityStyle = {
+  P0: "bg-rose-100 text-rose-800 border-rose-200",
+  P1: "bg-amber-100 text-amber-800 border-amber-200",
+  P2: "bg-blue-100 text-blue-800 border-blue-200",
+  P3: "bg-slate-100 text-slate-700 border-slate-200",
+} as const;
+
+function recordKind(collectionName: string) {
+  return collectionName === "evoluciones" ? "EVOLUCION" : "EVALUACION";
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Fecha no registrada"
+    : date.toLocaleString("es-CL", { dateStyle: "medium", timeStyle: "short" });
+}
+
+/** Hallazgos privados: esta vista jamás envía mensajes ni modifica fichas clínicas. */
 export function BandejaDocenteInteligente() {
-    const { user } = useAuth();
-    const [reviews, setReviews] = useState<AgentReview[]>([]);
-    const [profiles, setProfiles] = useState<Record<string, StudentLearningProfile>>({});
-    const [loading, setLoading] = useState(true);
-    const [processingId, setProcessingId] = useState<string | null>(null);
-    const [editingReview, setEditingReview] = useState<AgentReview | null>(null);
-    const [editText, setEditText] = useState('');
-    const [isTriggeringRun, setIsTriggeringRun] = useState(false);
-    
-    // Estado para la modal de ficha completa
-    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
-    const [selectedProfile, setSelectedProfile] = useState<StudentLearningProfile | null>(null);
+  const router = useRouter();
+  const [reviews, setReviews] = useState<ReviewWithId[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, ProfileDisplay>>({});
+  const [loading, setLoading] = useState(true);
+  const [running, setRunning] = useState(false);
+  const [workingId, setWorkingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-    useEffect(() => {
-        loadBandejaData();
-    }, []);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setNotice(null);
+    try {
+      const [reviewSnap, profileSnap] = await Promise.all([
+        getDocs(collection(db, "teacher_agent_reviews")),
+        getDocs(collection(db, "student_learning_profiles")),
+      ]);
 
-    const loadBandejaData = async () => {
-        setLoading(true);
-        try {
-            // 1. Cargar revisiones privadas del agente
-            const reviewsSnap = await getDocs(collection(db, 'agent_reviews'));
-            const revList: AgentReview[] = reviewsSnap.docs.map(d => ({ id: d.id, ...d.data() } as AgentReview));
-            setReviews(revList.filter(r => r.status === 'PENDIENTE'));
-
-            // 2. Cargar perfiles longitudinales
-            const profilesSnap = await getDocs(collection(db, 'student_learning_profiles'));
-            const profMap: Record<string, StudentLearningProfile> = {};
-            profilesSnap.docs.forEach(d => {
-                profMap[d.id] = d.data() as StudentLearningProfile;
-            });
-            setProfiles(profMap);
-        } catch (e) {
-            console.error("Error cargando Bandeja Docente:", e);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Aprobar Feedback y publicar para el alumno
-    const handleApprove = async (review: AgentReview) => {
-        if (!review.id) return;
-        setProcessingId(review.id);
-        try {
-            const finalFeedback = editingReview?.id === review.id ? editText : review.feedbackDraft;
-
-            // Actualizar revisión como APROBADA
-            await updateDoc(doc(db, 'agent_reviews', review.id), {
-                status: 'APROBADO_ENVIADO',
-                feedbackDraft: finalFeedback,
-                teacherDecision: 'accepted',
-                reviewedAt: new Date().toISOString()
-            });
-
-            // Guardar borrador aprobado en el expediente del alumno
-            await setDoc(doc(db, 'intern_expedientes', review.studentId), {
-                studentId: review.studentId,
-                lastApprovedFeedback: finalFeedback,
-                lastApprovedAt: new Date().toISOString(),
-                status: 'APPROVED_BY_TEACHER'
-            }, { merge: true });
-
-            // Registrar decisión docente para bucle de aprendizaje
-            await setDoc(doc(db, 'teacher_decisions', `${review.id}_decision`), {
-                reviewId: review.id,
-                originalDraft: review.feedbackDraft,
-                finalText: finalFeedback,
-                decision: 'accepted',
-                createdAt: new Date().toISOString()
-            });
-
-            setReviews(prev => prev.filter(r => r.id !== review.id));
-            setEditingReview(null);
-        } catch (e) {
-            console.error("Error al aprobar feedback:", e);
-        } finally {
-            setProcessingId(null);
-        }
-    };
-
-    // Descartar Observación
-    const handleDiscard = async (review: AgentReview) => {
-        if (!review.id) return;
-        setProcessingId(review.id);
-        try {
-            await updateDoc(doc(db, 'agent_reviews', review.id), {
-                status: 'DESCARTADO',
-                teacherDecision: 'rejected_irrelevant',
-                reviewedAt: new Date().toISOString()
-            });
-
-            setReviews(prev => prev.filter(r => r.id !== review.id));
-        } catch (e) {
-            console.error("Error al descartar revisión:", e);
-        } finally {
-            setProcessingId(null);
-        }
-    };
-
-    // Disparar revisión manual del Agente Antigravity
-    const handleTriggerAgentRun = async () => {
-        setIsTriggeringRun(true);
-        try {
-            await fetch('/api/ai/super-profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'SYNTHESIZE',
-                    userId: user?.uid || 'docente_runner',
-                    estudianteNombre: 'Revisión Manual Docente'
-                })
-            });
-            await loadBandejaData();
-        } catch (e) {
-            console.error("Error al ejecutar agente:", e);
-        } finally {
-            setIsTriggeringRun(false);
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
-                <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mx-auto" />
-                <p className="text-sm font-bold text-slate-700">Cargando observaciones docentes del Agente Antigravity...</p>
-            </div>
-        );
+      setReviews(reviewSnap.docs
+        .map((snapshot) => ({
+          id: snapshot.id,
+          ...(snapshot.data() as TeacherAgentReview),
+        }))
+        .filter((review) => review.status === "PENDING_TEACHER")
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+      setProfiles(
+        Object.fromEntries(
+          profileSnap.docs.map((snapshot) => [
+            snapshot.id,
+            snapshot.data() as ProfileDisplay,
+          ]),
+        ),
+      );
+    } catch (error) {
+      console.error("No se pudo cargar la bandeja del agente:", error);
+      setNotice("No se pudieron cargar los hallazgos privados. Reintenta en unos segundos.");
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
-    return (
-        <div className="space-y-6">
-            {/* Header y Acción Principal */}
-            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl border border-indigo-500/30 p-6 text-white shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <div className="flex items-center gap-2">
-                        <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
-                        <h2 className="text-lg font-black tracking-tight text-white">Bandeja Docente Autónomo Antigravity</h2>
-                    </div>
-                    <p className="text-xs text-indigo-200/80 mt-1">
-                        Revisiones privadas generadas automáticamente con evidencia exacta. Ningún borrador se envía al alumno sin tu aprobación.
-                    </p>
-                </div>
+  useEffect(() => {
+    load();
+  }, [load]);
 
-                <button
-                    onClick={handleTriggerAgentRun}
-                    disabled={isTriggeringRun}
-                    className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-md shrink-0"
-                >
-                    <RefreshCw className={`w-4 h-4 ${isTriggeringRun ? 'animate-spin' : ''}`} />
-                    <span>{isTriggeringRun ? 'Ejecutando Agente...' : 'Revisar Ahora con IA'}</span>
-                </button>
-            </div>
+  const counts = useMemo(
+    () => ({
+      total: reviews.length,
+      p0: reviews.filter((review) => review.priority === "P0").length,
+      p1: reviews.filter((review) => review.priority === "P1").length,
+    }),
+    [reviews],
+  );
 
-            {/* Listado de Observaciones Pendientes */}
-            {reviews.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center space-y-3">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
-                    <h3 className="text-base font-bold text-slate-900">¡Al día! No hay revisiones pendientes de aprobación</h3>
-                    <p className="text-xs text-slate-500 max-w-md mx-auto">
-                        Todas las observaciones clínicas han sido revisadas. El agente Antigravity ejecutará el próximo censo nocturno a las 21:30 PM.
-                    </p>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4 text-indigo-600" />
-                        Observaciones Clínicas Pendientes de Tu Aprobación ({reviews.length})
-                    </h3>
+  const runCensus = async () => {
+    setRunning(true);
+    setNotice(null);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("No se encontró sesión docente válida.");
+      const response = await fetch("/api/agent/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ triggeredBy: "manual" }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "No se pudo iniciar el censo.");
+      setNotice("Censo iniciado. Los hallazgos aparecerán aquí al finalizar; no se envía nada a estudiantes.");
+    } catch (error: any) {
+      setNotice(error?.message || "No se pudo iniciar el censo.");
+    } finally {
+      setRunning(false);
+    }
+  };
 
-                    {reviews.map(review => {
-                        const isEditing = editingReview?.id === review.id;
-                        return (
-                            <div key={review.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition hover:shadow-md">
-                                {/* Encabezado de la Tarjeta */}
-                                <div className="bg-slate-50 border-b border-slate-200 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                                    <div className="flex items-center gap-2">
-                                        <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border ${
-                                            review.severity === 'ALTA' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                                            review.severity === 'MEDIA' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                            'bg-blue-50 text-blue-700 border-blue-200'
-                                        }`}>
-                                            Severidad {review.severity}
-                                        </span>
-                                        <span className="text-xs font-bold text-slate-900">Estudiante ID: {review.studentId}</span>
-                                        <span className="text-[11px] text-slate-400 font-mono">• Registro: {review.recordType}</span>
-                                        <button 
-                                            onClick={() => {
-                                                setSelectedStudentId(review.studentId);
-                                                setSelectedProfile(profiles[review.studentId] || null);
-                                            }}
-                                            className="ml-2 px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md text-[10px] font-bold hover:bg-indigo-100 transition-colors flex items-center gap-1 border border-indigo-200"
-                                        >
-                                            <UserCheck className="w-3 h-3" />
-                                            Ver Ficha Completa
-                                        </button>
-                                    </div>
-                                    <span className="text-[11px] text-slate-400 font-mono">Confianza IA: {Math.round(review.confidence * 100)}%</span>
-                                </div>
+  const updateStatus = async (review: ReviewWithId, status: "DISMISSED" | "ACCEPTED_PRIVATE") => {
+    setWorkingId(review.id);
+    try {
+      await updateDoc(doc(db, "teacher_agent_reviews", review.id), {
+        status,
+        reviewedAt: new Date().toISOString(),
+      });
+      setReviews((current) => current.filter((item) => item.id !== review.id));
+    } catch (error) {
+      console.error("No se pudo actualizar el hallazgo:", error);
+      setNotice("No se pudo guardar tu decisión. Reintenta.");
+    } finally {
+      setWorkingId(null);
+    }
+  };
 
-                                <div className="p-5 space-y-4">
-                                    {/* CITA TEXTUAL EXACTA (Estilo Comentario de Google Docs) */}
-                                    {review.sourceReferences && review.sourceReferences.length > 0 && (
-                                        <div className="bg-amber-50/70 border-l-4 border-amber-400 p-3 rounded-r-xl space-y-1">
-                                            <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
-                                                Cita Textual del Registro del Alumno:
-                                            </span>
-                                            <p className="text-xs text-amber-950 font-medium italic">
-                                                "{review.sourceReferences[0].exactExcerpt}"
-                                            </p>
-                                        </div>
-                                    )}
+  const createFeedbackDraft = async (review: ReviewWithId) => {
+    setWorkingId(review.id);
+    try {
+      const source = review.sourceReferences[0];
+      const student = profiles[review.studentId]?.displayName || "Estudiante";
+      const messageBody = [
+        `Hola ${student},`,
+        "",
+        review.observation,
+        review.pedagogicalInference ? `Para tu razonamiento clínico: ${review.pedagogicalInference}` : "",
+        source?.redactedExcerpt ? `Revisa específicamente este fragmento de tu registro: “${source.redactedExcerpt}”.` : "",
+        "",
+        "Este es un borrador docente: revísalo y decide si corresponde enviarlo por tu canal habitual.",
+      ].filter(Boolean).join("\n");
 
-                                    {/* OBSERVACIÓN Y RAZONAMIENTO DEL AGENTE */}
-                                    <div className="space-y-1">
-                                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider text-indigo-700">Observación del Agente:</h4>
-                                        <p className="text-xs text-slate-800 leading-relaxed font-medium">{review.observation}</p>
-                                        <p className="text-[11px] text-slate-500 leading-relaxed"><strong className="text-slate-700">Por qué importa:</strong> {review.whyItMatters}</p>
-                                    </div>
+      await setDoc(doc(collection(db, "student_message_drafts")), {
+        studentId: review.studentId,
+        reviewId: review.id,
+        messageBody,
+        status: "DRAFT_PENDING_APPROVAL",
+        createdAt: new Date().toISOString(),
+      });
+      await updateStatus(review, "ACCEPTED_PRIVATE");
+      setNotice("Borrador privado creado. No se envió ningún mensaje al estudiante.");
+    } catch (error) {
+      console.error("No se pudo crear el borrador:", error);
+      setNotice("No se pudo crear el borrador. Reintenta.");
+    } finally {
+      setWorkingId(null);
+    }
+  };
 
-                                    {/* BORRADOR DE FEEDBACK PARA EL ESTUDIANTE */}
-                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                                                <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
-                                                Borrador de Feedback Propuesto (Editable antes de enviar)
-                                            </span>
-                                            {!isEditing && (
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingReview(review);
-                                                        setEditText(review.feedbackDraft);
-                                                    }}
-                                                    className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 underline"
-                                                >
-                                                    Editar Texto
-                                                </button>
-                                            )}
-                                        </div>
+  if (loading) {
+    return <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-sm font-semibold text-slate-600">Cargando hallazgos privados del agente…</div>;
+  }
 
-                                        {isEditing ? (
-                                            <div className="space-y-2">
-                                                <textarea
-                                                    value={editText}
-                                                    onChange={e => setEditText(e.target.value)}
-                                                    rows={3}
-                                                    className="w-full text-xs p-3 rounded-lg border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 bg-white"
-                                                />
-                                                <div className="flex justify-end gap-2">
-                                                    <button
-                                                        onClick={() => setEditingReview(null)}
-                                                        className="text-xs text-slate-500 hover:text-slate-700 font-bold px-2 py-1"
-                                                    >
-                                                        Cancelar
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <p className="text-xs text-slate-700 whitespace-pre-line leading-relaxed italic bg-white p-3 rounded-lg border border-slate-200">
-                                                "{review.feedbackDraft}"
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* BOTONES DE ACCIÓN DOCENTE (1 CLIC) */}
-                                    <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
-                                        <button
-                                            onClick={() => handleDiscard(review)}
-                                            disabled={processingId === review.id}
-                                            className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5"
-                                        >
-                                            <XCircle className="w-4 h-4 text-slate-400" />
-                                            <span>Descartar</span>
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleApprove(review)}
-                                            disabled={processingId === review.id}
-                                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-2 rounded-xl transition flex items-center gap-2 shadow-sm"
-                                        >
-                                            <Send className="w-3.5 h-3.5" />
-                                            <span>Aprobar y Entregar al Alumno</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-
-            {/* Modal de Ficha Completa del Alumno */}
-            {selectedStudentId && (
-                <FichaAlumnoCompletaModal
-                    studentId={selectedStudentId}
-                    profile={selectedProfile}
-                    onClose={() => {
-                        setSelectedStudentId(null);
-                        setSelectedProfile(null);
-                    }}
-                />
-            )}
+  return (
+    <div className="space-y-5">
+      <section className="rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-950 p-6 text-white shadow-xl">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-black"><Sparkles className="h-5 w-5 text-amber-300" /> Hallazgos & Feedback IA</h2>
+            <p className="mt-1 max-w-2xl text-xs text-indigo-100">Censo privado para priorizar tu revisión. No modifica fichas y nunca envía feedback sin tu intervención.</p>
+          </div>
+          <button onClick={runCensus} disabled={running} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-500 disabled:bg-slate-600">
+            <RefreshCw className={`h-4 w-4 ${running ? "animate-spin" : ""}`} />
+            {running ? "Iniciando censo…" : "Revisar ahora"}
+          </button>
         </div>
-    );
+      </section>
+
+      {notice && <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">{notice}</div>}
+
+      <div className="grid grid-cols-3 gap-3">
+        <Metric label="Pendientes" value={counts.total} />
+        <Metric label="P0 seguridad" value={counts.p0} tone="rose" />
+        <Metric label="P1 atención" value={counts.p1} tone="amber" />
+      </div>
+
+      {reviews.length === 0 ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-10 text-center">
+          <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
+          <h3 className="mt-3 font-bold text-slate-900">No hay hallazgos pendientes</h3>
+          <p className="mt-1 text-sm text-slate-500">Puede significar que ya revisaste todo o que aún no se ha ejecutado un censo habilitado.</p>
+        </section>
+      ) : reviews.map((review) => {
+        const source = review.sourceReferences[0];
+        const student = profiles[review.studentId]?.displayName || "Estudiante sin nombre registrado";
+        const viewerHref = source
+          ? `/app/revision-docente/registros/${recordKind(source.collection)}/${source.recordId}`
+          : null;
+        return (
+          <article key={review.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <header className="flex flex-col gap-2 border-b border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${priorityStyle[review.priority]}`}>{review.priority}</span>
+                <strong className="text-sm text-slate-900">{student}</strong>
+                <span className="text-xs text-slate-500">{formatDate(review.createdAt)}</span>
+              </div>
+              <span className="text-xs font-mono text-slate-500">Confianza IA: {Math.round(review.confidence * 100)}%</span>
+            </header>
+            <div className="space-y-4 p-5">
+              {source?.redactedExcerpt && <blockquote className="rounded-r-xl border-l-4 border-amber-400 bg-amber-50 p-3 text-sm italic text-amber-950">“{source.redactedExcerpt}”</blockquote>}
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wide text-indigo-700">Hallazgo</h3>
+                <p className="mt-1 text-sm text-slate-800">{review.observation}</p>
+                {review.pedagogicalInference && <p className="mt-2 text-sm text-slate-600"><strong>Sentido pedagógico:</strong> {review.pedagogicalInference}</p>}
+              </div>
+              <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
+                {viewerHref && <button onClick={() => router.push(viewerHref)} className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-800 hover:bg-indigo-100"><FileText className="h-3.5 w-3.5" /> Ver registro exacto</button>}
+                <button onClick={() => updateStatus(review, "DISMISSED")} disabled={workingId === review.id} className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100"><XCircle className="h-3.5 w-3.5" /> Descartar</button>
+                <button onClick={() => createFeedbackDraft(review)} disabled={workingId === review.id} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:bg-slate-400"><AlertTriangle className="h-3.5 w-3.5" /> Crear borrador privado</button>
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function Metric({ label, value, tone = "slate" }: { label: string; value: number; tone?: "slate" | "rose" | "amber" }) {
+  const classes = tone === "rose" ? "border-rose-200 bg-rose-50 text-rose-900" : tone === "amber" ? "border-amber-200 bg-amber-50 text-amber-900" : "border-slate-200 bg-slate-50 text-slate-800";
+  return <div className={`rounded-xl border p-3 ${classes}`}><p className="text-[10px] font-bold uppercase tracking-wide opacity-70">{label}</p><p className="mt-1 text-2xl font-black">{value}</p></div>;
 }

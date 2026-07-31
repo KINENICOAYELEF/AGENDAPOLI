@@ -5,10 +5,11 @@
  */
 
 import { NextResponse, after } from 'next/server';
-import { createAgentRun, updateAgentRun } from '@/lib/agent/runManager';
-import { runAgentInteraction, ACTIVE_AGENT_VERSION_ID } from '@/lib/agent/client';
+import { ACTIVE_AGENT_VERSION_ID } from '@/lib/agent/client';
 import { featureFlags } from '@/lib/agent/config';
 import { requireTeacher } from '@/lib/server/firebaseAdmin';
+import { getAdminDb } from '@/lib/server/firebaseAdmin';
+import { runCensusEngine } from '@/lib/agent/censusEngine';
 
 export async function POST(req: Request) {
   try {
@@ -22,39 +23,43 @@ export async function POST(req: Request) {
     }
 
     const payload = await req.json().catch(() => ({}));
-    const { prompt, context, triggeredBy, sync } = payload || {};
+    const { triggeredBy, sync } = payload || {};
 
-    const runId = await createAgentRun({
+    if (!featureFlags.agentWriteEnabled) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: 'AGENT_CENSUS_DISABLED',
+          error: 'El censo está deshabilitado por seguridad. Configura FF_AGENT_WRITE_ENABLED=true cuando la credencial Firebase Admin esté instalada.',
+        },
+        { status: 409 },
+      );
+    }
+
+    const db = getAdminDb();
+
+    const runRef = await db.collection('agent_runs').add({
       triggeredBy: triggeredBy || 'manual',
       status: 'running',
       startedAt: new Date().toISOString(),
       agentVersion: ACTIVE_AGENT_VERSION_ID,
       promptVersion: 'v2-2026',
     });
+    const runId = runRef.id;
 
     // Background execution task wrapper
     const executeBackgroundRun = async () => {
       try {
-        if (!featureFlags.agentShadowMode && !featureFlags.agentWriteEnabled) {
-          await updateAgentRun(runId, 'completed', {
-            status: 'skipped',
-            message: 'Ejecución omitida por Feature Flags de seguridad (PR0/PR8).',
-          });
-          return;
-        }
-
-        const agentResult = await runAgentInteraction(
-          prompt || 'Revisión clínica automática de rutina',
-          context
-        );
-
-        await updateAgentRun(runId, 'completed', {
+        const censusResult = await runCensusEngine();
+        await runRef.update({
+          status: 'completed',
           finishedAt: new Date().toISOString(),
-          agentResult,
+          censusResult,
         });
       } catch (err: any) {
         console.error(`[Background Run Error ${runId}]:`, err);
-        await updateAgentRun(runId, 'failed', {
+        await runRef.update({
+          status: 'failed',
           finishedAt: new Date().toISOString(),
           errorMessage: err.message || 'Error en ejecución background',
         });

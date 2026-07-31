@@ -20,10 +20,11 @@ export const featureFlags = {
   teacherInboxV3: process.env.FF_TEACHER_INBOX_V3 !== 'false',
   readOnlyAuditViewer: process.env.FF_READONLY_AUDIT_VIEWER !== 'false',
   agentShadowMode: process.env.FF_AGENT_SHADOW !== 'false',
-  agentWriteEnabled: process.env.FF_AGENT_WRITE_ENABLED === 'true' || true,
+  // La creación de hallazgos privados se habilita de forma explícita. Nunca
+  // debe activarse solo por existir código desplegado.
+  agentWriteEnabled: process.env.FF_AGENT_WRITE_ENABLED === 'true',
   studentFeedbackPublishing: process.env.FF_STUDENT_FEEDBACK_PUBLISHING === 'true' || false,
   telegramTeacherEnabled: process.env.FF_TELEGRAM_TEACHER !== 'false',
   nativeTriggersEnabled: process.env.FF_AGENT_NATIVE_TRIGGERS !== 'false',
   simulationAnalysisEnabled: process.env.FF_SIMULATION_ANALYSIS !== 'false',
 };
-

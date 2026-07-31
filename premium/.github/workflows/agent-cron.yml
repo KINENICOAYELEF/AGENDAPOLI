@@ -21,12 +21,13 @@ jobs:
 
       - name: Ejecutar Censo de Agente Clínico
         env:
-          FIREBASE_ADMIN_PROJECT_ID: ${{ secrets.FIREBASE_ADMIN_PROJECT_ID }}
-          FIREBASE_ADMIN_CLIENT_EMAIL: ${{ secrets.FIREBASE_ADMIN_CLIENT_EMAIL }}
-          FIREBASE_ADMIN_PRIVATE_KEY: ${{ secrets.FIREBASE_ADMIN_PRIVATE_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_ALLOWED_CHAT_ID: ${{ secrets.TELEGRAM_ALLOWED_CHAT_ID }}
+          APP_URL: ${{ vars.AGENT_APP_URL || 'https://agendapoli.vercel.app' }}
+          AGENT_MCP_SECRET: ${{ secrets.AGENT_MCP_SECRET }}
         run: |
-          echo "Iniciando censo clínico de Agente Antigravity en America/Santiago..."
-          echo "Status: OK"
+          test -n "$AGENT_MCP_SECRET" || { echo "Falta el secreto AGENT_MCP_SECRET"; exit 1; }
+          echo "Solicitando censo clínico privado en $APP_URL..."
+          curl --fail-with-body --retry 2 --retry-delay 5 --max-time 30 \
+            -X POST "$APP_URL/api/agent/run" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $AGENT_MCP_SECRET" \
+            --data '{"triggeredBy":"cron","sync":false}'
