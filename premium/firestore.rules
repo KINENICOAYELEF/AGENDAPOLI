@@ -139,7 +139,24 @@ service cloud.firestore {
     }
 
     // --------------------------------------------------------------------
-    // 7. Perfiles de Entrenamiento Diario (Tutoría Socrática)
+    // 7. Biblioteca de Evidencia Clínica (Journal Club)
+    // Se conserva mientras el módulo siga existiendo en producción.
+    // --------------------------------------------------------------------
+    match /evidence_tasks/{taskId} {
+      allow read: if isDocente() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
+      allow create: if isDocente() || (isAuthenticated() && request.resource.data.studentId == request.auth.uid);
+      allow delete: if isDocente();
+      allow update: if isDocente() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
+    }
+
+    match /evidence_articles/{articleId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isDocente();
+    }
+
+    // --------------------------------------------------------------------
+    // 8. Perfiles de Entrenamiento Diario (Tutoría Socrática)
     // --------------------------------------------------------------------
     match /training_profiles/{userId} {
       // El estudiante lee y escribe su propio perfil. El Docente lee todos.
@@ -147,7 +164,7 @@ service cloud.firestore {
     }
 
     // --------------------------------------------------------------------
-    // 8. Colecciones Privadas del Agente Docente Autónomo (PR 5)
+    // 9. Colecciones Privadas del Agente Docente Autónomo
     // --------------------------------------------------------------------
     match /teacher_agent_reviews/{reviewId} {
       allow read, write: if isDocente();
@@ -162,6 +179,15 @@ service cloud.firestore {
       allow read, write: if isDocente();
     }
     match /student_message_drafts/{draftId} {
+      allow read, write: if isDocente();
+    }
+    match /patient_continuity_summaries/{patientId} {
+      allow read, write: if isDocente();
+    }
+    match /teacher_notifications/{notificationId} {
+      allow read, write: if isDocente();
+    }
+    match /proposed_simulations/{proposalId} {
       allow read, write: if isDocente();
     }
     match /intern_expedientes/{studentId} {
