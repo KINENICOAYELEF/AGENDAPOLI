@@ -115,3 +115,15 @@ describe('Pruebas de Estructura de Datos y Contratos', () => {
     assert.strictEqual(failurePayload.error.code, 'UNAUTHORIZED');
   });
 });
+
+describe('Compatibilidad del servidor en producción', () => {
+  test('firebase-admin/auth puede cargarse sin ERR_REQUIRE_ESM', async () => {
+    const adminAuth = await import('firebase-admin/auth');
+
+    assert.strictEqual(
+      typeof adminAuth.getAuth,
+      'function',
+      'La API docente no puede iniciar si firebase-admin/auth no carga en Node.js',
+    );
+  });
+});
