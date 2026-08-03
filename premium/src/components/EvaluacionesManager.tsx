@@ -73,7 +73,11 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
                         usuariaId={usuariaId}
                         procesoId={proceso.id!}
                         type={evaluacionType}
-                        initialData={(selectedEvaluacion || (remoteHistorySnapshot || pacienteSnapshot ? { remoteHistorySnapshot, paciente: pacienteSnapshot } : null)) as any}
+                        initialData={(selectedEvaluacion || (
+                            evaluacionType === 'INITIAL' && (remoteHistorySnapshot || pacienteSnapshot)
+                                ? { remoteHistorySnapshot, paciente: pacienteSnapshot }
+                                : null
+                        )) as any}
                         reevaluationBaseline={reevaluationBaseline}
                         procesoContext={proceso}
                         onClose={() => { 
