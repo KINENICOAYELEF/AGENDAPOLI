@@ -15,6 +15,14 @@ type WebhookInfo = {
   allowed_updates?: string[];
 };
 
+export type TelegramInlineKeyboard = {
+  inline_keyboard: Array<Array<{
+    text: string;
+    callback_data?: string;
+    url?: string;
+  }>>;
+};
+
 const appUrl = () => (process.env.NEXT_PUBLIC_APP_URL || 'https://agendapoli.vercel.app').replace(/\/$/, '');
 const expectedWebhookUrl = () => `${appUrl()}/api/telegram/webhook`;
 
@@ -48,6 +56,7 @@ export type TelegramWebhookStatus = {
   expectedWebhookUrl: string;
   configuredWebhookUrl?: string;
   isWebhookConnected: boolean;
+  menuReady: boolean;
   securityReady: boolean;
   missing: string[];
   pendingUpdates?: number;
@@ -71,7 +80,7 @@ export async function getTelegramWebhookStatus(): Promise<TelegramWebhookStatus>
     missing,
   };
 
-  if (!token) return { ...base, isWebhookConnected: false };
+  if (!token) return { ...base, isWebhookConnected: false, menuReady: false };
 
   try {
     const info = await telegramApi<WebhookInfo>('getWebhookInfo');
@@ -79,6 +88,7 @@ export async function getTelegramWebhookStatus(): Promise<TelegramWebhookStatus>
       ...base,
       configuredWebhookUrl: info.url || undefined,
       isWebhookConnected: info.url === expectedWebhookUrl(),
+      menuReady: info.allowed_updates?.includes('callback_query') ?? false,
       pendingUpdates: info.pending_update_count ?? 0,
       lastError: info.last_error_message,
       lastErrorAt: info.last_error_date ? new Date(info.last_error_date * 1000).toISOString() : undefined,
@@ -87,6 +97,7 @@ export async function getTelegramWebhookStatus(): Promise<TelegramWebhookStatus>
     return {
       ...base,
       isWebhookConnected: false,
+      menuReady: false,
       detail: error?.message || 'No fue posible consultar Telegram.',
     };
   }
@@ -101,20 +112,45 @@ export async function configureTelegramWebhook() {
   await telegramApi<boolean>('setWebhook', {
     url: expectedWebhookUrl(),
     secret_token: webhookSecret,
-    allowed_updates: ['message'],
+    allowed_updates: ['message', 'callback_query'],
     drop_pending_updates: false,
   });
 
   return getTelegramWebhookStatus();
 }
 
-export async function sendTelegramMessage(chatId: string | number, text: string) {
+export async function sendTelegramMessage(
+  chatId: string | number,
+  text: string,
+  replyMarkup?: TelegramInlineKeyboard,
+) {
   return telegramApi<{ message_id: number }>('sendMessage', {
     chat_id: chatId,
     text,
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
+    reply_markup: replyMarkup,
   });
+}
+
+export async function editTelegramMessage(
+  chatId: string | number,
+  messageId: number,
+  text: string,
+  replyMarkup?: TelegramInlineKeyboard,
+) {
+  return telegramApi<{ message_id: number }>('editMessageText', {
+    chat_id: chatId,
+    message_id: messageId,
+    text,
+    parse_mode: 'Markdown',
+    disable_web_page_preview: true,
+    reply_markup: replyMarkup,
+  });
+}
+
+export async function answerTelegramCallback(callbackQueryId: string) {
+  return telegramApi<boolean>('answerCallbackQuery', { callback_query_id: callbackQueryId });
 }
 
 export function getAllowedTelegramChatId() {

@@ -8,6 +8,7 @@ type TelegramStatus = {
   expectedWebhookUrl: string;
   configuredWebhookUrl?: string;
   isWebhookConnected: boolean;
+  menuReady: boolean;
   securityReady: boolean;
   missing: string[];
   pendingUpdates?: number;
@@ -67,7 +68,7 @@ export function TelegramAdminPanel() {
     }
   };
 
-  const connected = Boolean(status?.isWebhookConnected && status?.securityReady);
+  const connected = Boolean(status?.isWebhookConnected && status?.securityReady && status?.menuReady);
 
   return (
     <section className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
@@ -88,7 +89,7 @@ export function TelegramAdminPanel() {
           <div className="grid gap-3 sm:grid-cols-2 text-sm">
             <div className="rounded-lg border border-slate-200 p-3"><span className="block text-slate-500">Webhook esperado</span><span className="font-mono text-xs break-all text-slate-800">{status.expectedWebhookUrl}</span></div>
             <div className="rounded-lg border border-slate-200 p-3"><span className="block text-slate-500">Webhook informado por Telegram</span><span className="font-mono text-xs break-all text-slate-800">{status.configuredWebhookUrl || 'Aún no conectado'}</span></div>
-            <div className="rounded-lg border border-slate-200 p-3"><span className="block text-slate-500">Seguridad</span><span className="font-bold text-slate-800">{status.securityReady ? 'Token, chat autorizado y secreto presentes' : `Falta: ${status.missing.join(', ')}`}</span></div>
+            <div className="rounded-lg border border-slate-200 p-3"><span className="block text-slate-500">Seguridad y menú</span><span className="font-bold text-slate-800">{status.securityReady ? (status.menuReady ? 'Token, chat autorizado, secreto y botones activos' : 'Seguridad lista; falta activar botones') : `Falta: ${status.missing.join(', ')}`}</span></div>
             <div className="rounded-lg border border-slate-200 p-3"><span className="block text-slate-500">Actualizaciones pendientes</span><span className="font-bold text-slate-800">{status.pendingUpdates ?? '—'}</span></div>
           </div>
         )}
