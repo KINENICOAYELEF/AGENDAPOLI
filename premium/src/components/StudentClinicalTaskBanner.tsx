@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { AlertTriangle, ArrowRight, ClipboardCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import type { StudentClinicalTask } from "@/types/studentClinicalTask";
 
@@ -21,16 +20,31 @@ export function StudentClinicalTaskBanner() {
 
   useEffect(() => {
     if (!user || user.role !== "INTERNO") return;
-    const taskQuery = query(
-      collection(db, "student_clinical_tasks"),
-      where("studentId", "==", user.uid),
-    );
-    return onSnapshot(taskQuery, (snapshot) => {
-      setTasks(snapshot.docs
-        .map((item) => ({ id: item.id, ...(item.data() as StudentClinicalTask) }))
-        .filter((task) => task.status === "ACTIVE")
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)));
-    }, (error) => console.error("No se pudieron cargar las tareas clínicas del estudiante", error));
+    let active = true;
+    const loadTasks = async () => {
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) return;
+        const response = await fetch("/api/student/clinical-tasks", {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        if (active) setTasks(Array.isArray(payload.tasks) ? payload.tasks : []);
+      } catch (error) {
+        console.error("No se pudieron cargar las tareas clínicas del estudiante", error);
+      }
+    };
+    void loadTasks();
+    const interval = window.setInterval(loadTasks, 60_000);
+    const refreshOnFocus = () => void loadTasks();
+    window.addEventListener("focus", refreshOnFocus);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshOnFocus);
+    };
   }, [user]);
 
   const task = tasks[0];

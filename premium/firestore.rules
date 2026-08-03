@@ -194,12 +194,6 @@ service cloud.firestore {
     match /teacher_notifications/{notificationId} {
       allow read, write: if isDocente();
     }
-    match /student_clinical_tasks/{taskId} {
-      // El aviso solo lo publica/cancela un docente. El estudiante destinatario
-      // puede leerlo, pero no descartarlo ni marcarlo resuelto manualmente.
-      allow read: if isDocente() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
-      allow create, update, delete: if isDocente();
-    }
     match /proposed_simulations/{proposalId} {
       allow read, write: if isDocente();
     }
