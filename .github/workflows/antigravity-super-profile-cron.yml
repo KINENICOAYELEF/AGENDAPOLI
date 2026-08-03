@@ -2,8 +2,8 @@ name: Antigravity Agent — Censo Docente Confiable
 
 on:
   schedule:
-    # Pares invierno/verano. El script valida la hora real de Santiago y solo
-    # ejecuta una vez a las 07:30 y 21:30.
+    # Pares invierno/verano. La API usa una llave durable mañana/noche: si
+    # GitHub se retrasa o activa ambos respaldos, ejecuta una sola vez.
     - cron: '30 10 * * *'
     - cron: '30 11 * * *'
     - cron: '30 0 * * *'
@@ -31,5 +31,6 @@ jobs:
           AGENT_MCP_SECRET: ${{ secrets.AGENT_MCP_SECRET }}
           APP_URL: ${{ vars.AGENT_APP_URL || 'https://agendapoli.vercel.app' }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_SCHEDULE: ${{ github.event.schedule }}
         run: |
           node premium/scripts/run-antigravity-cron.js

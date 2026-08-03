@@ -164,6 +164,19 @@ describe('Circuito de reevaluación y avisos docentes', () => {
     assert.match(source, /No se enviará nada a estudiantes sin tu aprobación/);
   });
 
+  test('el cron usa turnos durables, evita duplicados y propaga fallos reales', () => {
+    const script = readFileSync(new URL('../scripts/run-antigravity-cron.js', import.meta.url), 'utf8');
+    const workflow = readFileSync(new URL('../../.github/workflows/antigravity-super-profile-cron.yml', import.meta.url), 'utf8');
+    const route = readFileSync(new URL('../src/app/api/agent/run/route.ts', import.meta.url), 'utf8');
+    assert.match(script, /scheduledSlot: scheduleSlot \|\| undefined/);
+    assert.doesNotMatch(script, /!\[7, 21\]\.includes/);
+    assert.match(workflow, /GITHUB_EVENT_SCHEDULE/);
+    assert.match(route, /agent_schedule_slots/);
+    assert.match(route, /deduplicated: true/);
+    assert.match(route, /status: 'failed'/);
+    assert.match(route, /throw err/);
+  });
+
   test('la interfaz no ejecuta censos completos de Firestore en segundo plano', () => {
     const notifications = readFileSync(new URL('../src/components/NotificationCenter.tsx', import.meta.url), 'utf8');
     const studentTasks = readFileSync(new URL('../src/components/StudentClinicalTaskBanner.tsx', import.meta.url), 'utf8');

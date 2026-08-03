@@ -12,6 +12,13 @@ import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { runCensusEngine } from '@/lib/agent/censusEngine';
 import { notifyTeacherOfCensus } from '@/lib/agent/notificationTriage';
 
+const SCHEDULE_SLOT_PATTERN = /^\d{4}-\d{2}-\d{2}-(morning|evening)$/;
+const SCHEDULE_LEASE_MS = 45 * 60 * 1000;
+
+function isAlreadyExistsError(error: any) {
+  return error?.code === 6 || error?.code === 'already-exists' || error?.code === 'ALREADY_EXISTS';
+}
+
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get('authorization');
@@ -24,7 +31,7 @@ export async function POST(req: Request) {
     }
 
     const payload = await req.json().catch(() => ({}));
-    const { triggeredBy, sync } = payload || {};
+    const { triggeredBy, sync, scheduledSlot } = payload || {};
 
     if (!featureFlags.agentWriteEnabled) {
       return NextResponse.json(
@@ -39,14 +46,70 @@ export async function POST(req: Request) {
 
     const db = getAdminDb();
 
+    const normalizedScheduledSlot = triggeredBy === 'cron_github_action'
+      && typeof scheduledSlot === 'string'
+      && SCHEDULE_SLOT_PATTERN.test(scheduledSlot)
+      ? scheduledSlot
+      : null;
+    const slotRef = normalizedScheduledSlot
+      ? db.collection('agent_schedule_slots').doc(normalizedScheduledSlot)
+      : null;
+
+    if (slotRef) {
+      const nowIso = new Date().toISOString();
+      try {
+        await slotRef.create({
+          slot: normalizedScheduledSlot,
+          status: 'running',
+          triggeredBy,
+          startedAt: nowIso,
+          updatedAt: nowIso,
+        });
+      } catch (slotError: any) {
+        if (!isAlreadyExistsError(slotError)) throw slotError;
+
+        const existingSnapshot = await slotRef.get();
+        const existing = existingSnapshot.data() || {};
+        const startedAtMs = Date.parse(existing.startedAt || '');
+        const leaseIsFresh = existing.status === 'running'
+          && Number.isFinite(startedAtMs)
+          && Date.now() - startedAtMs < SCHEDULE_LEASE_MS;
+
+        if (existing.status === 'completed' || leaseIsFresh) {
+          return NextResponse.json({
+            success: true,
+            status: 'completed',
+            deduplicated: true,
+            scheduleStatus: existing.status,
+            scheduledSlot: normalizedScheduledSlot,
+            runId: existing.runId || null,
+            agentVersion: ACTIVE_AGENT_VERSION_ID,
+          });
+        }
+
+        // Permite recuperar un turno fallido o abandonado sin esperar al día siguiente.
+        await slotRef.update({
+          status: 'running',
+          startedAt: nowIso,
+          updatedAt: nowIso,
+          retryCount: Number(existing.retryCount || 0) + 1,
+          errorMessage: null,
+        });
+      }
+    }
+
     const runRef = await db.collection('agent_runs').add({
       triggeredBy: triggeredBy || 'manual',
       status: 'running',
       startedAt: new Date().toISOString(),
       agentVersion: ACTIVE_AGENT_VERSION_ID,
       promptVersion: 'v2-2026',
+      ...(normalizedScheduledSlot ? { scheduledSlot: normalizedScheduledSlot } : {}),
     });
     const runId = runRef.id;
+    if (slotRef) {
+      await slotRef.update({ runId, updatedAt: new Date().toISOString() });
+    }
 
     // Background execution task wrapper
     const executeBackgroundRun = async () => {
@@ -71,6 +134,14 @@ export async function POST(req: Request) {
           censusResult,
           notification,
         });
+        if (slotRef) {
+          await slotRef.update({
+            status: 'completed',
+            runId,
+            finishedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        }
       } catch (err: any) {
         console.error(`[Background Run Error ${runId}]:`, err);
         await runRef.update({
@@ -78,6 +149,16 @@ export async function POST(req: Request) {
           finishedAt: new Date().toISOString(),
           errorMessage: err.message || 'Error en ejecución background',
         });
+        if (slotRef) {
+          await slotRef.update({
+            status: 'failed',
+            runId,
+            finishedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            errorMessage: err.message || 'Error en ejecución background',
+          });
+        }
+        throw err;
       }
     };
 
@@ -92,7 +173,11 @@ export async function POST(req: Request) {
       notification = completedData.notification || null;
     } else {
       // Ensure background task completes even after response is sent on Vercel
-      after(executeBackgroundRun);
+      after(async () => {
+        await executeBackgroundRun().catch((error) => {
+          console.error(`[Deferred Background Run Error ${runId}]:`, error);
+        });
+      });
     }
 
     return NextResponse.json({
@@ -100,6 +185,7 @@ export async function POST(req: Request) {
       runId,
       agentVersion: ACTIVE_AGENT_VERSION_ID,
       status: sync ? 'completed' : 'background_triggered',
+      ...(normalizedScheduledSlot ? { scheduledSlot: normalizedScheduledSlot } : {}),
       ...(sync ? { censusResult, notification } : {}),
     });
   } catch (error: any) {

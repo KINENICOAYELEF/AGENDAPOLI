@@ -6,10 +6,39 @@
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://agendapoli.vercel.app';
 const AGENT_SECRET = process.env.AGENT_MCP_SECRET;
 
-function santiagoHour() {
-  return Number(new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'America/Santiago', hour: '2-digit', hour12: false,
-  }).format(new Date()));
+function santiagoDateParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Santiago',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hour12: false,
+  }).formatToParts(date);
+  return Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+}
+
+function previousIsoDate(isoDate) {
+  const date = new Date(`${isoDate}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function scheduledSlot() {
+  if (process.env.GITHUB_EVENT_NAME !== 'schedule') return null;
+
+  const { year, month, day, hour } = santiagoDateParts();
+  const localDate = `${year}-${month}-${day}`;
+  const localHour = Number(hour);
+  const expression = process.env.GITHUB_EVENT_SCHEDULE || '';
+  const isMorningExpression = expression.includes('30 10 ') || expression.includes('30 11 ');
+  const period = isMorningExpression ? 'morning' : 'evening';
+
+  // Una ejecución nocturna puede ser iniciada con retraso después de medianoche.
+  const slotDate = period === 'evening' && localHour < 6
+    ? previousIsoDate(localDate)
+    : localDate;
+  return `${slotDate}-${period}`;
 }
 
 const wait = (milliseconds) => new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -21,10 +50,8 @@ async function runCron() {
     throw new Error('AGENT_MCP_SECRET no está configurado en GitHub Actions.');
   }
 
-  if (process.env.GITHUB_EVENT_NAME === 'schedule' && ![7, 21].includes(santiagoHour())) {
-    console.log(`[Antigravity Cron] Ventana DST de respaldo omitida. Hora Santiago: ${santiagoHour()}:30.`);
-    return;
-  }
+  const scheduleSlot = scheduledSlot();
+  if (scheduleSlot) console.log(`[Antigravity Cron] Turno durable: ${scheduleSlot}`);
 
   let lastError;
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -40,7 +67,8 @@ async function runCron() {
         body: JSON.stringify({
           prompt: 'Ejecutar censo clínico y actualizar perfiles de aprendizaje de la cohorte',
           triggeredBy: 'cron_github_action',
-          sync: true
+          sync: true,
+          scheduledSlot: scheduleSlot || undefined,
         }),
         signal: controller.signal,
       });

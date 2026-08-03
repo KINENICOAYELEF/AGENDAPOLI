@@ -102,7 +102,7 @@ export function TelegramAdminPanel() {
           <button onClick={() => void runAction('configure')} disabled={loading || actionLoading !== null || !status?.securityReady} className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 disabled:opacity-50">{actionLoading === 'configure' ? 'Conectando…' : 'Conectar / reparar webhook'}</button>
           <button onClick={() => void runAction('test')} disabled={!connected || actionLoading !== null} className="px-4 py-2 rounded-lg bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 disabled:opacity-50">{actionLoading === 'test' ? 'Enviando…' : 'Enviar prueba privada'}</button>
         </div>
-        <p className="text-xs text-slate-500">La prueba se envía solo al chat docente autorizado. Las notas de voz se registran, pero no se transcriben ni ejecutan acciones clínicas todavía.</p>
+        <p className="text-xs text-slate-500">La prueba se envía solo al chat docente autorizado. Las notas de voz se transcriben para consultar el estado o solicitar un censo; el bot no modifica fichas ni contacta estudiantes sin tu aprobación.</p>
       </div>
     </section>
   );
