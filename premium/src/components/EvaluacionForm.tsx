@@ -26,12 +26,14 @@ export interface EvaluacionFormProps {
     procesoId: string;
     type: 'INITIAL' | 'REEVALUATION';
     initialData: Evaluacion | null;
+    /** Línea basal solo para orientar una reevaluación nueva; nunca se edita. */
+    reevaluationBaseline?: Evaluacion | null;
     procesoContext?: Proceso; // FASE 2.2.5
     onClose: () => void;
     onSaveSuccess: (evaluacion: Evaluacion, isNew: boolean) => void;
 }
 
-export function EvaluacionForm({ usuariaId, procesoId, type, initialData, procesoContext, onClose, onSaveSuccess }: EvaluacionFormProps) {
+export function EvaluacionForm({ usuariaId, procesoId, type, initialData, reevaluationBaseline, procesoContext, onClose, onSaveSuccess }: EvaluacionFormProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
 
@@ -200,7 +202,10 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
         autoSynthesis: (initialData as any)?.autoSynthesis || {},
         geminiDiagnostic: (initialData as any)?.geminiDiagnostic || {},
         p4_plan_structured: (initialData as any)?.p4_plan_structured || {},
-        reevaluation: (initialData as any)?.reevaluation || {},
+        reevaluation: (initialData as any)?.reevaluation || (type === 'REEVALUATION' ? {
+            indexEvaluationId: reevaluationBaseline?.id,
+            isSameProblem: true,
+        } : {}),
         ...initialData
     });
 

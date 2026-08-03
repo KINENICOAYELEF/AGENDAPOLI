@@ -22,6 +22,7 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
 
     const [view, setView] = useState<'lista' | 'formulario' | 'lectura'>('lista');
     const [selectedEvaluacion, setSelectedEvaluacion] = useState<Evaluacion | null>(null);
+    const [reevaluationBaseline, setReevaluationBaseline] = useState<Evaluacion | null>(null);
     const [evaluacionType, setEvaluacionType] = useState<'INITIAL' | 'REEVALUATION'>('INITIAL');
 
     const [evaluaciones, setEvaluaciones] = useState<Evaluacion[]>([]);
@@ -73,6 +74,8 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
                         procesoId={proceso.id!}
                         type={evaluacionType}
                         initialData={(selectedEvaluacion || (remoteHistorySnapshot || pacienteSnapshot ? { remoteHistorySnapshot, paciente: pacienteSnapshot } : null)) as any}
+                        reevaluationBaseline={reevaluationBaseline}
+                        procesoContext={proceso}
                         onClose={() => { 
                             setView('lista');
                             loadEvaluaciones();
@@ -96,6 +99,7 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
     }
 
     const hasInitial = evaluaciones.some(e => e.type === 'INITIAL');
+    const latestBaseline = evaluaciones.find(e => e.type === 'REEVALUATION') || evaluaciones.find(e => e.type === 'INITIAL') || null;
 
     return (
         <div className="space-y-6">
@@ -110,7 +114,7 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
                     </button>
                     {!hasInitial && (
                         <button
-                            onClick={() => { setSelectedEvaluacion(null); setEvaluacionType('INITIAL'); setView('formulario'); }}
+                            onClick={() => { setSelectedEvaluacion(null); setReevaluationBaseline(null); setEvaluacionType('INITIAL'); setView('formulario'); }}
                             className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition-all text-sm flex items-center gap-2"
                         >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
@@ -118,11 +122,14 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
                         </button>
                     )}
                     <button
-                        onClick={() => { setSelectedEvaluacion(null); setEvaluacionType('REEVALUATION'); setView('formulario'); }}
+                        onClick={() => {
+                            if (!hasInitial) { setSelectedEvaluacion(null); setReevaluationBaseline(null); setEvaluacionType('INITIAL'); setView('formulario'); return; }
+                            setSelectedEvaluacion(null); setReevaluationBaseline(latestBaseline); setEvaluacionType('REEVALUATION'); setView('formulario');
+                        }}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-sm transition-all text-sm flex items-center gap-2"
                     >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                        Nueva Re-Evaluación
+                        {hasInitial ? 'Iniciar reevaluación guiada' : 'Crear evaluación inicial primero'}
                     </button>
                 </div>
             </div>
@@ -134,6 +141,14 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
                     <p className="text-slate-500 font-medium">Aún no hay evaluaciones realizadas en este proceso clínico.</p>
                 </div>
             ) : (
+                <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
+                    <strong>Reevaluación guiada</strong>
+                    <p className="mt-1 text-emerald-800">Se abrirá como un registro nuevo y vacío para que el estudiante compare y justifique. Solo se precarga la referencia a la última línea basal; no copia respuestas ni redacta conclusiones con IA.</p>
+                    {latestBaseline && <p className="mt-2 text-xs font-semibold text-emerald-900">Línea basal disponible: {latestBaseline.type === 'REEVALUATION' ? 'última reevaluación' : 'evaluación inicial'} · {formatSafeDate(latestBaseline)}</p>}
+                </section>
+            )}
+
+            {evaluaciones.length > 0 && (
                 <div className="grid gap-4 md:grid-cols-2">
                     {evaluaciones.map(ev => (
                         <div key={ev.id} className="bg-white border text-sm border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer" onClick={() => { setSelectedEvaluacion(ev); setEvaluacionType(ev.type); setView('lectura'); }}>
