@@ -175,6 +175,12 @@ export function BandejaDocenteInteligente() {
         : isMissing
           ? 'Este proceso ya tiene evoluciones, pero no cuenta con una evaluación inicial cerrada. Completa la línea basal antes de continuar registrando sesiones.'
           : 'La evaluación inicial existente no entrega una línea basal suficiente. Completa entrevista, examen físico, integración clínica, objetivos y plan; luego ciérrala.';
+      const actionParams = new URLSearchParams({
+        openFicha: review.patientId,
+        action: isReevaluation ? 'REEVALUAR' : 'EVALUACION_INICIAL',
+      });
+      if (review.processId) actionParams.set('procesoId', review.processId);
+      if (isReevaluation) actionParams.set('step', '1');
       await setDoc(doc(db, 'student_clinical_tasks', `review_${review.id}`), {
         year: review.year,
         studentId: review.studentId,
@@ -186,7 +192,7 @@ export function BandejaDocenteInteligente() {
         title,
         message,
         actionLabel: isReevaluation ? 'Ir a reevaluar' : 'Abrir expediente',
-        actionHref: `/app/usuarios?openFicha=${encodeURIComponent(review.patientId)}`,
+        actionHref: `/app/usuarios?${actionParams.toString()}`,
         createdAt: new Date().toISOString(),
         createdBy: auth.currentUser?.uid || 'teacher',
       }, { merge: true });

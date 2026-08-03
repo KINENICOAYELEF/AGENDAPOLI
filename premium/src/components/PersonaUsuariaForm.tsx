@@ -234,9 +234,30 @@ export function PersonaUsuariaForm({ initialData, initialAction, initialRecordPa
             // Auto-calcular edad antes de guardar para fines de queries rápidas si se desea
             const calcEdad = calcularEdad(fechaNacimiento!);
             const finalEdad = typeof calcEdad === 'number' ? calcEdad : undefined;
+            const savedAt = new Date().toISOString();
+            const assignmentChanged = isEditMode
+                && initialData?.meta?.assignedInternId !== formData.meta?.assignedInternId;
+            const nextMeta = {
+                ...formData.meta,
+                ...(!isEditMode ? {
+                    createdAt: savedAt,
+                    createdBy: user?.uid,
+                    ...(user?.role === 'INTERNO' && !formData.meta?.assignedInternId ? {
+                        assignedInternId: user.uid,
+                        assignedInternName: user.displayName || user.email,
+                        assignmentStartedAt: savedAt,
+                    } : {}),
+                } : {}),
+                ...(assignmentChanged ? {
+                    assignmentStartedAt: savedAt,
+                    updatedAt: savedAt,
+                    updatedBy: user?.uid,
+                } : {}),
+            };
 
             const payload: any = {
                 ...formData,
+                meta: nextMeta,
                 id: targetId,
                 identity: {
                     ...formData.identity,
@@ -248,19 +269,6 @@ export function PersonaUsuariaForm({ initialData, initialAction, initialRecordPa
                 telefono: formData.identity.telefono,
                 email: formData.identity.correo,
 
-                // Inyectamos timestamp de creación solo si es un documento nuevo
-                ...(!isEditMode && { 
-                    meta: { 
-                        ...formData.meta, // Preserve existing meta like assignedInternId
-                        createdAt: new Date().toISOString(),
-                        createdBy: user?.uid,
-                        // FASE 14: Asignación por defecto si el creador es INTERNO y no escogió uno
-                        ...(user?.role === 'INTERNO' && !formData.meta?.assignedInternId && {
-                            assignedInternId: user.uid,
-                            assignedInternName: user.displayName || user.email
-                        })
-                    } 
-                })
             };
 
             const docRef = doc(db, "programs", globalActiveYear, "usuarias", targetId);

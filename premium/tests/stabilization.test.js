@@ -172,4 +172,30 @@ describe('Circuito de reevaluación y avisos docentes', () => {
     assert.match(notifications, /NOTIFICATION_CACHE_TTL_MS/);
     assert.match(studentTasks, /5 \* 60_000/);
   });
+
+  test('los avisos clínicos abren el formulario exacto sin sobrescribir registros ajenos', () => {
+    const inbox = readFileSync(new URL('../src/components/revision-docente/BandejaDocenteInteligente.tsx', import.meta.url), 'utf8');
+    const timeline = readFileSync(new URL('../src/components/ProcesoTimeline.tsx', import.meta.url), 'utf8');
+    assert.match(inbox, /action: isReevaluation \? 'REEVALUAR' : 'EVALUACION_INICIAL'/);
+    assert.match(inbox, /actionParams\.set\('procesoId', review\.processId\)/);
+    assert.match(timeline, /item\.data\.status !== 'DRAFT'/);
+    assert.match(timeline, /author === user\?\.uid \|\| author === user\?\.email/);
+  });
+
+  test('la continuidad usa la línea basal del proceso y la fecha de asignación actual', () => {
+    const census = readFileSync(new URL('../src/lib/agent/censusEngine.ts', import.meta.url), 'utf8');
+    assert.match(census, /const globalBaselines =/);
+    assert.match(census, /assignmentStartedAt: patient\?\.meta\?\.assignmentStartedAt/);
+    assert.match(census, /const countingFrom = Math\.max\(baselineDate/);
+    assert.match(census, /studentEvolutions/);
+  });
+
+  test('cerrar una reevaluación conserva inicio, autoría, objetivos y resuelve el aviso', () => {
+    const reassessment = readFileSync(new URL('../src/components/ReevaluacionExpressForm.tsx', import.meta.url), 'utf8');
+    const taskClient = readFileSync(new URL('../src/lib/studentClinicalTasksClient.ts', import.meta.url), 'utf8');
+    assert.match(reassessment, /const \[startedAt\]/);
+    assert.match(reassessment, /closedBy: user\.uid, closedAt: now/);
+    assert.match(reassessment, /finalObjectives\.filter/);
+    assert.match(taskClient, /student-clinical-tasks-changed/);
+  });
 });

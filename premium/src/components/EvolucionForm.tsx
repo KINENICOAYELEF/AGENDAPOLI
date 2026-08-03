@@ -1031,17 +1031,20 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                     if (usuariaSnap.exists()) {
                         const currentData = usuariaSnap.data();
                         // Solo preguntar si el paciente no tiene un interno asignado todavía
-                        if (!currentData.assignedInternId) {
+                        const currentAssignedInternId = currentData.meta?.assignedInternId || currentData.assignedInternId;
+                        if (!currentAssignedInternId) {
                             const wantAssign = window.confirm(
                                 "¿Deseas vincular a esta persona usuaria a tu lista permanente de internado?\n\n" +
                                 "• Aceptar: Sí, vincular a mi lista permanente.\n" +
                                 "• Cancelar: No, es una atención puntual o de apoyo/suplencia por hoy."
                             );
                             if (wantAssign) {
+                                const assignedAt = new Date().toISOString();
                                 await updateDoc(usuariaRef, sanitizeForFirestoreDeep({
-                                    assignedInternId: user.uid,
-                                    assignedInternName: user.displayName || user.email,
-                                    updatedAt: new Date().toISOString()
+                                    "meta.assignedInternId": user.uid,
+                                    "meta.assignedInternName": user.displayName || user.email,
+                                    "meta.assignmentStartedAt": assignedAt,
+                                    "meta.updatedAt": assignedAt,
                                 }));
                             }
                         }

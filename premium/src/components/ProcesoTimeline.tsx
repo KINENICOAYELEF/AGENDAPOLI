@@ -108,7 +108,15 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                 setSelectedEval(draft?.type === 'evaluacion' ? draft.data : null);
                 setView('formReeval');
             } else if (initialAction?.toUpperCase() === 'EVALUACION_INICIAL') {
-                const initial = loadedItems.find(item => item.type === 'evaluacion' && item.data.type === 'INITIAL');
+                // Un aviso nunca debe hacer que el estudiante sobrescriba una
+                // evaluación cerrada o una línea basal creada por otra persona.
+                // Solo continúa su propio borrador; en otro caso crea un nuevo
+                // registro preservando íntegro el historial previo.
+                const initial = loadedItems.find(item => {
+                    if (item.type !== 'evaluacion' || item.data.type !== 'INITIAL' || item.data.status !== 'DRAFT') return false;
+                    const author = item.data.audit?.createdBy || item.data.clinicianResponsible;
+                    return author === user?.uid || author === user?.email;
+                });
                 setSelectedEval(initial?.type === 'evaluacion' ? initial.data : null);
                 setView('formExpressEval');
             } else if (initialAction?.toUpperCase() === 'EVOLUCIONAR') {

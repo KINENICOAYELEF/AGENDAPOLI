@@ -74,6 +74,7 @@ export function ReevaluacionExpressForm({ usuariaId, proceso, baselineEvaluation
   const [step, setStep] = useState<1 | 2 | 3>(parsedInitialStep === 2 || parsedInitialStep === 3 ? parsedInitialStep : 1);
   const [saving, setSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [recordId] = useState(existing?.id || generateId());
+  const [startedAt] = useState(existing?.sessionAt || new Date().toISOString());
   const [data, setData] = useState<ReassessmentData>(() => existing?.reevaluationExpress || emptyData);
 
   useEffect(() => {
@@ -120,16 +121,25 @@ export function ReevaluacionExpressForm({ usuariaId, proceso, baselineEvaluation
     setSaving("saving");
     try {
       const now = new Date().toISOString();
+      const finalObjectives = data.reasoning.objectives
+        .map(objective => ({ ...objective, text: objective.text.trim() }))
+        .filter(objective => objective.text.length > 0);
       const payload: any = {
-        ...(existing || {}), id: recordId, usuariaId, procesoId: proceso.id, type: "REEVALUATION", status: close ? "CLOSED" : "DRAFT", sessionAt: existing?.sessionAt || now,
+        ...(existing || {}), id: recordId, usuariaId, procesoId: proceso.id, type: "REEVALUATION", status: close ? "CLOSED" : "DRAFT", sessionAt: startedAt,
         clinicianResponsible: user.email || "", reevaluationExpress: data,
-        reevaluation: { indexEvaluationId: baselineEvaluation?.id || existing?.reevaluation?.indexEvaluationId, isSameProblem: !data.interview.newRedFlags, newRedFlags: data.interview.newRedFlags, progressSummary: `${data.interview.change}\n${data.reasoning.coherence}`.trim(), planModifications: `${data.reasoning.plan}\nDosificación: ${data.reasoning.dosage}`.trim(), updatedObjectives: data.reasoning.objectives.map(objective => ({ id: objective.id, texto: objective.text, status: objective.status.toLowerCase() })), retest: { patientReport: data.interview.change, comparableSignResult: data.exam.comparableResult, keyMeasures: data.exam.objectiveFindings, clinicalDirection: data.reasoning.direction, planDecision: data.reasoning.decision, nextReevaluationCriteria: data.reasoning.nextReassessment, psfsScores: data.exam.psfsScores } },
-        audit: existing?.audit || { createdBy: user.uid, createdAt: now }, updatedAt: now,
+        reevaluation: { indexEvaluationId: baselineEvaluation?.id || existing?.reevaluation?.indexEvaluationId, isSameProblem: !data.interview.newRedFlags, newRedFlags: data.interview.newRedFlags, progressSummary: `${data.interview.change}\n${data.reasoning.coherence}`.trim(), planModifications: `${data.reasoning.plan}\nDosificación: ${data.reasoning.dosage}`.trim(), updatedObjectives: finalObjectives.map(objective => ({ id: objective.id, texto: objective.text, status: objective.status.toLowerCase() })), retest: { patientReport: data.interview.change, comparableSignResult: data.exam.comparableResult, keyMeasures: data.exam.objectiveFindings, clinicalDirection: data.reasoning.direction, planDecision: data.reasoning.decision, nextReevaluationCriteria: data.reasoning.nextReassessment, psfsScores: data.exam.psfsScores } },
+        audit: {
+          ...(existing?.audit || {}),
+          createdBy: existing?.audit?.createdBy || user.uid,
+          createdAt: existing?.audit?.createdAt || startedAt,
+          ...(close ? { closedBy: user.uid, closedAt: now } : {}),
+        },
+        updatedAt: now,
       };
       await setDoc(doc(db, "programs", globalActiveYear, "evaluaciones", recordId), sanitizeForFirestoreDeep(payload), { merge: true });
       if (close) {
         const versionId = `reeval_${Date.now().toString(36)}`;
-        const activeObjectives = data.reasoning.objectives.filter(objective => objective.status !== "LOGRADO").map(objective => ({ id: objective.id, label: objective.text, status: "activo" }));
+        const activeObjectives = finalObjectives.filter(objective => objective.status !== "LOGRADO").map(objective => ({ id: objective.id, label: objective.text, status: "activo" }));
         await setDoc(doc(db, "programs", globalActiveYear, "procesos", proceso.id), sanitizeForFirestoreDeep({
           caseSnapshot: { ...snapshot, lastUpdated: now, lastProgressSummary: data.reasoning.coherence, lastRetest: data.exam.comparableResult || data.exam.objectiveFindings, psfsLast: data.exam.psfsScores },
           activeEvaluationId: recordId,

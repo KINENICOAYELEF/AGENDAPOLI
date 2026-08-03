@@ -73,12 +73,16 @@ export function InternAssignmentManager() {
         setIsSaving(true);
         try {
             const batch = writeBatch(db);
+            const assignedAt = new Date().toISOString();
             selectedPatientIds.forEach(id => {
                 const docRef = doc(db, "programs", globalActiveYear, "usuarias", id);
+                const patient = patients.find(item => item.id === id);
+                const assignmentChanged = patient?.meta?.assignedInternId !== intern.uid;
                 batch.update(docRef, {
                     "meta.assignedInternId": intern.uid,
                     "meta.assignedInternName": intern.displayName || intern.email,
-                    "meta.updatedAt": new Date().toISOString()
+                    ...(assignmentChanged ? { "meta.assignmentStartedAt": assignedAt } : {}),
+                    "meta.updatedAt": assignedAt,
                 });
             });
 

@@ -131,56 +131,57 @@ async function createInitialEvaluationContinuityReview(
  * cuando ya existe una línea basal y el mismo interno ha documentado cinco
  * sesiones posteriores con la misma persona. Nunca toca la ficha.
  */
-async function reconcileReevaluationReminders(db: ReturnType<typeof getAdminDb>, year: string, student: any, records: any[]) {
-  const evolutionsByPatient = new Map<string, any[]>();
-  for (const record of records.filter((item) => item.collection === 'evoluciones')) {
-    const patientId = record.usuariaId || record.personaUsuariaId;
-    if (!patientId) continue;
-    const current = evolutionsByPatient.get(patientId) || [];
-    current.push(record);
-    evolutionsByPatient.set(patientId, current);
-  }
+async function reconcileReevaluationReminder(input: {
+  db: ReturnType<typeof getAdminDb>;
+  year: string;
+  student: any;
+  patientId: string;
+  processId: string;
+  studentEvolutions: any[];
+  processBaselines: any[];
+  previousReminderDocs: any[];
+  assignmentStartedAt?: string;
+}) {
+  const { db, year, student, patientId, processId, studentEvolutions, processBaselines, previousReminderDocs, assignmentStartedAt } = input;
+  const evaluations = processBaselines
+    .filter((item) => item.status === 'CLOSED')
+    .sort((a, b) => (recordDate(a) || 0) - (recordDate(b) || 0));
+  if (!evaluations.length) return 0;
 
-  let created = 0;
-  for (const [patientId, evolutions] of evolutionsByPatient) {
-    const evaluations = records
-      .filter((item) => item.collection === 'evaluaciones' && (item.usuariaId || item.personaUsuariaId) === patientId)
-      .sort((a, b) => (recordDate(a) || 0) - (recordDate(b) || 0));
-    if (!evaluations.length) continue;
-
-    const baseline = evaluations[evaluations.length - 1];
-    const baselineDate = recordDate(baseline) || 0;
-    const sessionsSinceBaseline = evolutions.filter((item) => (recordDate(item) || 0) > baselineDate);
-    const reminderId = `reevaluation_due_${year}_${student.id}_${patientId}_${baseline.id}`;
+  // La línea basal pertenece al proceso, no al autor. Así un estudiante nuevo
+  // puede continuar desde una evaluación válida hecha por quien lo precedió.
+  const baseline = evaluations[evaluations.length - 1];
+  const baselineDate = recordDate(baseline) || 0;
+  const assignmentDate = assignmentStartedAt ? new Date(assignmentStartedAt).getTime() : 0;
+  const countingFrom = Math.max(baselineDate, Number.isFinite(assignmentDate) ? assignmentDate : 0);
+  const sessionsSinceBaseline = studentEvolutions
+    .filter((item) => item.status === 'CLOSED' && (recordDate(item) || 0) > countingFrom);
+  const reminderId = `reevaluation_due_${year}_${student.id}_${patientId}_${baseline.id}`;
     const reminderRef = db.collection('teacher_agent_reviews').doc(reminderId);
 
     // Una reevaluación nueva cierra recordatorios originados en líneas basales
     // anteriores para esta dupla estudiante-persona.
     // Solo filtramos por estudiante en Firestore para no exigir un índice
     // compuesto nuevo durante atención clínica; el resto se filtra en memoria.
-    const previousReminders = await db.collection('teacher_agent_reviews')
-      .where('studentId', '==', student.id)
-      .limit(100)
-      .get();
-    await Promise.all(previousReminders.docs
-      .filter((doc: any) => {
-        const data = doc.data();
-        return doc.id !== reminderId && data.patientId === patientId && data.category === 'REEVALUATION_DUE' && data.status === 'PENDING_TEACHER';
-      })
-      .map((doc: any) => doc.ref.update({ status: 'ACCEPTED_PRIVATE', reviewedAt: new Date().toISOString(), resolution: 'reevaluation_detected' })));
+  await Promise.all(previousReminderDocs
+    .filter((doc: any) => {
+      const data = doc.data();
+      return doc.id !== reminderId
+        && data.patientId === patientId
+        && (!data.processId || data.processId === processId)
+        && data.category === 'REEVALUATION_DUE'
+        && data.status === 'PENDING_TEACHER';
+    })
+    .map((doc: any) => doc.ref.update({ status: 'ACCEPTED_PRIVATE', reviewedAt: new Date().toISOString(), resolution: 'new_baseline_detected' })));
 
-    if (sessionsSinceBaseline.length < 5) {
-      // Si una reevaluación nueva cambió la línea basal, el recordatorio previo
-      // deja de ser pertinente. Conservamos historial, pero no sigue molestando.
-      continue;
-    }
+  if (sessionsSinceBaseline.length < 5) return 0;
 
-    const latestEvolution = sessionsSinceBaseline.sort((a, b) => (recordDate(b) || 0) - (recordDate(a) || 0))[0];
-    const payload = TeacherAgentReviewSchema.parse({
+  const latestEvolution = sessionsSinceBaseline.sort((a, b) => (recordDate(b) || 0) - (recordDate(a) || 0))[0];
+  const payload = TeacherAgentReviewSchema.parse({
       year,
       studentId: student.id,
       patientId,
-      processId: baseline.procesoId || latestEvolution.procesoId,
+      processId,
       sourceReferences: [{
         year,
         collection: 'evoluciones' as const,
@@ -199,14 +200,13 @@ async function reconcileReevaluationReminders(db: ReturnType<typeof getAdminDb>,
       baselineEvaluationId: baseline.id,
       sessionsSinceBaseline: sessionsSinceBaseline.length,
     });
-    try {
-      await reminderRef.create(payload);
-      created++;
-    } catch (error: any) {
-      if (error?.code !== 6 && error?.code !== 'already-exists') throw error;
-    }
+  try {
+    await reminderRef.create(payload);
+    return 1;
+  } catch (error: any) {
+    if (error?.code !== 6 && error?.code !== 'already-exists') throw error;
+    return 0;
   }
-  return created;
 }
 
 async function reconcilePublishedStudentTasks(db: ReturnType<typeof getAdminDb>, year: string) {
@@ -261,12 +261,17 @@ export async function runCensusEngine() {
     }
 
     const students = usersSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
-    const [initialsSnap, processesSnap, patientsSnap] = await Promise.all([
+    const [initialsSnap, reevaluationsSnap, processesSnap, patientsSnap] = await Promise.all([
       db.collection(`programs/${year}/evaluaciones`).where('type', '==', 'INITIAL').get(),
+      db.collection(`programs/${year}/evaluaciones`).where('type', '==', 'REEVALUATION').get(),
       db.collection(`programs/${year}/procesos`).get(),
       db.collection(`programs/${year}/usuarias`).get(),
     ]);
     const globalInitials = initialsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+    const globalBaselines = [
+      ...globalInitials,
+      ...reevaluationsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })),
+    ];
     const processes = processesSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
     const patients = patientsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
     let reviewsCreated = 0;
@@ -400,13 +405,6 @@ export async function runCensusEngine() {
         }
       }
 
-      // Recordatorio persistente de reevaluación: usa todo el historial del
-      // estudiante con esa persona, pero solo se crea una vez por línea basal.
-      const reevaluationReminders = await reconcileReevaluationReminders(db, year, student, allRecords);
-      reviewsCreated += reevaluationReminders;
-      reevaluationRemindersCreated += reevaluationReminders;
-      priorityCounts.P2 += reevaluationReminders;
-
       // La línea basal pertenece a la persona/proceso, aunque la haya escrito
       // otro interno. El desempeño, en cambio, se cuenta solo por autoría.
       const closedEvolutionsByProcess = new Map<string, any[]>();
@@ -415,13 +413,36 @@ export async function runCensusEngine() {
         current.push(evolution);
         closedEvolutionsByProcess.set(evolution.procesoId, current);
       }
+      const previousReminderSnap = closedEvolutionsByProcess.size > 0
+        ? await db.collection('teacher_agent_reviews').where('studentId', '==', student.id).limit(100).get()
+        : null;
       for (const [processId, evolutions] of closedEvolutionsByProcess) {
         const process = processes.find((item: any) => item.id === processId);
         if (!process || !['ACTIVO', 'EN_PAUSA', 'PAUSADO'].includes(process.estado)) continue;
         const patient = patients.find((item: any) => item.id === process.personaUsuariaId);
-        const assignedInternId = patient?.meta?.assignedInternId || process.primaryInternId || process.attendancePlan?.primaryInternId;
+        const assignedInternId = patient?.meta?.assignedInternId
+          || patient?.assignedInternId
+          || process.primaryInternId
+          || process.attendancePlan?.primaryInternId;
         if (assignedInternId !== student.id) continue;
         const processInitials = globalInitials.filter((evaluation: any) => evaluation.procesoId === processId);
+        const processBaselines = globalBaselines.filter((evaluation: any) => evaluation.procesoId === processId);
+
+        const reevaluationReminders = await reconcileReevaluationReminder({
+          db,
+          year,
+          student,
+          patientId: process.personaUsuariaId,
+          processId,
+          studentEvolutions: evolutions,
+          processBaselines,
+          previousReminderDocs: previousReminderSnap?.docs || [],
+          assignmentStartedAt: patient?.meta?.assignmentStartedAt,
+        });
+        reviewsCreated += reevaluationReminders;
+        reevaluationRemindersCreated += reevaluationReminders;
+        priorityCounts.P2 += reevaluationReminders;
+
         const result = await createInitialEvaluationContinuityReview(
           db,
           year,

@@ -18,5 +18,11 @@ export async function resolveClinicalTasksAfterEvaluation(input: {
     const payload = await response.json().catch(() => ({}));
     throw new Error(payload.error || 'No se pudo cerrar la tarea clínica asociada.');
   }
-  return response.json();
+  const result = await response.json();
+  if (result?.success) {
+    window.dispatchEvent(new CustomEvent('student-clinical-tasks-changed', {
+      detail: { patientId: input.patientId, processId: input.processId, recordType: input.recordType },
+    }));
+  }
+  return result;
 }

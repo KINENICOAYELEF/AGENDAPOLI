@@ -334,6 +334,9 @@ export function NotificationCenter() {
                     ...patient.meta,
                     assignedInternId: intern.uid,
                     assignedInternName: intern.displayName || intern.email || undefined,
+                    assignmentStartedAt: patient.meta?.assignedInternId === intern.uid
+                        ? patient.meta?.assignmentStartedAt
+                        : new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 }
             };

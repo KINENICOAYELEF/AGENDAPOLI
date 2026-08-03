@@ -259,6 +259,7 @@ export interface PersonaUsuaria {
         updatedBy?: string;
         assignedInternId?: string;
         assignedInternName?: string;
+        assignmentStartedAt?: string;
     };
 
     // Legacy migration fields (deprecated)

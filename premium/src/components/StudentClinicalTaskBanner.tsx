@@ -47,11 +47,14 @@ export function StudentClinicalTaskBanner() {
     const refreshOnFocus = () => {
       if (Date.now() - lastLoadedAt >= 60_000) void loadTasks();
     };
+    const refreshAfterClinicalSave = () => void loadTasks();
     window.addEventListener("focus", refreshOnFocus);
+    window.addEventListener("student-clinical-tasks-changed", refreshAfterClinicalSave);
     return () => {
       active = false;
       window.clearInterval(interval);
       window.removeEventListener("focus", refreshOnFocus);
+      window.removeEventListener("student-clinical-tasks-changed", refreshAfterClinicalSave);
     };
   }, [user]);
 
