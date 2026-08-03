@@ -340,6 +340,11 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, reeval
             };
         } else {
             const fd = formData as EvaluacionReevaluacion;
+            const retest = fd.reevaluation?.retest as any;
+            if (!retest?.patientReport?.trim()) missing.push("Cambio desde la última evaluación");
+            if (!retest?.comparableSignResult?.trim() && !retest?.keyMeasures?.trim()) missing.push("Al menos un retest comparable");
+            if (!retest?.clinicalDirection) missing.push("Dirección clínica global");
+            if (!retest?.planDecision) missing.push("Decisión sobre el plan");
             const hasProgress = !!(fd.reevaluation?.progressSummary?.trim());
             if (!hasProgress) missing.push("Resumen del Retest y Progreso");
 
@@ -735,8 +740,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, reeval
         { id: 3, label: 'P3: Síntesis / Clasific.', icon: '⚖️' },
         { id: 4, label: 'P4: IA Gemini + Metas', icon: '🤖', warning: !getValidationContext.hasDx || !getValidationContext.hasSmartObs }
     ] : [
-        { id: 15, label: 'Anamnesis Remota', icon: '📇' },
-        { id: 5, label: 'Retest y Reevaluación', icon: '🔄' }
+        { id: 5, label: 'Reevaluación clínica', icon: '🔄' }
     ];
 
     const [isPerfilDrawerOpen, setIsPerfilDrawerOpen] = useState(false);
@@ -769,11 +773,10 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, reeval
                             </button>
                             <div>
                                 <h2 className="text-sm md:text-base font-black text-slate-800 leading-tight">
-                                    {type === 'INITIAL' ? 'Eval. Inicial V2' : 'Reevaluación V2'}
+                                    {type === 'INITIAL' ? 'Evaluación inicial' : 'Reevaluación clínica'}
                                 </h2>
                                 <div className="flex items-center gap-2 text-[10px] md:text-xs text-slate-500 font-medium whitespace-nowrap">
-                                    <span>P: {procesoId.slice(0, 4)}</span>
-                                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                    {type === 'INITIAL' && <><span>Proceso {procesoId.slice(0, 4)}</span><span className="w-1 h-1 rounded-full bg-slate-300"></span></>}
                                     <span className={`${getValidationContext.allValid ? 'text-emerald-600 font-bold' : 'text-amber-500'}`}>
                                         {getValidationContext.allValid ? 'Hitos OK' : '1+ Hitos Pendientes'}
                                     </span>
@@ -852,7 +855,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, reeval
                 </div>
 
                 {/* PANEL DE ADMINISTRADOR: IMPORT/EXPORT JSON */}
-                {((user?.role as string) === 'ADMIN' || user?.role === 'DOCENTE') && (
+                {type === 'INITIAL' && ((user?.role as string) === 'ADMIN' || user?.role === 'DOCENTE') && (
                     <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex flex-col sm:flex-row shadow-sm gap-3 z-30">
                         <div className="flex items-center gap-3 text-amber-900 flex-1">
                             <span className="text-2xl">🛠️</span>
@@ -902,7 +905,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, reeval
                 {/* CONTENIDO PRINCIPAL SCROLL V2 */}
                 <div ref={scrollContainerRef} key={importKey} className={`flex-1 overflow-y-auto ${isKeyboardOpen ? 'pb-40' : 'pb-32'} pt-4 sm:pt-6 px-0 sm:px-6 max-w-5xl mx-auto w-full transition-all duration-300`}>
 
-                    {screen === 5 && type === 'REEVALUATION' && <Screen5_Reevaluacion procesoContext={procesoContext} formData={formData} updateFormData={updateFormData as any} isClosed={isClosed} onProceed={() => setScreen(1)} onCreateNewInitial={() => {
+                    {screen === 5 && type === 'REEVALUATION' && <Screen5_Reevaluacion procesoContext={procesoContext} baselineEvaluation={reevaluationBaseline} formData={formData} updateFormData={updateFormData as any} isClosed={isClosed} onCreateNewInitial={() => {
                         handleSave(false);
                         alert("Borrador de Reevaluación guardado. Por favor, crea una 'Nueva Evaluación Inicial' desde el Panel del Proceso Clínico.");
                         onClose();
