@@ -10,6 +10,7 @@ import { featureFlags } from '@/lib/agent/config';
 import { requireTeacher } from '@/lib/server/firebaseAdmin';
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { runCensusEngine } from '@/lib/agent/censusEngine';
+import { notifyTeacherOfCensus } from '@/lib/agent/notificationTriage';
 
 export async function POST(req: Request) {
   try {
@@ -51,10 +52,16 @@ export async function POST(req: Request) {
     const executeBackgroundRun = async () => {
       try {
         const censusResult = await runCensusEngine();
+        const notification = await notifyTeacherOfCensus({
+          runId,
+          triggeredBy: triggeredBy || 'manual',
+          ...censusResult,
+        });
         await runRef.update({
           status: 'completed',
           finishedAt: new Date().toISOString(),
           censusResult,
+          notification,
         });
       } catch (err: any) {
         console.error(`[Background Run Error ${runId}]:`, err);

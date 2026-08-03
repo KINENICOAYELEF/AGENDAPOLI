@@ -11,6 +11,7 @@ import {
   sendTelegramMessage,
   type TelegramInlineKeyboard,
 } from '@/lib/server/telegram';
+import { getRecentPendingReviewSummary } from '@/lib/agent/notificationTriage';
 
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://agendapoli.vercel.app').replace(/\/$/, '');
@@ -36,16 +37,6 @@ function normalizeCommand(text: string) {
   if (commands[value]) return commands[value];
   if (value.startsWith('/alumno') || value.startsWith('/estudiante')) return 'students';
   return 'unknown';
-}
-
-async function pendingReviewCounts() {
-  const base = adminDb.collection('teacher_agent_reviews').where('status', '==', 'PENDING_TEACHER');
-  const [total, p0, p1] = await Promise.all([
-    base.count().get(),
-    base.where('priority', '==', 'P0').count().get(),
-    base.where('priority', '==', 'P1').count().get(),
-  ]);
-  return { total: total.data().count, p0: p0.data().count, p1: p1.data().count };
 }
 
 async function sendOrUpdate(chatId: string, text: string, callback?: any) {
@@ -102,11 +93,11 @@ export async function POST(req: Request) {
     const command = callback?.data || normalizeCommand(message?.text || '');
 
     if (command === 'home' || command === 'today') {
-      const pending = await pendingReviewCounts();
-      await sendOrUpdate(senderChatId, `🤖 *Agenda Poli — Asistente Docente*\n\n📌 Pendientes: *${pending.total}*\n🔴 P0 seguridad: *${pending.p0}* · 🟠 P1 atención: *${pending.p1}*\n\nElige una opción del menú.`, callback);
+      const pending = await getRecentPendingReviewSummary();
+      await sendOrUpdate(senderChatId, `🤖 *Agenda Poli — Asistente Docente*\n\n📌 Hallazgos nuevos (últimas ${pending.hours} h): *${pending.total}*\n🔴 P0 seguridad: *${pending.p0}* · 🟠 P1 atención: *${pending.p1}*\n\nElige una opción del menú.`, callback);
     } else if (command === 'pending') {
-      const pending = await pendingReviewCounts();
-      await sendOrUpdate(senderChatId, `📋 *Revisiones pendientes*\n\n• Total: *${pending.total}*\n• P0 seguridad: *${pending.p0}*\n• P1 atención: *${pending.p1}*`, callback);
+      const pending = await getRecentPendingReviewSummary();
+      await sendOrUpdate(senderChatId, `📋 *Revisiones recientes*\n\n• Últimas ${pending.hours} h: *${pending.total}*\n• P0 seguridad: *${pending.p0}*\n• P1 atención: *${pending.p1}*`, callback);
     } else if (command === 'summary') {
       const profilesSnap = await adminDb.collection('student_learning_profiles').get();
       await sendOrUpdate(senderChatId, `🧠 *Síntesis de cátedra*\n\n• Perfiles en seguimiento: *${profilesSnap.size}*\n• Los hallazgos quedan privados hasta tu revisión.`, callback);

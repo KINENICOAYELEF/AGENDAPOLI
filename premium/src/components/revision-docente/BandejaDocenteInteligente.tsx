@@ -18,6 +18,7 @@ import type { StudentLearningProfile } from "@/types/agentDataFoundation";
 
 type ReviewWithId = TeacherAgentReview & { id: string };
 type ProfileDisplay = StudentLearningProfile & { displayName?: string };
+const RECENT_REVIEW_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 const priorityStyle = {
   P0: "bg-rose-100 text-rose-800 border-rose-200",
@@ -71,11 +72,16 @@ export function BandejaDocenteInteligente() {
         getDocs(query(collection(db, "student_learning_profiles"), limit(100))),
       ]);
 
+      const cutoff = Date.now() - RECENT_REVIEW_WINDOW_MS;
       setReviews(reviewSnap.docs
         .map((snapshot) => ({
           id: snapshot.id,
           ...(snapshot.data() as TeacherAgentReview),
         }))
+        .filter((review) => {
+          const created = new Date(review.createdAt).getTime();
+          return Number.isFinite(created) && created >= cutoff;
+        })
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
       setProfiles(
         Object.fromEntries(
@@ -185,7 +191,7 @@ export function BandejaDocenteInteligente() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="flex items-center gap-2 text-lg font-black"><Sparkles className="h-5 w-5 text-amber-300" /> Hallazgos & Feedback IA</h2>
-            <p className="mt-1 max-w-2xl text-xs text-indigo-100">Censo privado para priorizar tu revisión. No modifica fichas y nunca envía feedback sin tu intervención.</p>
+            <p className="mt-1 max-w-2xl text-xs text-indigo-100">Solo muestra hallazgos creados durante las últimas 48 horas. El histórico se conserva, pero no satura tu revisión diaria.</p>
           </div>
           <button onClick={runCensus} disabled={running} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-500 disabled:bg-slate-600">
             <RefreshCw className={`h-4 w-4 ${running ? "animate-spin" : ""}`} />

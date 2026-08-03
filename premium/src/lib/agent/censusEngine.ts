@@ -12,6 +12,14 @@ import { deidentifyText } from './deidentify';
 import { TeacherAgentReviewSchema } from './contracts/review';
 import { analyzeStudentLongitudinal } from './longitudinalAnalysis';
 
+const CLINICAL_ACTIVITY_WINDOW_DAYS = 14;
+
+function recordDate(record: any) {
+  const value = record.sessionAt || record.fechaHoraAtencion || record.audit?.createdAt || record.createdAt;
+  const time = new Date(typeof value?.toDate === 'function' ? value.toDate() : value || '').getTime();
+  return Number.isFinite(time) ? time : null;
+}
+
 function hasValue(val: unknown): boolean {
   if (Array.isArray(val)) return val.length > 0;
   if (typeof val === 'object' && val !== null) return Object.keys(val).length > 0;
@@ -21,7 +29,7 @@ function hasValue(val: unknown): boolean {
 export async function runCensusEngine() {
   if (!featureFlags.agentWriteEnabled) {
     console.log('[PR9 Census Engine] Execution blocked: featureFlags.agentWriteEnabled is false.');
-    return { status: 'blocked', reason: 'agentWriteEnabled is false' };
+    return { status: 'blocked', reason: 'agentWriteEnabled is false', studentsProcessed: 0, recordsProcessed: 0, reviewsCreated: 0, priorityCounts: { P0: 0, P1: 0, P2: 0, P3: 0 } };
   }
 
   const db = getAdminDb();
@@ -32,12 +40,14 @@ export async function runCensusEngine() {
     const usersSnap = await db.collection('users').where('role', '==', 'INTERNO').get();
     if (usersSnap.empty) {
       console.log('[PR9 Census Engine] No active INTERNO students found.');
-      return { status: 'completed', studentsProcessed: 0, reviewsCreated: 0 };
+      return { status: 'completed', studentsProcessed: 0, recordsProcessed: 0, reviewsCreated: 0, priorityCounts: { P0: 0, P1: 0, P2: 0, P3: 0 } };
     }
 
     const students = usersSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
     let reviewsCreated = 0;
     let recordsProcessed = 0;
+    const priorityCounts: Record<'P0' | 'P1' | 'P2' | 'P3', number> = { P0: 0, P1: 0, P2: 0, P3: 0 };
+    const recentCutoff = Date.now() - CLINICAL_ACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
     for (const student of students) {
       // 2. Consulta incremental de evaluaciones reales creadas por el estudiante
@@ -60,9 +70,17 @@ export async function runCensusEngine() {
       ].sort((a: any, b: any) => String(a.sessionAt || a.fechaHoraAtencion || a.audit?.createdAt || '')
         .localeCompare(String(b.sessionAt || b.fechaHoraAtencion || b.audit?.createdAt || '')));
 
-      recordsProcessed += allRecords.length;
+      // No reabre fichas de meses anteriores por el solo hecho de correr hoy.
+      // El historial permanece disponible para análisis longitudinal solicitado,
+      // pero los hallazgos operativos se limitan a actividad clínica reciente.
+      const recentRecords = allRecords.filter((record: any) => {
+        const date = recordDate(record);
+        return date !== null && date >= recentCutoff && date <= Date.now();
+      });
 
-      for (const record of allRecords) {
+      recordsProcessed += recentRecords.length;
+
+      for (const record of recentRecords) {
         const missingFields: string[] = [];
         let priority: 'P0' | 'P1' | 'P2' | 'P3' = 'P3';
 
@@ -116,6 +134,7 @@ export async function runCensusEngine() {
           try {
             await db.collection('teacher_agent_reviews').doc(reviewId).create(validatedReview);
             reviewsCreated++;
+            priorityCounts[priority]++;
           } catch (writeError: any) {
             if (writeError?.code !== 6 && writeError?.code !== 'already-exists') {
               throw writeError;
@@ -141,7 +160,9 @@ export async function runCensusEngine() {
       // El análisis generativo es un segundo nivel explícitamente habilitado.
       // Nunca bloquea ni modifica la ficha: si falla, el censo estructural
       // anterior sigue siendo válido y queda registrado de forma privada.
-      if (featureFlags.agentLlmAnalysisEnabled && allRecords.length > 0) {
+      // Solo se activa cuando existe actividad reciente, pero conserva los
+      // registros previos como contexto longitudinal del estudiante.
+      if (featureFlags.agentLlmAnalysisEnabled && recentRecords.length > 0) {
         const analysis = await analyzeStudentLongitudinal(student.id, allRecords);
         if (analysis) {
           const sourceReferences = analysis.evidence.flatMap((evidence) => {
@@ -178,8 +199,9 @@ export async function runCensusEngine() {
             try {
               await db.collection('teacher_agent_reviews')
                 .doc(`longitudinal_${year}_${student.id}_${evidenceVersion}`)
-                .create(reviewPayload);
-              reviewsCreated++;
+              .create(reviewPayload);
+            reviewsCreated++;
+            priorityCounts[analysis.priority]++;
             } catch (writeError: any) {
               if (writeError?.code !== 6 && writeError?.code !== 'already-exists') throw writeError;
             }
@@ -211,6 +233,7 @@ export async function runCensusEngine() {
       studentsProcessed: students.length,
       recordsProcessed,
       reviewsCreated,
+      priorityCounts,
     };
   } catch (error: any) {
     console.error('[PR9 Census Engine Error]:', error);
