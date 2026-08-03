@@ -33,6 +33,7 @@ function SearchParamsHandler({ onOpenFicha }: { onOpenFicha: (id: string, params
 }
 
 export default function UsuariosPage() {
+    const router = useRouter();
     const { globalActiveYear, loadingYear } = useYear();
     const { user } = useAuth();
     const canDelete = user?.role === 'DOCENTE';
@@ -49,6 +50,34 @@ export default function UsuariosPage() {
 
     // Búsqueda en array de memoria
     const [searchTerm, setSearchTerm] = useState("");
+
+    const updateClinicalUrl = useCallback((patientId: string | null, state: Record<string, string | undefined> = {}) => {
+        if (!patientId) {
+            router.push('/app/usuarios', { scroll: false });
+            return;
+        }
+        const params = new URLSearchParams({ openFicha: patientId });
+        Object.entries(state).forEach(([key, value]) => {
+            if (value) params.set(key, value);
+        });
+        router.push(`/app/usuarios?${params.toString()}`, { scroll: false });
+    }, [router]);
+
+    const openClinicalRecord = useCallback((patient: PersonaUsuaria, action?: string) => {
+        setSelectedUser(patient);
+        setInitialAction(action);
+        setInitialRecordParams(action ? { action } : undefined);
+        setIsFormOpen(true);
+        updateClinicalUrl(patient.id || null, action ? { action } : {});
+    }, [updateClinicalUrl]);
+
+    const closeClinicalRecord = useCallback(() => {
+        setIsFormOpen(false);
+        setSelectedUser(null);
+        setInitialAction(undefined);
+        setInitialRecordParams(undefined);
+        updateClinicalUrl(null);
+    }, [updateClinicalUrl]);
 
     // ----- MOTOR DE CONSULTA — CARGA COMPLETA (FASE 70) -----
     const fetchUsuarios = async () => {
@@ -94,7 +123,7 @@ export default function UsuariosPage() {
     });
 
     const handleUserSaved = (savedUser: PersonaUsuaria, isNew: boolean) => {
-        setIsFormOpen(false);
+        closeClinicalRecord();
         if (isNew) {
             // Lo insertamos artificialmente al principio del arreglo en memoria para evitar resfrescar la base de datos
             setPersonasUsuarias(prev => [savedUser, ...prev]);
@@ -226,7 +255,7 @@ export default function UsuariosPage() {
                             return (
                                 <div 
                                     key={u.id} 
-                                    onClick={() => { setSelectedUser(u); setIsFormOpen(true); }}
+                                    onClick={() => openClinicalRecord(u)}
                                     className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-indigo-300 transition-all cursor-pointer active:scale-[0.99]"
                                 >
                                     <div className="flex justify-between items-start mb-3">
@@ -256,13 +285,13 @@ export default function UsuariosPage() {
 
                                     <div className="grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
                                         <button
-                                            onClick={() => { setSelectedUser(u); setIsFormOpen(true); }}
+                                            onClick={() => openClinicalRecord(u)}
                                             className="min-h-[40px] flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
                                         >
                                             Abrir Expediente
                                         </button>
                                         <button
-                                            onClick={() => { setSelectedUser(u); setInitialAction('EVOLUCIONAR'); setIsFormOpen(true); }}
+                                            onClick={() => openClinicalRecord(u, 'EVOLUCIONAR')}
                                             className="min-h-[40px] flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-xs"
                                         >
                                             <span>⚡ + Evolucionar</span>
@@ -291,7 +320,7 @@ export default function UsuariosPage() {
                                     return (
                                         <tr 
                                             key={u.id} 
-                                            onClick={() => { setSelectedUser(u); setIsFormOpen(true); }}
+                                            onClick={() => openClinicalRecord(u)}
                                             className="hover:bg-indigo-50/40 transition-colors cursor-pointer group"
                                         >
                                             <td className="px-5 py-4">
@@ -327,14 +356,14 @@ export default function UsuariosPage() {
                                             <td className="px-5 py-4 text-right whitespace-nowrap shrink-0" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
-                                                        onClick={() => { setSelectedUser(u); setInitialAction('EVOLUCIONAR'); setIsFormOpen(true); }}
+                                                        onClick={() => openClinicalRecord(u, 'EVOLUCIONAR')}
                                                         className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow-xs transition flex items-center gap-1 shrink-0"
                                                         title="Evolucionar sesión de este paciente"
                                                     >
                                                         <span>⚡ + Evolucionar</span>
                                                     </button>
                                                     <button
-                                                        onClick={() => { setSelectedUser(u); setIsFormOpen(true); }}
+                                                        onClick={() => openClinicalRecord(u)}
                                                         className="text-slate-700 hover:text-indigo-700 font-semibold text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition border border-slate-200 shrink-0"
                                                     >
                                                         Expediente
@@ -376,7 +405,7 @@ export default function UsuariosPage() {
             {isFormOpen && (
                 <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
                     {/* Backdrop */}
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsFormOpen(false)}></div>
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={closeClinicalRecord}></div>
 
                     {/* Panel principal Modal (Bottom Sheet en móvil, Modal centrado en Desktop) */}
                     <div className="relative bg-white shadow-2xl w-full h-[95vh] sm:h-auto sm:max-h-[90vh] rounded-t-3xl sm:rounded-2xl max-w-4xl flex flex-col overflow-hidden animate-slide-up sm:animate-zoom-in">
@@ -396,7 +425,7 @@ export default function UsuariosPage() {
                                     <p className="text-xs text-slate-400 font-mono mt-0.5">ID: {selectedUser.id}</p>
                                 )}
                             </div>
-                            <button onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-2 rounded-full transition-colors">
+                            <button onClick={closeClinicalRecord} className="text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-2 rounded-full transition-colors">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </button>
                         </div>
@@ -407,7 +436,12 @@ export default function UsuariosPage() {
                                 initialData={selectedUser}
                                 initialAction={initialAction}
                                 initialRecordParams={initialRecordParams}
-                                onClose={() => { setIsFormOpen(false); setInitialAction(undefined); setInitialRecordParams(undefined); }}
+                                onNavigationChange={(state) => {
+                                    if (!selectedUser?.id) return;
+                                    setInitialRecordParams(Object.fromEntries(Object.entries(state).filter(([, value]) => Boolean(value))) as Record<string, string>);
+                                    updateClinicalUrl(selectedUser.id, state);
+                                }}
+                                onClose={closeClinicalRecord}
                                 onSaveSuccess={handleUserSaved}
                             />
                         </div>

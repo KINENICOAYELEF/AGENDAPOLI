@@ -141,6 +141,17 @@ describe('Circuito de reevaluación y avisos docentes', () => {
     assert.match(source, /activeObjectiveSetVersionId: versionId/);
     assert.match(source, /recordType: 'REEVALUATION'/);
     assert.match(source, /Síntesis de continuidad/);
+    assert.match(source, /Agregar plantilla/);
+    assert.match(source, /■ MEDIDA O SIGNO COMPARABLE/);
+    assert.doesNotMatch(source, /Actividades funcionales precargadas/);
+  });
+
+  test('la navegación clínica conserva persona, proceso, formulario y paso en la URL', () => {
+    const usersPage = readFileSync(new URL('../src/app/app/usuarios/page.tsx', import.meta.url), 'utf8');
+    const timeline = readFileSync(new URL('../src/components/ProcesoTimeline.tsx', import.meta.url), 'utf8');
+    assert.match(usersPage, /openFicha: patientId/);
+    assert.match(timeline, /action: 'REEVALUAR'/);
+    assert.match(timeline, /step: String\(nextStep\)/);
   });
 
   test('Telegram ejecuta el censo de inmediato y conserva la aprobación docente', () => {

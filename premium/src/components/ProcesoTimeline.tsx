@@ -27,6 +27,9 @@ interface ProcesoTimelineProps {
     proceso: Proceso;
     initialRecordId?: string;
     initialRecordType?: string;
+    initialAction?: string;
+    initialStep?: string;
+    onNavigationChange?: (state: Record<string, string | undefined>) => void;
     onBack: () => void;
 }
 
@@ -34,7 +37,7 @@ type TimelineItem =
     | { type: 'evaluacion'; data: Evaluacion; date: Date }
     | { type: 'evolucion'; data: Evolucion; date: Date };
 
-export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso, initialRecordId, initialRecordType, onBack }: ProcesoTimelineProps) {
+export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso, initialRecordId, initialRecordType, initialAction, initialStep, onNavigationChange, onBack }: ProcesoTimelineProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
     const isAdmin = (user?.role as string) === 'ADMIN' || (user?.role as string) === 'DOCENTE';
@@ -100,6 +103,17 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                         setView('editEvol');
                     }
                 }
+            } else if (initialAction?.toUpperCase() === 'REEVALUAR') {
+                const draft = loadedItems.find(item => item.type === 'evaluacion' && item.data.type === 'REEVALUATION' && item.data.status === 'DRAFT');
+                setSelectedEval(draft?.type === 'evaluacion' ? draft.data : null);
+                setView('formReeval');
+            } else if (initialAction?.toUpperCase() === 'EVALUACION_INICIAL') {
+                const initial = loadedItems.find(item => item.type === 'evaluacion' && item.data.type === 'INITIAL');
+                setSelectedEval(initial?.type === 'evaluacion' ? initial.data : null);
+                setView('formExpressEval');
+            } else if (initialAction?.toUpperCase() === 'EVOLUCIONAR') {
+                setSelectedEvol(null);
+                setView('formEvol');
             }
         } catch (e) {
             console.error("Error cargando timeline:", e);
@@ -131,11 +145,13 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
 
     const handleEvalSaved = () => {
         setView('timeline');
+        onNavigationChange?.({ action: 'PROCESOS', procesoId: proceso.id });
         loadData();
     };
 
     const handleEvolSaved = () => {
         setView('timeline');
+        onNavigationChange?.({ action: 'PROCESOS', procesoId: proceso.id });
         loadData();
     };
 
@@ -155,7 +171,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                     <ReadOnlyEvaluacion
                         evaluacion={selectedEval}
                         usuariaName={personaUsuariaName}
-                        onClose={() => setView('timeline')}
+                        onClose={() => { setView('timeline'); onNavigationChange?.({ action: 'PROCESOS', procesoId: proceso.id }); }}
                         onEdit={() => setView('formExpressEval')}
                     />
                 </div>
@@ -179,7 +195,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                             initialData={selectedEval}
                             reevaluationBaseline={null}
                             procesoContext={proceso}
-                            onClose={() => setView('timeline')}
+                            onClose={() => { setView('timeline'); onNavigationChange?.({ action: 'PROCESOS', procesoId: proceso.id }); }}
                             onSaveSuccess={handleEvalSaved}
                         />
                     )}
@@ -190,7 +206,9 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                             baselineEvaluation={latestBaselineEvaluation}
                             recentEvolutions={items.filter(i => i.type === 'evolucion').map(i => i.data as Evolucion)}
                             initialData={selectedEval}
-                            onClose={() => setView('timeline')}
+                            initialStep={initialStep}
+                            onStepChange={(nextStep) => onNavigationChange?.({ action: 'REEVALUAR', procesoId: proceso.id, step: String(nextStep) })}
+                            onClose={() => { setView('timeline'); onNavigationChange?.({ action: 'PROCESOS', procesoId: proceso.id }); }}
                             onSaveSuccess={handleEvalSaved}
                         />
                     )}
@@ -199,7 +217,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                             usuariaId={personaUsuariaId}
                             procesoId={proceso.id!}
                             initialData={selectedEval}
-                            onClose={() => setView('timeline')}
+                            onClose={() => { setView('timeline'); onNavigationChange?.({ action: 'PROCESOS', procesoId: proceso.id }); }}
                             onSaveSuccess={handleEvalSaved}
                         />
                     )}
@@ -209,13 +227,13 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                             procesoId={proceso.id}
                             initialData={selectedEvol}
                             evolucionesAnteriores={items.filter(i => i.type === 'evolucion').map(i => i.data as Evolucion)}
-                            onClose={() => setView('timeline')}
+                            onClose={() => { setView('timeline'); onNavigationChange?.({ action: 'PROCESOS', procesoId: proceso.id }); }}
                             onSaveSuccess={handleEvolSaved}
                         />
                     )}
                     {view === 'historyEvol' && selectedEvol && (
                         <div className="p-6 h-full overflow-y-auto w-full max-w-2xl mx-auto">
-                            <button onClick={() => setView('timeline')} className="mb-4 text-sm font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                            <button onClick={() => { setView('timeline'); onNavigationChange?.({ action: 'PROCESOS', procesoId: proceso.id }); }} className="mb-4 text-sm font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
                                 <ChevronLeftIcon className="w-4 h-4" /> Volver al Timeline
                             </button>
                             <h2 className="text-xl font-black text-slate-800 mb-6">Historial de Revisiones (Snapshots)</h2>
@@ -280,7 +298,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
             {/* FASE 2.2.4: Botones de Acción Rápida */}
             <div className="grid gap-2 sm:grid-cols-2">
                 <button
-                    onClick={() => { setSelectedEvol(null); setView('formEvol'); }}
+                    onClick={() => { setSelectedEvol(null); setView('formEvol'); onNavigationChange?.({ action: 'EVOLUCIONAR', procesoId: proceso.id }); }}
                     className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700"
                 >
                     <PlusIcon className="w-4 h-4" />
@@ -290,6 +308,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                     onClick={() => {
                         setSelectedEval(hasInitialEvaluation ? null : latestInitialEvaluation);
                         setView(hasInitialEvaluation ? 'formReeval' : 'formExpressEval');
+                        onNavigationChange?.({ action: hasInitialEvaluation ? 'REEVALUAR' : 'EVALUACION_INICIAL', procesoId: proceso.id, step: hasInitialEvaluation ? '1' : undefined });
                     }}
                     className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700"
                 >

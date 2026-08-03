@@ -13,9 +13,10 @@ interface ProcesosManagerProps {
     remoteHistorySnapshot?: any;
     pacienteSnapshot?: any;
     initialRecordParams?: Record<string, string>;
+    onNavigationChange?: (state: Record<string, string | undefined>) => void;
     onBack: () => void;
 }
-export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHistorySnapshot, pacienteSnapshot, initialRecordParams, onBack }: ProcesosManagerProps) {
+export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHistorySnapshot, pacienteSnapshot, initialRecordParams, onNavigationChange, onBack }: ProcesosManagerProps) {
     const { globalActiveYear } = useYear();
 
     // router interno de este panel
@@ -46,6 +47,7 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHi
             if (active) {
                 setSelectedProceso(active);
                 setView('timeline');
+                if (!initialRecordParams?.procesoId) onNavigationChange?.({ action: initialRecordParams?.action || 'PROCESOS', procesoId: active.id });
             }
         } catch (error: any) {
             console.error("Error cargando procesos:", error);
@@ -96,7 +98,10 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHi
                     proceso={selectedProceso}
                     initialRecordId={initialRecordParams?.recordId}
                     initialRecordType={initialRecordParams?.recordType}
-                    onBack={() => setView('lista')}
+                    initialAction={initialRecordParams?.action}
+                    initialStep={initialRecordParams?.step}
+                    onNavigationChange={onNavigationChange}
+                    onBack={() => { setView('lista'); onNavigationChange?.({ action: 'PROCESOS' }); }}
                 />
             </div>
         );

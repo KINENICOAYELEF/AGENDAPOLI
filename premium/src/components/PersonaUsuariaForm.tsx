@@ -17,6 +17,7 @@ interface UserFormProps {
     initialData: PersonaUsuaria | null;
     initialAction?: string;
     initialRecordParams?: Record<string, string>;
+    onNavigationChange?: (state: Record<string, string | undefined>) => void;
     onClose: () => void;
     onSaveSuccess: (savedUser: PersonaUsuaria, isNew: boolean) => void;
 }
@@ -24,7 +25,7 @@ interface UserFormProps {
 import { useAuth, AppUser } from "@/context/AuthContext";
 import { UsersService } from "@/services/users";
 
-export function PersonaUsuariaForm({ initialData, initialAction, initialRecordParams, onClose, onSaveSuccess }: UserFormProps) {
+export function PersonaUsuariaForm({ initialData, initialAction, initialRecordParams, onNavigationChange, onClose, onSaveSuccess }: UserFormProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
 
@@ -294,7 +295,8 @@ export function PersonaUsuariaForm({ initialData, initialAction, initialRecordPa
                 remoteHistorySnapshot={formData.remoteHistory}
                 pacienteSnapshot={formData.identity}
                 initialRecordParams={initialRecordParams}
-                onBack={() => setSubView('main')}
+                onNavigationChange={onNavigationChange}
+                onBack={() => { setSubView('main'); onNavigationChange?.({}); }}
             />
         );
     }
@@ -755,7 +757,7 @@ export function PersonaUsuariaForm({ initialData, initialAction, initialRecordPa
                         {/* ACCESO AL GESTOR DE PROCESOS */}
                         <button
                             type="button"
-                            onClick={() => setSubView('procesos')}
+                            onClick={() => { setSubView('procesos'); onNavigationChange?.({ action: 'PROCESOS' }); }}
                             className="group relative flex items-center justify-between p-5 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all text-left overflow-hidden"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/0 via-indigo-50/0 to-indigo-50/50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
