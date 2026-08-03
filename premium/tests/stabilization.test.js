@@ -158,6 +158,22 @@ describe('Circuito de reevaluación y avisos docentes', () => {
     assert.doesNotMatch(processes, /if \(!initialRecordParams\?\.procesoId\) onNavigationChange/);
   });
 
+  test('un enlace clínico fallido muestra reintento sin perder su destino', () => {
+    const usersPage = readFileSync(new URL('../src/app/app/usuarios/page.tsx', import.meta.url), 'utf8');
+    assert.match(usersPage, /const \[pendingFicha, setPendingFicha\]/);
+    assert.match(usersPage, /Firebase alcanzó temporalmente su cuota de lecturas/);
+    assert.match(usersPage, /Reintentar abrir/);
+    assert.match(usersPage, /handleOpenFichaFromUrl\(pendingFicha\.id, pendingFicha\.params\)/);
+  });
+
+  test('el panel docente aplaza módulos que no han sido abiertos', () => {
+    const admin = readFileSync(new URL('../src/app/app/admin/page.tsx', import.meta.url), 'utf8');
+    assert.match(admin, /Carga bajo demanda/);
+    assert.match(admin, /AdminLazySection/);
+    assert.match(admin, /openPanels\.auditoria/);
+    assert.match(admin, /openPanels\.telegram/);
+  });
+
   test('Telegram ejecuta el censo de inmediato y conserva la aprobación docente', () => {
     const source = readFileSync(new URL('../src/app/api/telegram/webhook/route.ts', import.meta.url), 'utf8');
     assert.match(source, /fetch\(`\$\{APP_URL\}\/api\/agent\/run`/);

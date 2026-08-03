@@ -5,7 +5,7 @@ import { useYear } from "@/context/YearContext";
 import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { LegacyImporter } from "@/components/LegacyImporter";
 import { EvolutionsMigrator } from "@/components/EvolutionsMigrator";
@@ -19,11 +19,39 @@ import { TelegramAdminPanel } from "@/components/TelegramAdminPanel";
 
 import { HistorialEvolucionesAdmin } from "@/components/HistorialEvolucionesAdmin";
 
+type AdminPanelKey = "auditoria" | "personal" | "asignaciones" | "evaluaciones" | "telegram" | "mantenimiento";
+
+function AdminLazySection({ title, description, open, onToggle, children }: { title: string; description: string; open: boolean; onToggle: () => void; children: ReactNode }) {
+    return (
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <div>
+                    <h2 className="text-base font-black text-slate-900">{title}</h2>
+                    <p className="mt-1 text-sm leading-5 text-slate-500">{description}</p>
+                </div>
+                <button type="button" onClick={onToggle} aria-expanded={open} className="min-h-11 shrink-0 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700">
+                    {open ? "Ocultar módulo" : "Abrir módulo"}
+                </button>
+            </div>
+            {open && <div className="border-t border-slate-100 p-3 sm:p-5">{children}</div>}
+        </section>
+    );
+}
+
 export default function AdminDocentePage() {
     const { user, loading } = useAuth();
     const { globalActiveYear, availableYears, refreshYears } = useYear();
     const [newYearInput, setNewYearInput] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
+    const [openPanels, setOpenPanels] = useState<Record<AdminPanelKey, boolean>>({
+        auditoria: false,
+        personal: false,
+        asignaciones: false,
+        evaluaciones: false,
+        telegram: false,
+        mantenimiento: false,
+    });
+    const togglePanel = (panel: AdminPanelKey) => setOpenPanels(current => ({ ...current, [panel]: !current[panel] }));
 
     if (loading || !user) return null;
 
@@ -114,26 +142,30 @@ export default function AdminDocentePage() {
                 <p className="text-gray-600">Configuración global de espacios temporales académicos y auditoría clínica.</p>
             </div>
 
-            {/* Historial Auditado de Evoluciones Clínicas (Filtros por Interno, Estado y Fecha) */}
-            <HistorialEvolucionesAdmin />
+            <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-950">
+                <p className="font-black">Carga bajo demanda</p>
+                <p className="mt-1 leading-5">Los módulos siguientes consultan datos solo al abrirlos. Así este panel no consume lecturas clínicas cuando solo vienes a una tarea puntual.</p>
+            </div>
 
-            {/* Lista Principal de Personal Activo */}
-            <ActiveUsersManager />
+            <AdminLazySection title="Auditoría de evoluciones" description="Historial, filtros por interno y revisión de actividad clínica." open={openPanels.auditoria} onToggle={() => togglePanel("auditoria")}>
+                <HistorialEvolucionesAdmin />
+            </AdminLazySection>
 
-            {/* Administrador de Usuarios Pendientes (FASE 9) */}
-            <PendingUsersManager />
+            <AdminLazySection title="Personal y accesos" description="Cuentas activas y solicitudes pendientes de aprobación." open={openPanels.personal} onToggle={() => togglePanel("personal")}>
+                <div className="space-y-6"><ActiveUsersManager /><PendingUsersManager /></div>
+            </AdminLazySection>
 
-            {/* Vinculación Clínica de Pacientes (FASE 14) */}
-            <InternAssignmentManager />
+            <AdminLazySection title="Asignaciones clínicas" description="Vincula personas usuarias con internos para continuidad y seguimiento." open={openPanels.asignaciones} onToggle={() => togglePanel("asignaciones")}>
+                <InternAssignmentManager />
+            </AdminLazySection>
 
-            {/* Panel de Simulador de Examen Clínico */}
-            <SimuladorDocentePanel />
+            <AdminLazySection title="Simulaciones y defensas" description="Configuración e historial de las evaluaciones académicas." open={openPanels.evaluaciones} onToggle={() => togglePanel("evaluaciones")}>
+                <div className="space-y-6"><SimuladorDocentePanel /><DefensaDocentePanel /></div>
+            </AdminLazySection>
 
-            {/* Panel de Defensa de Comisión (Voz) */}
-            <DefensaDocentePanel />
-
-            {/* Diagnóstico y conexión privada del Bot Docente */}
-            <TelegramAdminPanel />
+            <AdminLazySection title="Bot Telegram docente" description="Diagnóstico privado, conexión y prueba del canal de avisos." open={openPanels.telegram} onToggle={() => togglePanel("telegram")}>
+                <TelegramAdminPanel />
+            </AdminLazySection>
 
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
 
@@ -224,14 +256,9 @@ export default function AdminDocentePage() {
                 </div>
             </div>
 
-            {/* Administrador de Feriados 2026 */}
-            <HolidayManager />
-
-            {/* Script Migrador Histórico (Fase 1.0) */}
-            <EvolutionsMigrator />
-
-            {/* Zona de Importación Histórica (JSON) */}
-            <LegacyImporter />
+            <AdminLazySection title="Mantenimiento y respaldo" description="Feriados, normalización histórica e importación de respaldos. Úsalo solo cuando corresponda." open={openPanels.mantenimiento} onToggle={() => togglePanel("mantenimiento")}>
+                <div className="space-y-6"><HolidayManager /><EvolutionsMigrator /><LegacyImporter /></div>
+            </AdminLazySection>
         </div>
     );
 }

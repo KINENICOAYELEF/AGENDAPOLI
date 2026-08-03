@@ -45,6 +45,8 @@ export default function UsuariosPage() {
     const [selectedUser, setSelectedUser] = useState<PersonaUsuaria | null>(null);
     const [initialAction, setInitialAction] = useState<string | undefined>(undefined);
     const [initialRecordParams, setInitialRecordParams] = useState<Record<string, string> | undefined>(undefined);
+    const [pendingFicha, setPendingFicha] = useState<{ id: string; params?: Record<string, string> } | null>(null);
+    const [fichaOpenError, setFichaOpenError] = useState<string | null>(null);
 
     // Lista completa (FASE 70: sin paginación para evitar bug de usuarios invisibles)
     const [personasUsuarias, setPersonasUsuarias] = useState<PersonaUsuaria[]>([]);
@@ -164,6 +166,8 @@ export default function UsuariosPage() {
     const handleOpenFichaFromUrl = useCallback(async (id: string, params?: Record<string, string>) => {
         const action = params?.action;
         setInitialRecordParams(params);
+        setPendingFicha({ id, params });
+        setFichaOpenError(null);
         
         // Primero usar la copia estable en memoria. No vaciar ni remontar el
         // directorio completo si la persona ya estaba cargada.
@@ -172,6 +176,7 @@ export default function UsuariosPage() {
             setSelectedUser(userInMem);
             setInitialAction(action);
             setIsFormOpen(true);
+            setPendingFicha(null);
             return;
         }
 
@@ -190,13 +195,32 @@ export default function UsuariosPage() {
                 setSelectedUser(fetched);
                 setInitialAction(action);
                 setIsFormOpen(true);
+                setPendingFicha(null);
+            } else {
+                setFichaOpenError("No se encontró esta persona usuaria en el periodo activo.");
             }
         } catch (e) {
             console.error("Excepción auto-abriendo ficha", e);
+            const message = e instanceof Error ? e.message : "No fue posible consultar el expediente.";
+            setFichaOpenError(message.includes("resource-exhausted") || message.includes("quota")
+                ? "Firebase alcanzó temporalmente su cuota de lecturas. El enlace sigue intacto: reintenta cuando se restablezca."
+                : "No se pudo abrir el expediente por un problema temporal de conexión. Puedes reintentarlo sin perder el enlace.");
         } finally {
             setLoadingData(false);
         }
     }, [globalActiveYear]);
+
+    useEffect(() => {
+        if (!pendingFicha || !personasUsuarias.length || isFormOpen) return;
+        const cachedPatient = personasUsuarias.find(item => item.id === pendingFicha.id);
+        if (!cachedPatient) return;
+        setSelectedUser(cachedPatient);
+        setInitialAction(pendingFicha.params?.action);
+        setInitialRecordParams(pendingFicha.params);
+        setIsFormOpen(true);
+        setPendingFicha(null);
+        setFichaOpenError(null);
+    }, [personasUsuarias, pendingFicha, isFormOpen]);
 
     if (loadingYear) {
         return <div className="p-8 text-slate-500">Sincronizando reloj clínico...</div>;
@@ -227,6 +251,13 @@ export default function UsuariosPage() {
             <Suspense fallback={null}>
                 <SearchParamsHandler onOpenFicha={handleOpenFichaFromUrl} />
             </Suspense>
+
+            {fichaOpenError && pendingFicha && (
+                <div role="alert" className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="leading-5">{fichaOpenError}</p>
+                    <button type="button" onClick={() => void handleOpenFichaFromUrl(pendingFicha.id, pendingFicha.params)} className="min-h-11 shrink-0 rounded-xl border border-amber-300 bg-white px-4 font-bold text-amber-900 hover:bg-amber-100">Reintentar abrir</button>
+                </div>
+            )}
 
             {/* MASTER CONTAINER / DASHBOARD */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-[500px]">
