@@ -12,6 +12,8 @@ export type CensusNotificationInput = {
   status: string;
   reviewsCreated: number;
   reevaluationRemindersCreated?: number;
+  initialEvaluationMissingCreated?: number;
+  initialEvaluationInsufficientCreated?: number;
   priorityCounts: Record<Priority, number>;
 };
 
@@ -69,12 +71,17 @@ export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
   const reevaluationLine = input.reevaluationRemindersCreated
     ? `\n🔄 Reevaluación sugerida: *${input.reevaluationRemindersCreated}*.`
     : '';
+  const initialLine = input.initialEvaluationMissingCreated || input.initialEvaluationInsufficientCreated
+    ? `\n📋 Sin evaluación inicial: *${input.initialEvaluationMissingCreated || 0}* · línea basal insuficiente: *${input.initialEvaluationInsufficientCreated || 0}*.`
+    : '';
   const message = urgent
-    ? `🔴 *Atención docente*\n\nEl censo detectó *${input.priorityCounts.P0}* hallazgo(s) P0 de seguridad y *${input.priorityCounts.P1}* P1 nuevos.\n\nAcción: revisa la Bandeja Docente antes de continuar.`
-    : `🧠 *Censo Agenda Poli completado*\n\nHay *${input.reviewsCreated}* hallazgo(s) nuevos para revisión: P1 ${input.priorityCounts.P1} · P2 ${input.priorityCounts.P2}.${reevaluationLine}\n\nAcción: revísalos cuando corresponda en la Bandeja Docente.`;
+    ? `🔴 *Atención docente*\n\nEl censo detectó *${input.priorityCounts.P0}* hallazgo(s) P0 de seguridad y *${input.priorityCounts.P1}* P1 nuevos.${reevaluationLine}${initialLine}\n\nAcción: revisa la Bandeja Docente antes de continuar.`
+    : `🧠 *Censo Agenda Poli completado*\n\nHay *${input.reviewsCreated}* hallazgo(s) nuevos para revisión: P1 ${input.priorityCounts.P1} · P2 ${input.priorityCounts.P2}.${reevaluationLine}${initialLine}\n\nAcción: revisa la línea basal y decide si corresponde enviar un aviso al estudiante.`;
 
   try {
-    await sendTelegramMessage(chatId, message);
+    await sendTelegramMessage(chatId, message, {
+      inline_keyboard: [[{ text: '🔎 Abrir Bandeja Docente', url: 'https://agendapoli.vercel.app/app/revision-docente' }]],
+    });
     await notificationRef.update({ status: 'DELIVERED', deliveredAt: new Date().toISOString() });
     return { delivered: true };
   } catch (error: any) {

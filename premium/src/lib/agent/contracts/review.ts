@@ -30,7 +30,14 @@ export const TeacherAgentReviewSchema = z.object({
   ]),
   createdAt: z.string(),
   reviewedAt: z.string().optional(),
-  category: z.enum(['CLINICAL_AUDIT', 'REEVALUATION_DUE', 'ROTATION_REMINDER', 'INACTIVITY_REMINDER']).optional(),
+  category: z.enum([
+    'CLINICAL_AUDIT',
+    'REEVALUATION_DUE',
+    'INITIAL_EVALUATION_MISSING',
+    'INITIAL_EVALUATION_INSUFFICIENT',
+    'ROTATION_REMINDER',
+    'INACTIVITY_REMINDER',
+  ]).optional(),
   baselineEvaluationId: z.string().optional(),
   sessionsSinceBaseline: z.number().int().nonnegative().optional(),
 });

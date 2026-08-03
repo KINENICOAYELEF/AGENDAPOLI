@@ -26,6 +26,78 @@ function hasValue(val: unknown): boolean {
   return Boolean(val);
 }
 
+function initialEvaluationGaps(record: any): string[] {
+  const express = record?.expressDraft || {};
+  const gaps: string[] = [];
+  if (!hasValue(record?.interview || express.anamnesisProxima)) gaps.push('entrevista clínica');
+  if (!hasValue(record?.guidedExam || express.evaluacionFisica)) gaps.push('evaluación física');
+  if (!hasValue(record?.clinicalSynthesis || express.razonamientoIA || express.p4_plan?.diagnostico_narrativo)) gaps.push('integración clínica');
+  if (!hasValue(record?.p4_plan_structured || express.p4_plan)) gaps.push('objetivos y plan');
+  if (record?.status !== 'CLOSED') gaps.push('cierre formal');
+  return gaps;
+}
+
+async function createInitialEvaluationContinuityReview(
+  db: ReturnType<typeof getAdminDb>,
+  year: string,
+  student: any,
+  patientId: string,
+  processId: string,
+  evolutions: any[],
+  initialEvaluations: any[],
+) {
+  if (evolutions.length < 2) return { missing: 0, insufficient: 0 };
+  const latestEvolution = [...evolutions].sort((a, b) => (recordDate(b) || 0) - (recordDate(a) || 0))[0];
+  const sortedInitials = [...initialEvaluations].sort((a, b) => (recordDate(b) || 0) - (recordDate(a) || 0));
+  // Un borrador nuevo no invalida una línea basal previa que sí está cerrada
+  // y completa. Primero buscamos una evaluación utilizable del proceso.
+  const usableInitial = sortedInitials.find((evaluation) => initialEvaluationGaps(evaluation).length === 0);
+  if (usableInitial) return { missing: 0, insufficient: 0 };
+  const latestInitial = sortedInitials[0];
+  const gaps = latestInitial ? initialEvaluationGaps(latestInitial) : [];
+
+  const isMissing = !latestInitial;
+  const category = isMissing ? 'INITIAL_EVALUATION_MISSING' : 'INITIAL_EVALUATION_INSUFFICIENT';
+  const reviewId = isMissing
+    ? `initial_missing_${year}_${student.id}_${processId}`
+    : `initial_insufficient_${year}_${student.id}_${processId}_${latestInitial.id}`;
+  const observation = isMissing
+    ? `El estudiante asignado registra ${evolutions.length} evoluciones cerradas en el proceso, pero no existe una evaluación inicial utilizable.`
+    : `La línea basal disponible es insuficiente para seguimiento: falta ${gaps.join(', ')}. El estudiante asignado ya registra ${evolutions.length} evoluciones cerradas.`;
+  const source = latestInitial || latestEvolution;
+  const payload = TeacherAgentReviewSchema.parse({
+    year,
+    studentId: student.id,
+    patientId,
+    sourceReferences: [{
+      year,
+      collection: latestInitial ? 'evaluaciones' as const : 'evoluciones' as const,
+      recordId: source.id,
+      fieldPath: isMissing ? 'evaluacion_inicial_ausente' : gaps[0],
+      contentHash: `${category.toLowerCase()}_${processId}_${source.id}`,
+      redactedExcerpt: isMissing
+        ? `Proceso con ${evolutions.length} evoluciones cerradas y sin evaluación inicial.`
+        : `Línea basal incompleta: ${gaps.join(', ')}.`,
+    }],
+    observation,
+    pedagogicalInference: isMissing
+      ? 'La continuidad carece de una línea basal suficiente para contrastar objetivos, medidas y progresión. La autoría previa no debe atribuirse al estudiante actual.'
+      : 'La evaluación existe, pero no permite vincular de forma confiable entrevista, examen, hipótesis y plan. Corresponde revisión docente antes de solicitar regularización.',
+    confidence: 1,
+    priority: 'P1' as const,
+    status: 'PENDING_TEACHER' as const,
+    createdAt: new Date().toISOString(),
+    category,
+  });
+  try {
+    await db.collection('teacher_agent_reviews').doc(reviewId).create(payload);
+    return { missing: isMissing ? 1 : 0, insufficient: isMissing ? 0 : 1 };
+  } catch (error: any) {
+    if (error?.code === 6 || error?.code === 'already-exists') return { missing: 0, insufficient: 0 };
+    throw error;
+  }
+}
+
 /**
  * La frecuencia no sustituye el juicio clínico: es un recordatorio docente
  * cuando ya existe una línea basal y el mismo interno ha documentado cinco
@@ -126,9 +198,19 @@ export async function runCensusEngine() {
     }
 
     const students = usersSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+    const [initialsSnap, processesSnap, patientsSnap] = await Promise.all([
+      db.collection(`programs/${year}/evaluaciones`).where('type', '==', 'INITIAL').get(),
+      db.collection(`programs/${year}/procesos`).get(),
+      db.collection(`programs/${year}/usuarias`).get(),
+    ]);
+    const globalInitials = initialsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+    const processes = processesSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+    const patients = patientsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
     let reviewsCreated = 0;
     let recordsProcessed = 0;
     let reevaluationRemindersCreated = 0;
+    let initialEvaluationMissingCreated = 0;
+    let initialEvaluationInsufficientCreated = 0;
     const priorityCounts: Record<'P0' | 'P1' | 'P2' | 'P3', number> = { P0: 0, P1: 0, P2: 0, P3: 0 };
     const recentCutoff = Date.now() - CLINICAL_ACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
@@ -262,6 +344,36 @@ export async function runCensusEngine() {
       reevaluationRemindersCreated += reevaluationReminders;
       priorityCounts.P2 += reevaluationReminders;
 
+      // La línea basal pertenece a la persona/proceso, aunque la haya escrito
+      // otro interno. El desempeño, en cambio, se cuenta solo por autoría.
+      const closedEvolutionsByProcess = new Map<string, any[]>();
+      for (const evolution of allRecords.filter((record: any) => record.collection === 'evoluciones' && record.status === 'CLOSED' && record.procesoId)) {
+        const current = closedEvolutionsByProcess.get(evolution.procesoId) || [];
+        current.push(evolution);
+        closedEvolutionsByProcess.set(evolution.procesoId, current);
+      }
+      for (const [processId, evolutions] of closedEvolutionsByProcess) {
+        const process = processes.find((item: any) => item.id === processId);
+        if (!process || !['ACTIVO', 'EN_PAUSA', 'PAUSADO'].includes(process.estado)) continue;
+        const patient = patients.find((item: any) => item.id === process.personaUsuariaId);
+        const assignedInternId = patient?.meta?.assignedInternId || process.primaryInternId || process.attendancePlan?.primaryInternId;
+        if (assignedInternId !== student.id) continue;
+        const processInitials = globalInitials.filter((evaluation: any) => evaluation.procesoId === processId);
+        const result = await createInitialEvaluationContinuityReview(
+          db,
+          year,
+          student,
+          process.personaUsuariaId,
+          processId,
+          evolutions,
+          processInitials,
+        );
+        initialEvaluationMissingCreated += result.missing;
+        initialEvaluationInsufficientCreated += result.insufficient;
+        reviewsCreated += result.missing + result.insufficient;
+        priorityCounts.P1 += result.missing + result.insufficient;
+      }
+
       // Actualizar perfil longitudinal real del estudiante en student_learning_profiles
       await db.collection('student_learning_profiles').doc(student.id).set(
         {
@@ -353,6 +465,8 @@ export async function runCensusEngine() {
       recordsProcessed,
       reviewsCreated,
       reevaluationRemindersCreated,
+      initialEvaluationMissingCreated,
+      initialEvaluationInsufficientCreated,
       priorityCounts,
     };
   } catch (error: any) {
