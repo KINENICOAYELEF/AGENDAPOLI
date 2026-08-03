@@ -138,6 +138,14 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
         loadData();
     };
 
+    const evaluationsInTimeline = items
+        .filter((item): item is Extract<TimelineItem, { type: 'evaluacion' }> => item.type === 'evaluacion')
+        .map(item => item.data);
+    const hasInitialEvaluation = evaluationsInTimeline.some(evaluation => evaluation.type === 'INITIAL');
+    const latestBaselineEvaluation = evaluationsInTimeline.find(evaluation =>
+        evaluation.status === 'CLOSED' && evaluation.id !== selectedEval?.id,
+    ) || evaluationsInTimeline.find(evaluation => evaluation.id !== selectedEval?.id) || null;
+
     if (view === 'readEval' && selectedEval) {
         return (
             <div className="fixed inset-0 z-[9999] bg-white flex flex-col animate-in fade-in duration-200 overscroll-none">
@@ -167,6 +175,8 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                             procesoId={proceso.id!}
                             type={isReeval ? 'REEVALUATION' : 'INITIAL'}
                             initialData={selectedEval}
+                            reevaluationBaseline={isReeval ? latestBaselineEvaluation : null}
+                            procesoContext={proceso}
                             onClose={() => setView('timeline')}
                             onSaveSuccess={handleEvalSaved}
                         />
@@ -264,11 +274,14 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                     Nueva Evolución
                 </button>
                 <button
-                    onClick={() => { setSelectedEval(null); setView('formReeval'); }}
+                    onClick={() => {
+                        setSelectedEval(null);
+                        setView(hasInitialEvaluation ? 'formReeval' : 'formExpressEval');
+                    }}
                     className="flex-1 min-w-[140px] bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
                 >
                     <ArrowPathIcon className="w-4 h-4" />
-                    Reevaluación
+                    {hasInitialEvaluation ? 'Reevaluación' : 'Crear evaluación inicial'}
                 </button>
 
                 {/* Botón v2: Oficial/Recomendado para Docentes e Internos */}
