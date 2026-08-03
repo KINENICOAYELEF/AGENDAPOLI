@@ -18,12 +18,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Run Antigravity Synthesis Cron Script
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           AGENT_MCP_SECRET: ${{ secrets.AGENT_MCP_SECRET }}
-          APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'https://agendapoli.vercel.app' }}
+          APP_URL: ${{ vars.AGENT_APP_URL || 'https://agendapoli.vercel.app' }}
         run: |
           node premium/scripts/run-antigravity-cron.js

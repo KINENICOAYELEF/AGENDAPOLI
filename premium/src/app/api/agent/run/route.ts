@@ -52,11 +52,19 @@ export async function POST(req: Request) {
     const executeBackgroundRun = async () => {
       try {
         const censusResult = await runCensusEngine();
-        const notification = await notifyTeacherOfCensus({
-          runId,
-          triggeredBy: triggeredBy || 'manual',
-          ...censusResult,
-        });
+        let notification: unknown;
+        try {
+          notification = await notifyTeacherOfCensus({
+            runId,
+            triggeredBy: triggeredBy || 'manual',
+            ...censusResult,
+          });
+        } catch (notificationError: any) {
+          // El censo es válido aunque Telegram esté temporalmente caído.
+          // El fallo queda trazable sin convertir una revisión clínica en error.
+          console.error(`[Telegram Notification Error ${runId}]:`, notificationError);
+          notification = { delivered: false, reason: notificationError?.message || 'telegram_delivery_failed' };
+        }
         await runRef.update({
           status: 'completed',
           finishedAt: new Date().toISOString(),
@@ -73,8 +81,15 @@ export async function POST(req: Request) {
       }
     };
 
+    let censusResult: unknown;
+    let notification: unknown;
+
     if (sync) {
       await executeBackgroundRun();
+      const completedRun = await runRef.get();
+      const completedData = completedRun.data() || {};
+      censusResult = completedData.censusResult || null;
+      notification = completedData.notification || null;
     } else {
       // Ensure background task completes even after response is sent on Vercel
       after(executeBackgroundRun);
@@ -84,7 +99,8 @@ export async function POST(req: Request) {
       success: true,
       runId,
       agentVersion: ACTIVE_AGENT_VERSION_ID,
-      status: 'background_triggered',
+      status: sync ? 'completed' : 'background_triggered',
+      ...(sync ? { censusResult, notification } : {}),
     });
   } catch (error: any) {
     console.error('Error triggering background agent run:', error);
