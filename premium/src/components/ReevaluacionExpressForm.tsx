@@ -7,6 +7,9 @@ import { sanitizeForFirestoreDeep } from "@/lib/firebase-utils";
 import { useAuth } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
 import type { Evaluacion, Proceso } from "@/types/clinica";
+import type { Evolucion } from "@/types/clinica";
+import { resolveClinicalTasksAfterEvaluation } from "@/lib/studentClinicalTasksClient";
+import { invalidateClinicalObjectiveCache } from "@/lib/clinicalObjectiveCache";
 
 type Objective = { id: string; text: string; status: "ACTIVO" | "LOGRADO" | "MODIFICADO" | "NUEVO" };
 type ReassessmentData = {
@@ -24,7 +27,7 @@ const emptyData: ReassessmentData = {
 const generateId = () => `reeval_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 const domains = ["Función/tarea", "Movilidad", "Fuerza/capacidad", "Control motor", "Neurológico", "Marcha/equilibrio", "Carga deportiva/laboral", "Otro"];
 
-export function ReevaluacionExpressForm({ usuariaId, proceso, baselineEvaluation, initialData, onClose, onSaveSuccess }: { usuariaId: string; proceso: Proceso; baselineEvaluation: Evaluacion | null; initialData?: Evaluacion | null; onClose: () => void; onSaveSuccess: (evaluation: Evaluacion, isNew: boolean) => void }) {
+export function ReevaluacionExpressForm({ usuariaId, proceso, baselineEvaluation, recentEvolutions = [], initialData, onClose, onSaveSuccess }: { usuariaId: string; proceso: Proceso; baselineEvaluation: Evaluacion | null; recentEvolutions?: Evolucion[]; initialData?: Evaluacion | null; onClose: () => void; onSaveSuccess: (evaluation: Evaluacion, isNew: boolean) => void }) {
   const { globalActiveYear } = useYear();
   const { user } = useAuth();
   const existing: any = initialData;
@@ -56,6 +59,17 @@ export function ReevaluacionExpressForm({ usuariaId, proceso, baselineEvaluation
     reasoning: Boolean(data.reasoning.hypothesis.trim() && data.reasoning.direction && data.reasoning.decision && data.reasoning.plan.trim() && data.reasoning.nextReassessment.trim()),
   }), [data]);
   const completed = Object.values(requirements).filter(Boolean).length;
+  const continuityDigest = useMemo(() => recentEvolutions
+    .filter(evolution => evolution.status === "CLOSED")
+    .sort((a, b) => new Date(b.sessionAt || 0).getTime() - new Date(a.sessionAt || 0).getTime())
+    .slice(0, 5)
+    .map(evolution => ({
+      id: evolution.id,
+      date: evolution.sessionAt,
+      goal: evolution.sessionGoal || (evolution as any).objetivoSesion || "Sin objetivo de sesión documentado",
+      response: evolution.nextPlan || (evolution as any).planProximaSesion || "Sin plan siguiente documentado",
+      objectives: evolution.selectedObjectivesSnapshot || [],
+    })), [recentEvolutions]);
 
   const save = async (close = false) => {
     if (!globalActiveYear || !user || !proceso.id) return;
@@ -71,11 +85,22 @@ export function ReevaluacionExpressForm({ usuariaId, proceso, baselineEvaluation
       };
       await setDoc(doc(db, "programs", globalActiveYear, "evaluaciones", recordId), sanitizeForFirestoreDeep(payload), { merge: true });
       if (close) {
+        const versionId = `reeval_${Date.now().toString(36)}`;
         const activeObjectives = data.reasoning.objectives.filter(objective => objective.status !== "LOGRADO").map(objective => ({ id: objective.id, label: objective.text, status: "activo" }));
         await setDoc(doc(db, "programs", globalActiveYear, "procesos", proceso.id), sanitizeForFirestoreDeep({
           caseSnapshot: { ...snapshot, lastUpdated: now, lastProgressSummary: data.reasoning.coherence, lastRetest: data.exam.comparableResult || data.exam.objectiveFindings, psfsLast: data.exam.psfsScores },
-          activeObjectiveSet: { versionId: `reeval_${Date.now().toString(36)}`, updatedAt: now, objectives: activeObjectives }, updatedAt: now,
+          activeEvaluationId: recordId,
+          activeEvaluationIndexId: recordId,
+          activeObjectiveSetVersionId: versionId,
+          activeObjectiveSet: { versionId, updatedAt: now, objectives: activeObjectives }, updatedAt: now,
         }), { merge: true });
+        invalidateClinicalObjectiveCache(globalActiveYear, proceso.id);
+        window.dispatchEvent(new CustomEvent('clinical-objectives-updated', { detail: { year: globalActiveYear, processId: proceso.id } }));
+        try {
+          await resolveClinicalTasksAfterEvaluation({ year: globalActiveYear, patientId: usuariaId, processId: proceso.id, recordId, recordType: 'REEVALUATION' });
+        } catch (taskError) {
+          console.warn("La reevaluación cerró, pero la tarea se conciliará en el próximo censo", taskError);
+        }
         onSaveSuccess(payload as Evaluacion, !existing?.id);
       }
       setSaving("saved");
@@ -96,6 +121,11 @@ export function ReevaluacionExpressForm({ usuariaId, proceso, baselineEvaluation
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur"><div className="mx-auto flex max-w-5xl items-center justify-between gap-3"><button onClick={onClose} className="rounded-lg p-2 text-slate-600 hover:bg-slate-100">←</button><div className="min-w-0 flex-1"><h1 className="truncate font-black text-slate-900">Reevaluación Express</h1><p className="text-xs text-slate-500">Objetivo: 8–12 minutos · trabajo del estudiante</p></div><span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">{completed}/3</span></div></header>
     <main className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6">
       <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4"><p className="text-[10px] font-black uppercase tracking-wider text-indigo-600">Línea basal</p><p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-800">{baselineSummary}</p><details className="mt-2 text-xs text-slate-600"><summary className="cursor-pointer font-bold">Ver evaluación física previa</summary><p className="mt-2 whitespace-pre-wrap leading-5">{baselineExam}</p></details></div>
+      <details className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4" open={continuityDigest.length > 0}>
+        <summary className="cursor-pointer text-sm font-black text-emerald-950">Síntesis de continuidad · últimas {continuityDigest.length} sesiones cerradas</summary>
+        <p className="mt-1 text-xs text-emerald-800">Resume lo documentado; no propone respuestas ni sustituye tu entrevista y examen actual.</p>
+        {continuityDigest.length === 0 ? <p className="mt-3 text-xs text-slate-600">No hay evoluciones cerradas para sintetizar.</p> : <div className="mt-3 space-y-2">{continuityDigest.map(item => <div key={item.id} className="rounded-xl border border-emerald-100 bg-white p-3 text-xs text-slate-700"><p className="font-black text-slate-900">{item.date ? new Date(item.date).toLocaleDateString("es-CL") : "Fecha no disponible"}</p><p className="mt-1"><strong>Objetivo:</strong> {item.goal}</p><p className="mt-1"><strong>Plan siguiente:</strong> {item.response}</p>{item.objectives.length > 0 && <p className="mt-1"><strong>Objetivos vinculados:</strong> {item.objectives.map((objective: any) => objective.label).filter(Boolean).join(" · ")}</p>}</div>)}</div>}
+      </details>
       <nav className="grid grid-cols-3 gap-2">{([[1,"1. Entrevista"],[2,"2. Examen"],[3,"3. Decisión"]] as const).map(([id,label]) => <button key={id} onClick={() => setStep(id)} className={`rounded-xl px-2 py-3 text-xs font-black ${step === id ? "bg-indigo-600 text-white shadow" : "border border-slate-200 bg-white text-slate-600"}`}>{label}{requirements[id === 1 ? "interview" : id === 2 ? "exam" : "reasoning"] ? " ✓" : ""}</button>)}</nav>
 
       {step === 1 && <Card eyebrow="Entrevista focalizada" title="Solo lo que puede cambiar decisiones">

@@ -30,9 +30,17 @@ function isRecent(value: unknown, hours = RECENT_REVIEW_WINDOW_HOURS) {
 export async function getRecentPendingReviewSummary(hours = RECENT_REVIEW_WINDOW_HOURS) {
   const db = getAdminDb();
   const snapshot = await db.collection('teacher_agent_reviews').where('status', '==', 'PENDING_TEACHER').get();
-  const reviews = snapshot.docs.map((doc: any) => doc.data()).filter((review: any) => isRecent(review.createdAt, hours));
+  const persistent = new Set(['REEVALUATION_DUE', 'INITIAL_EVALUATION_MISSING', 'INITIAL_EVALUATION_INSUFFICIENT']);
+  const reviews = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })).filter((review: any) => isRecent(review.createdAt, hours) || persistent.has(review.category));
   const count = (priority: Priority) => reviews.filter((review: any) => review.priority === priority).length;
-  return { total: reviews.length, p0: count('P0'), p1: count('P1'), p2: count('P2'), p3: count('P3'), hours };
+  const categoryCount = (category: string) => reviews.filter((review: any) => review.category === category).length;
+  return {
+    total: reviews.length,
+    p0: count('P0'), p1: count('P1'), p2: count('P2'), p3: count('P3'), hours,
+    reevaluationDue: categoryCount('REEVALUATION_DUE'),
+    initialMissing: categoryCount('INITIAL_EVALUATION_MISSING'),
+    initialInsufficient: categoryCount('INITIAL_EVALUATION_INSUFFICIENT'),
+  };
 }
 
 /**

@@ -142,7 +142,8 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
     const evaluationsInTimeline = items
         .filter((item): item is Extract<TimelineItem, { type: 'evaluacion' }> => item.type === 'evaluacion')
         .map(item => item.data);
-    const hasInitialEvaluation = evaluationsInTimeline.some(evaluation => evaluation.type === 'INITIAL');
+    const latestInitialEvaluation = evaluationsInTimeline.find(evaluation => evaluation.type === 'INITIAL') || null;
+    const hasInitialEvaluation = evaluationsInTimeline.some(evaluation => evaluation.type === 'INITIAL' && evaluation.status === 'CLOSED');
     const latestBaselineEvaluation = evaluationsInTimeline.find(evaluation =>
         evaluation.status === 'CLOSED' && evaluation.id !== selectedEval?.id,
     ) || evaluationsInTimeline.find(evaluation => evaluation.id !== selectedEval?.id) || null;
@@ -187,6 +188,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                             usuariaId={personaUsuariaId}
                             proceso={proceso}
                             baselineEvaluation={latestBaselineEvaluation}
+                            recentEvolutions={items.filter(i => i.type === 'evolucion').map(i => i.data as Evolucion)}
                             initialData={selectedEval}
                             onClose={() => setView('timeline')}
                             onSaveSuccess={handleEvalSaved}
@@ -286,20 +288,20 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                 </button>
                 <button
                     onClick={() => {
-                        setSelectedEval(null);
+                        setSelectedEval(hasInitialEvaluation ? null : latestInitialEvaluation);
                         setView(hasInitialEvaluation ? 'formReeval' : 'formExpressEval');
                     }}
                     className="flex-1 min-w-[140px] bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
                 >
                     <ArrowPathIcon className="w-4 h-4" />
-                    {hasInitialEvaluation ? 'Reevaluación' : 'Crear evaluación inicial'}
+                    {hasInitialEvaluation ? 'Reevaluación' : latestInitialEvaluation ? 'Completar evaluación inicial' : 'Crear evaluación inicial'}
                 </button>
 
                 {/* Botón v2: Oficial/Recomendado para Docentes e Internos */}
                 {canUseV2 && (
                     <button
-                        onClick={() => { setSelectedEval(null); setView('formExpressEval'); }}
-                        className="flex-1 min-w-[140px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold px-4 py-3 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 border border-purple-400/30 relative overflow-hidden group/btnv2 animate-pulse"
+                        onClick={() => { setSelectedEval(latestInitialEvaluation); setView('formExpressEval'); }}
+                        className="flex-1 min-w-[140px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold px-4 py-3 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 border border-purple-400/30 relative overflow-hidden group/btnv2"
                     >
                         <span className="absolute top-0 right-0 bg-amber-400 text-slate-900 font-black text-[8px] px-1.5 py-0.5 rounded-bl tracking-widest uppercase shadow-sm">
                             Oficial
@@ -308,7 +310,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-300 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-200"></span>
                         </span>
-                        <span>⚡ Eval Inicial v2</span>
+                        <span>{latestInitialEvaluation ? '⚡ Abrir Eval Inicial v2' : '⚡ Eval Inicial v2'}</span>
                     </button>
                 )}
 

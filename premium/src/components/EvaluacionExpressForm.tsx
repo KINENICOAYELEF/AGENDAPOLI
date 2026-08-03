@@ -6,6 +6,8 @@ import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { sanitizeForFirestoreDeep } from "@/lib/firebase-utils";
 import { ClinicalPlanningSection } from "./ClinicalPlanningSection";
+import { resolveClinicalTasksAfterEvaluation } from "@/lib/studentClinicalTasksClient";
+import { invalidateClinicalObjectiveCache } from "@/lib/clinicalObjectiveCache";
 
 export interface EvaluacionExpressFormProps {
     usuariaId: string;
@@ -342,6 +344,16 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                 clinicianResponsible: user.email || '',
                 audit: { createdBy: user.uid, createdAt: new Date().toISOString() }
             };
+            const shouldClose = !silent && !isDraft;
+            const now = new Date().toISOString();
+            basePayload.status = shouldClose ? 'CLOSED' : (basePayload.status || 'DRAFT');
+            basePayload.updatedAt = now;
+            basePayload.audit = {
+                ...(basePayload.audit || {}),
+                createdBy: basePayload.audit?.createdBy || user.uid,
+                createdAt: basePayload.audit?.createdAt || now,
+                ...(shouldClose ? { closedBy: user.uid, closedAt: now } : {}),
+            };
 
             basePayload.expressDraft = { 
                 anamnesisProxima, 
@@ -377,6 +389,40 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
 
             const docRef = doc(db, "programs", globalActiveYear, "evaluaciones", targetId);
             await setDoc(docRef, sanitizeForFirestoreDeep(basePayload), { merge: true });
+
+            // Al cerrar, los objetivos pasan a ser la versión vigente que
+            // aparecerá en las evoluciones siguientes del mismo proceso.
+            if (shouldClose && objetivosSmart.length > 0) {
+                const versionId = `initial_${Date.now().toString(36)}`;
+                await setDoc(doc(db, "programs", globalActiveYear, "procesos", procesoId), sanitizeForFirestoreDeep({
+                    activeEvaluationId: targetId,
+                    activeEvaluationIndexId: targetId,
+                    activeObjectiveSetVersionId: versionId,
+                    diagnosisVigente: diagnosticoNarrativo,
+                    activeObjectiveSet: {
+                        versionId,
+                        updatedAt: now,
+                        objectives: objetivosSmart.map(objective => ({
+                            id: objective.id || generateId(),
+                            label: objective.texto,
+                            status: 'activo',
+                        })),
+                    },
+                    updatedAt: now,
+                }), { merge: true });
+                invalidateClinicalObjectiveCache(globalActiveYear, procesoId);
+                window.dispatchEvent(new CustomEvent('clinical-objectives-updated', { detail: { year: globalActiveYear, processId: procesoId } }));
+            }
+
+            if (shouldClose) {
+                try {
+                    await resolveClinicalTasksAfterEvaluation({ year: globalActiveYear, patientId: usuariaId, processId: procesoId, recordId: targetId, recordType: 'INITIAL' });
+                } catch (taskError) {
+                    // El registro clínico ya quedó guardado; el censo resolverá
+                    // la tarea si la llamada auxiliar falla temporalmente.
+                    console.warn("La evaluación cerró, pero la tarea se conciliará en el próximo censo", taskError);
+                }
+            }
 
             // Sincronizar Anamnesis Remota / Contexto con la Ficha de la Persona Usuaria (Sección C)
             if (anamnesisRemota?.trim()) {

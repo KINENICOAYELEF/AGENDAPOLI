@@ -28,11 +28,9 @@ import { EvaSlider } from "./ui/EvaSlider";
 import { NumericStepper } from "./ui/NumericStepper";
 import { ExerciseRow } from "./ui/ExerciseRow";
 import { InterventionPanel } from "./ui/InterventionPanel";
+import { clinicalObjectiveCache, invalidateClinicalObjectiveCache } from "@/lib/clinicalObjectiveCache";
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
-
-// CACHÉ EN MEMORIA (FASE 2.1.9) PARA EVITAR RE-LECTURAS DE OBJETIVOS
-const globalEvalCache: Record<string, { objectives: { id: string, label: string, status?: string }[], versionId: string, timestamp: number, procesoContext?: any }> = {};
 
 function mapLegacyToPro(data: any, defaultUsuariaId: string): Partial<Evolucion> {
     if (!data) return {
@@ -479,6 +477,18 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
     const [currentVersionId, setCurrentVersionId] = useState<string | undefined>(undefined);
     const [procesoContext, setProcesoContext] = useState<{ motivoIngresoLibre?: string, evaluacionesStr?: string, caseSnapshot?: any, flags?: any }>({});
     const [loadingObjectives, setLoadingObjectives] = useState(false);
+    const [objectiveRefreshToken, setObjectiveRefreshToken] = useState(0);
+
+    useEffect(() => {
+        const handleObjectiveUpdate = (event: Event) => {
+            const detail = (event as CustomEvent<{ year?: string; processId?: string }>).detail;
+            if (!globalActiveYear || !procesoId || detail?.processId !== procesoId || detail?.year !== globalActiveYear) return;
+            invalidateClinicalObjectiveCache(globalActiveYear, procesoId);
+            setObjectiveRefreshToken(value => value + 1);
+        };
+        window.addEventListener('clinical-objectives-updated', handleObjectiveUpdate);
+        return () => window.removeEventListener('clinical-objectives-updated', handleObjectiveUpdate);
+    }, [globalActiveYear, procesoId]);
 
     // --- MANEJO DE COPIA SELECTIVA (FASE 2.1.25) ---
     const [showCopyModal, setShowCopyModal] = useState(false);
@@ -495,8 +505,8 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             const timeNow = Date.now();
 
             // Cache local para SPA
-            if (globalEvalCache[cacheKey] && (timeNow - globalEvalCache[cacheKey].timestamp < 600000)) {
-                const cached = globalEvalCache[cacheKey];
+            if (clinicalObjectiveCache[cacheKey] && (timeNow - clinicalObjectiveCache[cacheKey].timestamp < 600000)) {
+                const cached = clinicalObjectiveCache[cacheKey];
                 
                 // Si tenemos el contexto en caché, lo restauramos (FASE 2.2.4 fix para múltiples evoluciones continuas)
                 if (cached.procesoContext) {
@@ -565,7 +575,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                     if (activeSet && activeSet.objectives) {
                         const actives = activeSet.objectives.filter((o: any) => o.status !== 'logrado' && o.status !== 'pausado');
 
-                        globalEvalCache[cacheKey] = {
+                        clinicalObjectiveCache[cacheKey] = {
                             objectives: actives,
                             versionId: activeSet.versionId,
                             timestamp: timeNow,
@@ -610,7 +620,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                         }
 
                         // Guardamos en cache el Fallback con el contexto
-                        globalEvalCache[cacheKey] = {
+                        clinicalObjectiveCache[cacheKey] = {
                             objectives: fallbackActives,
                             versionId: fallbackVersionId || 'fallback_1',
                             timestamp: timeNow,
@@ -629,7 +639,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         };
 
         fetchObjectiveSet();
-    }, [procesoId, globalActiveYear, formData.objectiveSetVersionId, isClosedDynamic]);
+    }, [procesoId, globalActiveYear, formData.objectiveSetVersionId, isClosedDynamic, objectiveRefreshToken]);
 
     const toggleObjective = (objId: string, customStatus?: 'trabajado' | 'avanzó' | 'sin cambio' | 'empeoró') => {
         if (isClosedDynamic) return;

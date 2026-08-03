@@ -153,6 +153,20 @@ export async function answerTelegramCallback(callbackQueryId: string) {
   return telegramApi<boolean>('answerCallbackQuery', { callback_query_id: callbackQueryId });
 }
 
+export async function downloadTelegramFile(fileId: string) {
+  const file = await telegramApi<{ file_path?: string }>('getFile', { file_id: fileId });
+  const { token } = config();
+  if (!token || !file.file_path) throw new Error('Telegram no entregó la ruta del archivo de voz.');
+  const response = await fetch(`https://api.telegram.org/file/bot${token}/${file.file_path}`);
+  if (!response.ok) throw new Error(`No se pudo descargar el audio de Telegram (HTTP ${response.status}).`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (bytes.length > 18 * 1024 * 1024) throw new Error('La nota de voz supera el máximo seguro de 18 MB.');
+  return {
+    data: bytes.toString('base64'),
+    mimeType: file.file_path.endsWith('.mp3') ? 'audio/mpeg' : file.file_path.endsWith('.m4a') ? 'audio/mp4' : 'audio/ogg',
+  };
+}
+
 export function getAllowedTelegramChatId() {
   return config().allowedChatId;
 }

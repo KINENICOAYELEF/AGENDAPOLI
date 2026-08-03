@@ -15,10 +15,16 @@ import { db } from "@/lib/firebase";
 import { auth } from "@/lib/firebase";
 import type { TeacherAgentReview } from "@/lib/agent/contracts/review";
 import type { StudentLearningProfile } from "@/types/agentDataFoundation";
+import type { StudentClinicalTaskKind } from "@/types/studentClinicalTask";
 
 type ReviewWithId = TeacherAgentReview & { id: string };
 type ProfileDisplay = StudentLearningProfile & { displayName?: string };
 const RECENT_REVIEW_WINDOW_MS = 48 * 60 * 60 * 1000;
+const PERSISTENT_ACTION_CATEGORIES = new Set([
+  'REEVALUATION_DUE',
+  'INITIAL_EVALUATION_MISSING',
+  'INITIAL_EVALUATION_INSUFFICIENT',
+]);
 
 const priorityStyle = {
   P0: "bg-rose-100 text-rose-800 border-rose-200",
@@ -82,7 +88,7 @@ export function BandejaDocenteInteligente() {
           const created = new Date(review.createdAt).getTime();
           // Las auditorías rutinarias caducan de la vista diaria; el hito de
           // reevaluación permanece hasta que una reevaluación nueva lo cierre.
-          return review.category === 'REEVALUATION_DUE' || (Number.isFinite(created) && created >= cutoff);
+          return PERSISTENT_ACTION_CATEGORIES.has(review.category || '') || (Number.isFinite(created) && created >= cutoff);
         })
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
       setProfiles(
@@ -135,7 +141,7 @@ export function BandejaDocenteInteligente() {
     }
   };
 
-  const updateStatus = async (review: ReviewWithId, status: "DISMISSED" | "ACCEPTED_PRIVATE") => {
+  const updateStatus = async (review: ReviewWithId, status: "DISMISSED" | "ACCEPTED_PRIVATE" | "SHARED") => {
     setWorkingId(review.id);
     try {
       await updateDoc(doc(db, "teacher_agent_reviews", review.id), {
@@ -146,6 +152,49 @@ export function BandejaDocenteInteligente() {
     } catch (error) {
       console.error("No se pudo actualizar el hallazgo:", error);
       setNotice("No se pudo guardar tu decisión. Reintenta.");
+    } finally {
+      setWorkingId(null);
+    }
+  };
+
+  const publishStudentTask = async (review: ReviewWithId) => {
+    if (!review.patientId || !review.category || !PERSISTENT_ACTION_CATEGORIES.has(review.category)) {
+      setNotice("Este hallazgo no tiene suficiente información para crear una tarea al estudiante.");
+      return;
+    }
+    setWorkingId(review.id);
+    try {
+      const kind = review.category as StudentClinicalTaskKind;
+      const isReevaluation = kind === 'REEVALUATION_DUE';
+      const isMissing = kind === 'INITIAL_EVALUATION_MISSING';
+      const title = isReevaluation
+        ? 'Reevaluación clínica pendiente'
+        : isMissing ? 'Evaluación inicial pendiente' : 'Completa la evaluación inicial';
+      const message = isReevaluation
+        ? 'Tu docente revisó la continuidad de este proceso y solicita una reevaluación focalizada. Registra entrevista, examen físico comparable, interpretación, objetivos y ajuste del plan.'
+        : isMissing
+          ? 'Este proceso ya tiene evoluciones, pero no cuenta con una evaluación inicial cerrada. Completa la línea basal antes de continuar registrando sesiones.'
+          : 'La evaluación inicial existente no entrega una línea basal suficiente. Completa entrevista, examen físico, integración clínica, objetivos y plan; luego ciérrala.';
+      await setDoc(doc(db, 'student_clinical_tasks', `review_${review.id}`), {
+        year: review.year,
+        studentId: review.studentId,
+        patientId: review.patientId,
+        processId: review.processId || null,
+        reviewId: review.id,
+        kind,
+        status: 'ACTIVE',
+        title,
+        message,
+        actionLabel: isReevaluation ? 'Ir a reevaluar' : 'Abrir expediente',
+        actionHref: `/app/usuarios?openFicha=${encodeURIComponent(review.patientId)}`,
+        createdAt: new Date().toISOString(),
+        createdBy: auth.currentUser?.uid || 'teacher',
+      }, { merge: true });
+      await updateStatus(review, 'SHARED');
+      setNotice("Tarea publicada en la página del estudiante. Permanecerá visible hasta que cierre el registro solicitado.");
+    } catch (error) {
+      console.error("No se pudo publicar la tarea clínica:", error);
+      setNotice("No se pudo publicar la tarea al estudiante. Reintenta.");
     } finally {
       setWorkingId(null);
     }
@@ -228,6 +277,8 @@ export function BandejaDocenteInteligente() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${priorityStyle[review.priority]}`}>{review.priority}</span>
                 {review.category === 'REEVALUATION_DUE' && <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-black text-violet-800">REEVALUACIÓN PENDIENTE</span>}
+                {review.category === 'INITIAL_EVALUATION_MISSING' && <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[10px] font-black text-rose-800">SIN EVALUACIÓN INICIAL</span>}
+                {review.category === 'INITIAL_EVALUATION_INSUFFICIENT' && <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-black text-amber-800">LÍNEA BASAL INSUFICIENTE</span>}
                 <strong className="text-sm text-slate-900">{student}</strong>
                 <span className="text-xs text-slate-500">{formatDate(review.createdAt)}</span>
               </div>
@@ -244,6 +295,7 @@ export function BandejaDocenteInteligente() {
                 {viewerHref && <button onClick={() => router.push(viewerHref)} className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-800 hover:bg-indigo-100"><FileText className="h-3.5 w-3.5" /> Ver registro exacto</button>}
                 <button onClick={() => updateStatus(review, "DISMISSED")} disabled={workingId === review.id} className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100"><XCircle className="h-3.5 w-3.5" /> Descartar</button>
                 <button onClick={() => createFeedbackDraft(review)} disabled={workingId === review.id} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:bg-slate-400"><AlertTriangle className="h-3.5 w-3.5" /> Crear borrador privado</button>
+                {PERSISTENT_ACTION_CATEGORIES.has(review.category || '') && <button onClick={() => publishStudentTask(review)} disabled={workingId === review.id} className="inline-flex items-center gap-1.5 rounded-xl bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-600 disabled:bg-slate-400"><AlertTriangle className="h-3.5 w-3.5" /> Avisar en su página</button>}
               </div>
             </div>
           </article>

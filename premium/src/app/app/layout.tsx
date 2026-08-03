@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { DebugOverlay } from '@/components/DebugOverlay';
 import { SimuladorAlertaModal } from '@/components/SimuladorAlertaModal';
 import { NotificationCenter } from '@/components/NotificationCenter';
+import { StudentClinicalTaskBanner } from '@/components/StudentClinicalTaskBanner';
 import { 
     LayoutDashboard, 
     Users, 
@@ -89,6 +90,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex h-screen bg-slate-100/70 font-sans text-slate-900">
             <SimuladorAlertaModal />
+            <StudentClinicalTaskBanner />
             
             {/* Overlay Móvil */}
             {isSidebarOpen && (

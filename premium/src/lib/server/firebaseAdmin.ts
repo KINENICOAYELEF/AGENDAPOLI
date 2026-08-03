@@ -69,6 +69,17 @@ export async function requireTeacher(authHeader?: string | null) {
   return { uid: decoded.uid, user: userDoc.data() };
 }
 
+export async function requireAuthenticated(authHeader?: string | null) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    throw new Error('Unauthorized: Missing or invalid token');
+  }
+  const token = authHeader.replace('Bearer ', '');
+  const decoded = await getAdminAuth().verifyIdToken(token);
+  const userDoc = await getAdminDb().collection('users').doc(decoded.uid).get();
+  if (!userDoc.exists) throw new Error('Forbidden: User profile required');
+  return { uid: decoded.uid, user: userDoc.data() };
+}
+
 export const adminDb: any = new Proxy({}, {
   get(_target, prop) {
     const instance = getAdminDb();

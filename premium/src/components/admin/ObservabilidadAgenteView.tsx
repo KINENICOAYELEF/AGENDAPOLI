@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Activity, ShieldCheck, Cpu, RefreshCw, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { auth } from '@/lib/firebase';
 
 export function ObservabilidadAgenteView() {
   const [health, setHealth] = useState<any>(null);
@@ -12,15 +13,14 @@ export function ObservabilidadAgenteView() {
     setLoading(true);
     setError(null);
     try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error('No hay una sesión docente autenticada');
       const res = await fetch('/api/health/agent', {
-        headers: {
-          // Send Bearer token if present
-          'Authorization': `Bearer cron_system_runner`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
       const data = await res.json();
-      setHealth(data);
+      setHealth(data.data || data);
     } catch (err: any) {
       setError(err.message || 'Error conectando con diagnóstico del agente');
     } finally {
@@ -88,6 +88,11 @@ export function ObservabilidadAgenteView() {
                 <span>07:30 & 21:30 CLT</span>
               </div>
             </div>
+          </div>
+
+          <div className={`rounded-2xl border p-4 text-xs ${health?.automation?.stale ? 'border-amber-700 bg-amber-950/30 text-amber-200' : 'border-emerald-800 bg-emerald-950/20 text-emerald-200'}`}>
+            <p className="font-black">{health?.automation?.stale ? '⚠️ Automatización atrasada' : '✅ Automatización dentro de la ventana esperada'}</p>
+            <p className="mt-1 text-slate-300">Última ejecución: {health?.automation?.lastRun?.finishedAt || health?.automation?.lastRun?.startedAt || 'sin registro'} · Telegram: {health?.automation?.lastTelegramNotification?.status || 'sin envío registrado'}</p>
           </div>
 
           {/* DETALLES DE CONFIGURACIÓN Y FEATURE FLAGS */}

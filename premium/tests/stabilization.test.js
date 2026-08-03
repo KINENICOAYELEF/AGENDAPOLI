@@ -5,6 +5,7 @@
 
 import assert from 'node:assert';
 import { test, describe } from 'node:test';
+import { readFileSync } from 'node:fs';
 
 // Función de desidentificación clínica
 function deidentifyText(text) {
@@ -125,5 +126,26 @@ describe('Compatibilidad del servidor en producción', () => {
       'function',
       'La API docente no puede iniciar si firebase-admin/auth no carga en Node.js',
     );
+  });
+});
+
+describe('Circuito de reevaluación y avisos docentes', () => {
+  test('la evaluación inicial Express cierra formalmente y concilia tareas', () => {
+    const source = readFileSync(new URL('../src/components/EvaluacionExpressForm.tsx', import.meta.url), 'utf8');
+    assert.match(source, /basePayload\.status = shouldClose \? 'CLOSED'/);
+    assert.match(source, /resolveClinicalTasksAfterEvaluation/);
+  });
+
+  test('la reevaluación publica una nueva versión de objetivos y resuelve su aviso', () => {
+    const source = readFileSync(new URL('../src/components/ReevaluacionExpressForm.tsx', import.meta.url), 'utf8');
+    assert.match(source, /activeObjectiveSetVersionId: versionId/);
+    assert.match(source, /recordType: 'REEVALUATION'/);
+    assert.match(source, /Síntesis de continuidad/);
+  });
+
+  test('Telegram ejecuta el censo de inmediato y conserva la aprobación docente', () => {
+    const source = readFileSync(new URL('../src/app/api/telegram/webhook/route.ts', import.meta.url), 'utf8');
+    assert.match(source, /fetch\(`\$\{APP_URL\}\/api\/agent\/run`/);
+    assert.match(source, /No se enviará nada a estudiantes sin tu aprobación/);
   });
 });

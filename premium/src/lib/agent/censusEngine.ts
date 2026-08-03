@@ -26,13 +26,40 @@ function hasValue(val: unknown): boolean {
   return Boolean(val);
 }
 
+function meaningfulText(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return value.map(meaningfulText).filter(Boolean).join(' ');
+  if (value && typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !['id', 'status', 'createdAt', 'updatedAt', 'audit'].includes(key))
+      .map(([, item]) => meaningfulText(item))
+      .filter(Boolean)
+      .join(' ');
+  }
+  return '';
+}
+
+function hasClinicalNarrative(value: unknown, minimum = 25) {
+  return meaningfulText(value).length >= minimum;
+}
+
 function initialEvaluationGaps(record: any): string[] {
   const express = record?.expressDraft || {};
   const gaps: string[] = [];
-  if (!hasValue(record?.interview || express.anamnesisProxima)) gaps.push('entrevista clínica');
-  if (!hasValue(record?.guidedExam || express.evaluacionFisica)) gaps.push('evaluación física');
-  if (!hasValue(record?.clinicalSynthesis || express.razonamientoIA || express.p4_plan?.diagnostico_narrativo)) gaps.push('integración clínica');
-  if (!hasValue(record?.p4_plan_structured || express.p4_plan)) gaps.push('objetivos y plan');
+  const interview = record?.interview || express.anamnesisProxima;
+  const exam = record?.guidedExam || express.evaluacionFisica;
+  const synthesis = record?.clinicalSynthesis || express.razonamientoIA || express.p4_plan?.diagnostico_narrativo;
+  const plan = record?.p4_plan_structured || express.p4_plan;
+  const objectives = plan?.objetivos_smart || record?.objectives || [];
+  if (!hasClinicalNarrative(interview)) gaps.push('entrevista clínica útil');
+  if (!hasClinicalNarrative(exam)) gaps.push('evaluación física con mediciones o hallazgos');
+  if (!hasClinicalNarrative(synthesis)) gaps.push('integración clínica razonada');
+  if (!hasClinicalNarrative(plan?.diagnostico_narrativo || plan?.diagnostico_kinesiologico_narrativo)
+      || !Array.isArray(objectives)
+      || !objectives.some((objective: any) => hasClinicalNarrative(objective?.texto || objective?.label || objective?.description, 10))) {
+    gaps.push('objetivos y plan verificables');
+  }
   if (record?.status !== 'CLOSED') gaps.push('cierre formal');
   return gaps;
 }
@@ -69,6 +96,7 @@ async function createInitialEvaluationContinuityReview(
     year,
     studentId: student.id,
     patientId,
+    processId,
     sourceReferences: [{
       year,
       collection: latestInitial ? 'evaluaciones' as const : 'evoluciones' as const,
@@ -152,6 +180,7 @@ async function reconcileReevaluationReminders(db: ReturnType<typeof getAdminDb>,
       year,
       studentId: student.id,
       patientId,
+      processId: baseline.procesoId || latestEvolution.procesoId,
       sourceReferences: [{
         year,
         collection: 'evoluciones' as const,
@@ -178,6 +207,40 @@ async function reconcileReevaluationReminders(db: ReturnType<typeof getAdminDb>,
     }
   }
   return created;
+}
+
+async function reconcilePublishedStudentTasks(db: ReturnType<typeof getAdminDb>, year: string) {
+  const taskSnap = await db.collection('student_clinical_tasks').get();
+  const activeTasks = taskSnap.docs.filter((task: any) => {
+    const data = task.data();
+    return data.status === 'ACTIVE' && data.year === year && data.patientId;
+  });
+  let resolved = 0;
+  for (const task of activeTasks) {
+    const data = task.data();
+    const evaluationsQuery = db.collection(`programs/${year}/evaluaciones`).where('usuariaId', '==', data.patientId);
+    const evaluationSnap = await evaluationsQuery.get();
+    const evaluations = evaluationSnap.docs.map((item: any) => ({ id: item.id, ...item.data() }))
+      .filter((evaluation: any) => !data.processId || evaluation.procesoId === data.processId);
+    const createdAt = new Date(data.createdAt || 0).getTime();
+    const completed = evaluations.find((evaluation: any) => {
+      const completionTime = new Date(evaluation.updatedAt || evaluation.audit?.closedAt || evaluation.sessionAt || 0).getTime();
+      if (completionTime < createdAt || evaluation.status !== 'CLOSED') return false;
+      if (data.kind === 'REEVALUATION_DUE') return evaluation.type === 'REEVALUATION';
+      return evaluation.type === 'INITIAL' && initialEvaluationGaps(evaluation).length === 0;
+    });
+    if (!completed) continue;
+    await task.ref.update({
+      status: 'RESOLVED',
+      resolvedAt: new Date().toISOString(),
+      resolvedByRecordId: completed.id,
+      resolution: data.kind === 'REEVALUATION_DUE'
+        ? 'closed_reevaluation_detected_by_census'
+        : 'usable_initial_evaluation_detected_by_census',
+    });
+    resolved++;
+  }
+  return resolved;
 }
 
 export async function runCensusEngine() {
@@ -455,6 +518,8 @@ export async function runCensusEngine() {
       }
     }
 
+    const studentTasksResolved = await reconcilePublishedStudentTasks(db, year);
+
     console.log(
       `[PR9 Census Engine] Real audit finished. Processed ${recordsProcessed} records across ${students.length} students. Created ${reviewsCreated} reviews.`
     );
@@ -467,6 +532,7 @@ export async function runCensusEngine() {
       reevaluationRemindersCreated,
       initialEvaluationMissingCreated,
       initialEvaluationInsufficientCreated,
+      studentTasksResolved,
       priorityCounts,
     };
   } catch (error: any) {

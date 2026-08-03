@@ -15,6 +15,7 @@ export const TeacherAgentReviewSchema = z.object({
   year: z.string(),
   studentId: z.string(),
   patientId: z.string().optional(),
+  processId: z.string().optional(),
   sourceReferences: z.array(SourceReferenceSchema),
   observation: z.string(),
   pedagogicalInference: z.string().optional(),
