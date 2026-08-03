@@ -11,6 +11,7 @@ export type CensusNotificationInput = {
   triggeredBy: string;
   status: string;
   reviewsCreated: number;
+  reevaluationRemindersCreated?: number;
   priorityCounts: Record<Priority, number>;
 };
 
@@ -65,9 +66,12 @@ export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
   }
 
   const urgent = input.priorityCounts.P0 > 0;
+  const reevaluationLine = input.reevaluationRemindersCreated
+    ? `\n🔄 Reevaluación sugerida: *${input.reevaluationRemindersCreated}*.`
+    : '';
   const message = urgent
     ? `🔴 *Atención docente*\n\nEl censo detectó *${input.priorityCounts.P0}* hallazgo(s) P0 de seguridad y *${input.priorityCounts.P1}* P1 nuevos.\n\nAcción: revisa la Bandeja Docente antes de continuar.`
-    : `🧠 *Censo Agenda Poli completado*\n\nHay *${input.reviewsCreated}* hallazgo(s) nuevos para revisión: P1 ${input.priorityCounts.P1} · P2 ${input.priorityCounts.P2}.\n\nAcción: revísalos cuando corresponda en la Bandeja Docente.`;
+    : `🧠 *Censo Agenda Poli completado*\n\nHay *${input.reviewsCreated}* hallazgo(s) nuevos para revisión: P1 ${input.priorityCounts.P1} · P2 ${input.priorityCounts.P2}.${reevaluationLine}\n\nAcción: revísalos cuando corresponda en la Bandeja Docente.`;
 
   try {
     await sendTelegramMessage(chatId, message);

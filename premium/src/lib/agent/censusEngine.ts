@@ -128,6 +128,7 @@ export async function runCensusEngine() {
     const students = usersSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
     let reviewsCreated = 0;
     let recordsProcessed = 0;
+    let reevaluationRemindersCreated = 0;
     const priorityCounts: Record<'P0' | 'P1' | 'P2' | 'P3', number> = { P0: 0, P1: 0, P2: 0, P3: 0 };
     const recentCutoff = Date.now() - CLINICAL_ACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
@@ -229,6 +230,7 @@ export async function runCensusEngine() {
       // estudiante con esa persona, pero solo se crea una vez por línea basal.
       const reevaluationReminders = await reconcileReevaluationReminders(db, year, student, allRecords);
       reviewsCreated += reevaluationReminders;
+      reevaluationRemindersCreated += reevaluationReminders;
       priorityCounts.P2 += reevaluationReminders;
 
       // Actualizar perfil longitudinal real del estudiante en student_learning_profiles
@@ -321,6 +323,7 @@ export async function runCensusEngine() {
       studentsProcessed: students.length,
       recordsProcessed,
       reviewsCreated,
+      reevaluationRemindersCreated,
       priorityCounts,
     };
   } catch (error: any) {
