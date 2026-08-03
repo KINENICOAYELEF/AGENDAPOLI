@@ -209,21 +209,27 @@ async function reconcileReevaluationReminder(input: {
   }
 }
 
-async function reconcilePublishedStudentTasks(db: ReturnType<typeof getAdminDb>, year: string) {
-  const taskSnap = await db.collection('student_clinical_tasks').get();
+async function reconcilePublishedStudentTasks(
+  db: ReturnType<typeof getAdminDb>,
+  year: string,
+  evaluations: any[],
+) {
+  // Una sola lectura de tareas activas. Las evaluaciones ya fueron cargadas
+  // para el censo, evitando una consulta adicional por cada aviso publicado.
+  const taskSnap = await db.collection('student_clinical_tasks').where('status', '==', 'ACTIVE').get();
   const activeTasks = taskSnap.docs.filter((task: any) => {
     const data = task.data();
-    return data.status === 'ACTIVE' && data.year === year && data.patientId;
+    return data.year === year && data.patientId;
   });
   let resolved = 0;
   for (const task of activeTasks) {
     const data = task.data();
-    const evaluationsQuery = db.collection(`programs/${year}/evaluaciones`).where('usuariaId', '==', data.patientId);
-    const evaluationSnap = await evaluationsQuery.get();
-    const evaluations = evaluationSnap.docs.map((item: any) => ({ id: item.id, ...item.data() }))
-      .filter((evaluation: any) => !data.processId || evaluation.procesoId === data.processId);
+    const taskEvaluations = evaluations.filter((evaluation: any) =>
+      evaluation.usuariaId === data.patientId
+      && (!data.processId || evaluation.procesoId === data.processId),
+    );
     const createdAt = new Date(data.createdAt || 0).getTime();
-    const completed = evaluations.find((evaluation: any) => {
+    const completed = taskEvaluations.find((evaluation: any) => {
       const completionTime = new Date(evaluation.updatedAt || evaluation.audit?.closedAt || evaluation.sessionAt || 0).getTime();
       if (completionTime < createdAt || evaluation.status !== 'CLOSED') return false;
       if (data.kind === 'REEVALUATION_DUE') return evaluation.type === 'REEVALUATION';
@@ -261,11 +267,12 @@ export async function runCensusEngine() {
     }
 
     const students = usersSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
-    const [initialsSnap, reevaluationsSnap, processesSnap, patientsSnap] = await Promise.all([
+    const [initialsSnap, reevaluationsSnap, processesSnap, patientsSnap, pendingReviewsSnap] = await Promise.all([
       db.collection(`programs/${year}/evaluaciones`).where('type', '==', 'INITIAL').get(),
       db.collection(`programs/${year}/evaluaciones`).where('type', '==', 'REEVALUATION').get(),
       db.collection(`programs/${year}/procesos`).get(),
       db.collection(`programs/${year}/usuarias`).get(),
+      db.collection('teacher_agent_reviews').where('status', '==', 'PENDING_TEACHER').get(),
     ]);
     const globalInitials = initialsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
     const globalBaselines = [
@@ -274,6 +281,14 @@ export async function runCensusEngine() {
     ];
     const processes = processesSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
     const patients = patientsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+    const pendingReminderDocsByStudent = new Map<string, any[]>();
+    for (const reviewDoc of pendingReviewsSnap.docs) {
+      const review = reviewDoc.data();
+      if (review.category !== 'REEVALUATION_DUE' || !review.studentId) continue;
+      const current = pendingReminderDocsByStudent.get(review.studentId) || [];
+      current.push(reviewDoc);
+      pendingReminderDocsByStudent.set(review.studentId, current);
+    }
     let reviewsCreated = 0;
     let recordsProcessed = 0;
     let reevaluationRemindersCreated = 0;
@@ -413,9 +428,7 @@ export async function runCensusEngine() {
         current.push(evolution);
         closedEvolutionsByProcess.set(evolution.procesoId, current);
       }
-      const previousReminderSnap = closedEvolutionsByProcess.size > 0
-        ? await db.collection('teacher_agent_reviews').where('studentId', '==', student.id).limit(100).get()
-        : null;
+      const previousReminderDocs = pendingReminderDocsByStudent.get(student.id) || [];
       for (const [processId, evolutions] of closedEvolutionsByProcess) {
         const process = processes.find((item: any) => item.id === processId);
         if (!process || !['ACTIVO', 'EN_PAUSA', 'PAUSADO'].includes(process.estado)) continue;
@@ -436,7 +449,7 @@ export async function runCensusEngine() {
           processId,
           studentEvolutions: evolutions,
           processBaselines,
-          previousReminderDocs: previousReminderSnap?.docs || [],
+          previousReminderDocs,
           assignmentStartedAt: patient?.meta?.assignmentStartedAt,
         });
         reviewsCreated += reevaluationReminders;
@@ -539,7 +552,7 @@ export async function runCensusEngine() {
       }
     }
 
-    const studentTasksResolved = await reconcilePublishedStudentTasks(db, year);
+    const studentTasksResolved = await reconcilePublishedStudentTasks(db, year, globalBaselines);
 
     console.log(
       `[PR9 Census Engine] Real audit finished. Processed ${recordsProcessed} records across ${students.length} students. Created ${reviewsCreated} reviews.`

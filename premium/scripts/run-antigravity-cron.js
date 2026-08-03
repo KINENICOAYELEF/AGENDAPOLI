@@ -43,6 +43,11 @@ function scheduledSlot() {
 
 const wait = (milliseconds) => new Promise(resolve => setTimeout(resolve, milliseconds));
 
+function isNonRetryableQuotaError(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+  return message.includes('resource_exhausted') || message.includes('quota exceeded');
+}
+
 async function runCron() {
   console.log(`[Antigravity Cron] Iniciando censo y síntesis nocturna en: ${APP_URL}`);
 
@@ -87,6 +92,10 @@ async function runCron() {
       clearTimeout(timeout);
       lastError = err;
       console.error(`[Antigravity Cron] Intento ${attempt}/3 falló:`, err.message);
+      if (isNonRetryableQuotaError(err)) {
+        console.error('[Antigravity Cron] Firebase agotó la cuota diaria; no se repetirán lecturas inútiles.');
+        break;
+      }
       if (attempt < 3) await wait(attempt * 15000);
     }
   }

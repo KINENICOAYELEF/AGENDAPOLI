@@ -175,6 +175,17 @@ describe('Circuito de reevaluación y avisos docentes', () => {
     assert.match(route, /deduplicated: true/);
     assert.match(route, /status: 'failed'/);
     assert.match(route, /throw err/);
+    assert.match(script, /isNonRetryableQuotaError/);
+    assert.match(script, /no se repetirán lecturas inútiles/);
+  });
+
+  test('el censo evita consultas N+1 al conciliar tareas y recordatorios', () => {
+    const census = readFileSync(new URL('../src/lib/agent/censusEngine.ts', import.meta.url), 'utf8');
+    assert.match(census, /where\('status', '==', 'ACTIVE'\)/);
+    assert.match(census, /taskEvaluations = evaluations\.filter/);
+    assert.match(census, /pendingReminderDocsByStudent/);
+    assert.doesNotMatch(census, /evaluationsQuery\.get\(\)/);
+    assert.doesNotMatch(census, /where\('studentId', '==', student\.id\)\.limit\(100\)/);
   });
 
   test('la interfaz no ejecuta censos completos de Firestore en segundo plano', () => {
