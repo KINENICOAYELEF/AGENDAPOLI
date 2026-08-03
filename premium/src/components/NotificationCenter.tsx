@@ -28,6 +28,19 @@ interface NotificationItem {
     assignedPatients?: Array<{ id: string; name: string }>;
 }
 
+type NotificationCacheEntry = {
+    notifications: NotificationItem[];
+    interns: AppUser[];
+    users: AppUser[];
+    fetchedAt: number;
+};
+
+// La campana vive en el layout de toda la aplicación. Mantener este cache solo
+// en memoria evita repetir un censo completo al cambiar de pantalla; no guarda
+// información clínica en localStorage ni en el dispositivo.
+const notificationCache = new Map<string, NotificationCacheEntry>();
+const NOTIFICATION_CACHE_TTL_MS = 15 * 60 * 1000;
+
 export function NotificationCenter() {
     const { user } = useAuth();
     const { globalActiveYear } = useYear();
@@ -43,6 +56,7 @@ export function NotificationCenter() {
     const [searchQuery, setSearchQuery] = useState("");
     
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const fetchInFlightRef = useRef(false);
 
     // Cerrar al hacer click afuera
     useEffect(() => {
@@ -55,8 +69,18 @@ export function NotificationCenter() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const fetchAlerts = async () => {
+    const fetchAlerts = async (force = false) => {
         if (!globalActiveYear || !user) return;
+        const cacheKey = `${globalActiveYear}:${user.uid}:${user.role}`;
+        const cached = notificationCache.get(cacheKey);
+        if (!force && cached && Date.now() - cached.fetchedAt < NOTIFICATION_CACHE_TTL_MS) {
+            setNotifications(cached.notifications);
+            setAllInterns(cached.interns);
+            setAllUsers(cached.users);
+            return;
+        }
+        if (fetchInFlightRef.current) return;
+        fetchInFlightRef.current = true;
         setLoading(true);
         try {
             // 1. Obtener Internos y Docentes (para resolver nombres de quien evolucionó)
@@ -236,21 +260,42 @@ export function NotificationCenter() {
             // Ordenar por gravedad o relevancia
             list.sort((a, b) => b.daysCount - a.daysCount);
             setNotifications(list);
+            notificationCache.set(cacheKey, {
+                notifications: list,
+                interns,
+                users: combinedUsers,
+                fetchedAt: Date.now(),
+            });
 
         } catch (e) {
             console.error("Error cargando alertas de notificación:", e);
         } finally {
+            fetchInFlightRef.current = false;
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (globalActiveYear && user) {
-            fetchAlerts();
-            const interval = setInterval(fetchAlerts, 5 * 60 * 1000);
-            return () => clearInterval(interval);
+        if (!globalActiveYear || !user) return;
+        const cached = notificationCache.get(`${globalActiveYear}:${user.uid}:${user.role}`);
+        if (cached) {
+            setNotifications(cached.notifications);
+            setAllInterns(cached.interns);
+            setAllUsers(cached.users);
+        } else {
+            setNotifications([]);
+            setAllInterns([]);
+            setAllUsers([]);
         }
-    }, [globalActiveYear, user]);
+    }, [globalActiveYear, user?.uid, user?.role]);
+
+    // El censo pesado se ejecuta solo cuando la persona abre la campana. Las
+    // alertas automáticas siguen a cargo del agente programado y Telegram.
+    useEffect(() => {
+        if (isOpen && globalActiveYear && user) void fetchAlerts(false);
+        // fetchAlerts usa deliberadamente el usuario/año actuales.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, globalActiveYear, user?.uid, user?.role]);
 
     // Acción: Advertir/Bloquear acceso al interno
     const handleRestrictAccess = async (item: NotificationItem) => {
@@ -265,7 +310,7 @@ export function NotificationCenter() {
                 bloqueadoAt: new Date().toISOString()
             });
             alert(`Acceso restringido temporalmente para el interno ${item.internName}.`);
-            fetchAlerts();
+            fetchAlerts(true);
         } catch (e) {
             console.error(e);
             alert("Error al intentar restringir el acceso.");
@@ -297,7 +342,7 @@ export function NotificationCenter() {
 
             alert(`Paciente reasignado exitosamente a ${intern.displayName || intern.email}.`);
             setReassigningPatientId(null);
-            fetchAlerts();
+            fetchAlerts(true);
         } catch (e) {
             console.error(e);
             alert("Error al reasignar el paciente.");
@@ -364,7 +409,7 @@ export function NotificationCenter() {
                             <p className="text-[10px] text-slate-400 font-medium">Control de evolución y permanencia</p>
                         </div>
                         <button
-                            onClick={fetchAlerts}
+                            onClick={() => void fetchAlerts(true)}
                             disabled={loading}
                             className="text-xs text-indigo-600 hover:text-indigo-800 font-bold disabled:opacity-50 flex items-center gap-1 transition"
                         >

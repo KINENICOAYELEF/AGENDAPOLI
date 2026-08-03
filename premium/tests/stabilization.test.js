@@ -163,4 +163,13 @@ describe('Circuito de reevaluación y avisos docentes', () => {
     assert.match(source, /fetch\(`\$\{APP_URL\}\/api\/agent\/run`/);
     assert.match(source, /No se enviará nada a estudiantes sin tu aprobación/);
   });
+
+  test('la interfaz no ejecuta censos completos de Firestore en segundo plano', () => {
+    const notifications = readFileSync(new URL('../src/components/NotificationCenter.tsx', import.meta.url), 'utf8');
+    const studentTasks = readFileSync(new URL('../src/components/StudentClinicalTaskBanner.tsx', import.meta.url), 'utf8');
+    assert.doesNotMatch(notifications, /setInterval\(fetchAlerts/);
+    assert.match(notifications, /if \(isOpen && globalActiveYear && user\)/);
+    assert.match(notifications, /NOTIFICATION_CACHE_TTL_MS/);
+    assert.match(studentTasks, /5 \* 60_000/);
+  });
 });

@@ -21,6 +21,7 @@ export function StudentClinicalTaskBanner() {
   useEffect(() => {
     if (!user || user.role !== "INTERNO") return;
     let active = true;
+    let lastLoadedAt = 0;
     const loadTasks = async () => {
       try {
         const token = await auth.currentUser?.getIdToken();
@@ -31,14 +32,21 @@ export function StudentClinicalTaskBanner() {
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const payload = await response.json();
-        if (active) setTasks(Array.isArray(payload.tasks) ? payload.tasks : []);
+        if (active) {
+          setTasks(Array.isArray(payload.tasks) ? payload.tasks : []);
+          lastLoadedAt = Date.now();
+        }
       } catch (error) {
         console.error("No se pudieron cargar las tareas clínicas del estudiante", error);
       }
     };
     void loadTasks();
-    const interval = window.setInterval(loadTasks, 60_000);
-    const refreshOnFocus = () => void loadTasks();
+    // Cinco minutos mantiene el aviso persistente y reduce en 80% las consultas
+    // periódicas. Al volver a la pestaña se actualiza solo si pasó un minuto.
+    const interval = window.setInterval(loadTasks, 5 * 60_000);
+    const refreshOnFocus = () => {
+      if (Date.now() - lastLoadedAt >= 60_000) void loadTasks();
+    };
     window.addEventListener("focus", refreshOnFocus);
     return () => {
       active = false;
