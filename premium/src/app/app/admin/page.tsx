@@ -15,6 +15,7 @@ import { ActiveUsersManager } from "@/components/ActiveUsersManager";
 import { InternAssignmentManager } from "@/components/InternAssignmentManager";
 import { SimuladorDocentePanel } from "@/components/SimuladorDocentePanel";
 import { DefensaDocentePanel } from "@/components/DefensaDocentePanel";
+import { TelegramAdminPanel } from "@/components/TelegramAdminPanel";
 
 import { HistorialEvolucionesAdmin } from "@/components/HistorialEvolucionesAdmin";
 
@@ -130,6 +131,9 @@ export default function AdminDocentePage() {
 
             {/* Panel de Defensa de Comisión (Voz) */}
             <DefensaDocentePanel />
+
+            {/* Diagnóstico y conexión privada del Bot Docente */}
+            <TelegramAdminPanel />
 
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
 

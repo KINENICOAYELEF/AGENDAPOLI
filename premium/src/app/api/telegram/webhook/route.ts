@@ -11,9 +11,8 @@
 
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/server/firebaseAdmin';
+import { getAllowedTelegramChatId, sendTelegramMessage } from '@/lib/server/telegram';
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_ALLOWED_CHAT_ID = process.env.TELEGRAM_ALLOWED_CHAT_ID;
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://agendapoli.vercel.app';
 
@@ -27,24 +26,9 @@ async function pendingReviewCounts() {
   return { total: total.data().count, p0: p0.data().count, p1: p1.data().count };
 }
 
-async function sendTelegramMessage(chatId: string | number, text: string) {
-  if (!TELEGRAM_BOT_TOKEN) {
-    console.warn('[Telegram PR13] TELEGRAM_BOT_TOKEN missing in environment variables.');
-    return { ok: false, error: 'no_token' };
-  }
-
-  const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
-  });
-
-  return res.json();
-}
-
 export async function POST(req: Request) {
   try {
-    if (!TELEGRAM_BOT_TOKEN) {
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
       return NextResponse.json({ error: 'Bot token not configured' }, { status: 500 });
     }
 
@@ -66,22 +50,28 @@ export async function POST(req: Request) {
     const senderChatId = String(message.chat.id);
 
     // 2. Control Estricto de Acceso Privado (Chat ID autorizado) — Fail Closed
-    if (!TELEGRAM_ALLOWED_CHAT_ID || senderChatId !== TELEGRAM_ALLOWED_CHAT_ID) {
+    const allowedChatId = getAllowedTelegramChatId();
+    if (!allowedChatId || senderChatId !== allowedChatId) {
       await sendTelegramMessage(senderChatId, '⛔ *Acceso Denegado*: Asistente docente privado de Agenda Poli.');
       return NextResponse.json({ status: 'unauthorized' }, { status: 403 });
     }
 
     // 3. Manejo de Nota de Voz (PROCESAR ANTES DE VERIFICAR message.text)
     if (message.voice || message.audio) {
+      await adminDb.collection('telegram_intake_requests').add({
+        kind: message.voice ? 'VOICE_NOTE' : 'AUDIO_FILE',
+        status: 'RECEIVED_NOT_TRANSCRIBED',
+        chatId: senderChatId,
+        telegramMessageId: message.message_id || null,
+        receivedAt: new Date().toISOString(),
+      });
       await sendTelegramMessage(
         senderChatId,
         `🎙️ *Nota de voz recibida*\n\n` +
-          `Procesando la instrucción docente desidentificada...\n` +
-          `• Intención: *Registrar evento / rotación*\n` +
-          `• Estado: *Propuesta en borrador creada*\n\n` +
-          `Confirma en la Bandeja Docente para aplicar la acción.`
+          `Quedó registrada de forma privada para revisión.\n` +
+          `La transcripción y creación automática de acciones todavía no están habilitadas, por lo que no se modificó ninguna ficha, rotación ni evaluación.`
       );
-      return NextResponse.json({ status: 'voice_processed' });
+      return NextResponse.json({ status: 'voice_received_pending_transcription' });
     }
 
     if (!message.text) {
