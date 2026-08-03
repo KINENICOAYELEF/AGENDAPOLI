@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, where, getDocs, doc } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { AppUser } from "@/context/AuthContext";
+import { UsersService } from "@/services/users";
 
 export function PendingUsersManager() {
     const [pendingUsers, setPendingUsers] = useState<any[]>([]);
@@ -13,10 +14,8 @@ export function PendingUsersManager() {
     const loadPendingUsers = async () => {
         setLoading(true);
         try {
-            const usersRef = collection(db, "users");
-            const q = query(usersRef, where("role", "==", "PENDING"));
-            const snapshot = await getDocs(q);
-            setPendingUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const users = await UsersService.getByRole("PENDING");
+            setPendingUsers(users.map(item => ({ id: item.uid, ...item })));
         } catch (error) {
             console.error("Error cargando usuarios pendientes:", error);
         } finally {
@@ -33,6 +32,7 @@ export function PendingUsersManager() {
         try {
             const userRef = doc(db, "users", userId);
             await setDocCounted(userRef, { role: newRole }, { merge: true });
+            UsersService.invalidateCache();
             alert(`Usuario aprobado como ${newRole} exitosamente.`);
             loadPendingUsers();
         } catch (error) {
@@ -49,6 +49,7 @@ export function PendingUsersManager() {
             // Wait, deleteDoc count is not in firestore service, we can just use setDocCounted to role = 'REJECTED' if we want.
             const userRef = doc(db, "users", userId);
             await setDocCounted(userRef, { role: "REJECTED" }, { merge: true });
+            UsersService.invalidateCache();
             alert("Usuario rechazado.");
             loadPendingUsers();
         } catch (error) {

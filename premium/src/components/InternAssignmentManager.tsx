@@ -87,6 +87,7 @@ export function InternAssignmentManager() {
             });
 
             await batch.commit();
+            PersonasUsuariasService.invalidateCache(globalActiveYear);
             alert(`Éxito: ${selectedPatientIds.size} pacientes asignados a ${intern.displayName || intern.email}.`);
             setSelectedPatientIds(new Set());
             loadInitialData();

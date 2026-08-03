@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, where, getDocs, doc } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { useAuth } from "@/context/AuthContext";
+import { UsersService } from "@/services/users";
 
 export function ActiveUsersManager() {
     const { user: currentUser } = useAuth();
@@ -14,13 +15,8 @@ export function ActiveUsersManager() {
     const loadActiveUsers = async () => {
         setLoading(true);
         try {
-            const usersRef = collection(db, "users");
-            // Nota: Firebase in no tolera queries complejas sin índices compuestos a veces, 
-            // pero para simplificar, bajaremos todos los usuarios y filtraremos localmente, 
-            // o usaremos un query simple de 'in'.
-            const q = query(usersRef, where("role", "in", ["INTERNO", "DOCENTE"]));
-            const snapshot = await getDocs(q);
-            setActiveUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const users = await UsersService.getAll();
+            setActiveUsers(users.filter(item => item.role === "INTERNO" || item.role === "DOCENTE").map(item => ({ id: item.uid, ...item })));
         } catch (error) {
             console.error("Error cargando usuarios activos:", error);
         } finally {
@@ -37,6 +33,7 @@ export function ActiveUsersManager() {
         try {
             const userRef = doc(db, "users", userId);
             await setDocCounted(userRef, { role: newRole }, { merge: true });
+            UsersService.invalidateCache();
             alert(`Rol cambiado exitosamente a ${newRole}.`);
             loadActiveUsers();
         } catch (error) {
@@ -50,6 +47,7 @@ export function ActiveUsersManager() {
         try {
             const userRef = doc(db, "users", userId);
             await setDocCounted(userRef, { role: "PENDING" }, { merge: true });
+            UsersService.invalidateCache();
             alert("Acceso revocado exitosamente.");
             loadActiveUsers();
         } catch (error) {

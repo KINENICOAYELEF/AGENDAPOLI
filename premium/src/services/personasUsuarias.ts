@@ -3,6 +3,18 @@ import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { PersonaUsuaria } from "@/types/personaUsuaria";
 
+type PatientCacheEntry = {
+    data: PersonaUsuaria[];
+    fetchedAt: number;
+    inFlight?: Promise<PersonaUsuaria[]>;
+};
+
+// Cache exclusivamente en memoria del navegador. Evita que el mismo directorio
+// se lea varias veces al navegar entre usuarios, alertas y asignaciones, sin
+// persistir información clínica en disco/localStorage.
+const patientDirectoryCache = new Map<string, PatientCacheEntry>();
+const PATIENT_DIRECTORY_CACHE_TTL_MS = 5 * 60 * 1000;
+
 /**
  * REPOSITORIO DE PERSONAS USUARIAS
  * Capa de abstracción. Internamente sigue comunicándose con la colección
@@ -15,6 +27,11 @@ import { PersonaUsuaria } from "@/types/personaUsuaria";
  */
 
 export const PersonasUsuariasService = {
+    invalidateCache(year?: string) {
+        if (year) patientDirectoryCache.delete(year);
+        else patientDirectoryCache.clear();
+    },
+
     /**
      * Obtiene TODAS las Personas Usuarias del año.
      * Para datasets de hasta ~500 registros esto es seguro y rápido.
@@ -29,24 +46,39 @@ export const PersonasUsuariasService = {
     }> {
         if (!year) throw new Error("Año de programa requerido");
 
-        const collectionRef = collection(db, "programs", year, "usuarias");
+        const cached = patientDirectoryCache.get(year);
+        const isFresh = cached && Date.now() - cached.fetchedAt < PATIENT_DIRECTORY_CACHE_TTL_MS;
+        let data: PersonaUsuaria[];
 
-        // Carga todos los documentos sin límite ni paginación.
-        // Firestore retorna por __name__ (document ID) por defecto.
-        const q = query(collectionRef);
-
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map(d => d.data() as PersonaUsuaria);
-
-        // Ordenar en el cliente por nombre para vista consistente
-        data.sort((a, b) => {
-            const nameA = (a.identity?.fullName || (a as any).nombreCompleto || '').toLowerCase();
-            const nameB = (b.identity?.fullName || (b as any).nombreCompleto || '').toLowerCase();
-            return nameA.localeCompare(nameB);
-        });
+        if (isFresh) {
+            data = cached.data;
+        } else if (cached?.inFlight) {
+            data = await cached.inFlight;
+        } else {
+            const load = async () => {
+                const collectionRef = collection(db, "programs", year, "usuarias");
+                const snapshot = await getDocs(query(collectionRef));
+                const loaded = snapshot.docs.map(d => d.data() as PersonaUsuaria);
+                loaded.sort((a, b) => {
+                    const nameA = (a.identity?.fullName || (a as any).nombreCompleto || '').toLowerCase();
+                    const nameB = (b.identity?.fullName || (b as any).nombreCompleto || '').toLowerCase();
+                    return nameA.localeCompare(nameB);
+                });
+                patientDirectoryCache.set(year, { data: loaded, fetchedAt: Date.now() });
+                return loaded;
+            };
+            const inFlight = load();
+            patientDirectoryCache.set(year, { data: cached?.data || [], fetchedAt: cached?.fetchedAt || 0, inFlight });
+            try {
+                data = await inFlight;
+            } finally {
+                const current = patientDirectoryCache.get(year);
+                if (current?.inFlight === inFlight) delete current.inFlight;
+            }
+        }
 
         return {
-            data,
+            data: [...data],
             lastDoc: null,
             hasMore: false
         };
@@ -61,7 +93,12 @@ export const PersonasUsuariasService = {
         const docRef = doc(db, "programs", year, "usuarias", id);
         const snapshot = await getDoc(docRef);
         if (!snapshot.exists()) return null;
-        return snapshot.data() as PersonaUsuaria;
+        const patient = snapshot.data() as PersonaUsuaria;
+        const cached = patientDirectoryCache.get(year);
+        if (cached && !cached.data.some(item => item.id === id)) {
+            cached.data = [...cached.data, patient];
+        }
+        return patient;
     },
 
     /**
@@ -83,6 +120,7 @@ export const PersonasUsuariasService = {
 
         // Hacemos el volcado a la base de datos real
         await setDocCounted(targetRef, data, { merge: true });
+        this.invalidateCache(year);
     },
 
     /**
@@ -138,6 +176,7 @@ export const PersonasUsuariasService = {
         // 4. Finalmente, eliminar la Persona Usuaria
         const targetRef = doc(db, "programs", year, "usuarias", id);
         await deleteDoc(targetRef);
+        this.invalidateCache(year);
 
         console.log(`[CASCADE DELETE] Persona ${id}: ${procesosSnap.size} procesos, ${citasSnap.size} citas, ${evalsSnap.size} evaluaciones eliminadas.`);
     }

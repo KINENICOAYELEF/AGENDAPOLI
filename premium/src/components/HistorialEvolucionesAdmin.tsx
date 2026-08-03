@@ -9,6 +9,7 @@ import { Evolucion } from "@/types/clinica";
 import { PersonasUsuariasService } from "@/services/personasUsuarias";
 import { PersonaUsuaria } from "@/types/personaUsuaria";
 import Link from "next/link";
+import { UsersService } from "@/services/users";
 
 interface InternUser {
     id: string;
@@ -55,11 +56,9 @@ export function HistorialEvolucionesAdmin() {
                 setEvoluciones(loadedEvols);
 
                 // 2. Cargar todos los usuarios (para mapear UIDs a nombres de Internos)
-                const usersRef = collection(db, "users");
-                const usersSnap = await getDocs(usersRef);
-                const loadedUsers: InternUser[] = usersSnap.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
+                const loadedUsers: InternUser[] = (await UsersService.getAll()).map(user => ({
+                    id: user.uid,
+                    ...user,
                 } as InternUser));
 
                 setInternos(loadedUsers);

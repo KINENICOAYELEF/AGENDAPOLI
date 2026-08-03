@@ -191,6 +191,18 @@ describe('Circuito de reevaluación y avisos docentes', () => {
     assert.doesNotMatch(census, /where\('studentId', '==', student\.id\)\.limit\(100\)/);
   });
 
+  test('los directorios compartidos se cachean en memoria y se invalidan tras cambios', () => {
+    const patients = readFileSync(new URL('../src/services/personasUsuarias.ts', import.meta.url), 'utf8');
+    const users = readFileSync(new URL('../src/services/users.ts', import.meta.url), 'utf8');
+    const assignments = readFileSync(new URL('../src/components/InternAssignmentManager.tsx', import.meta.url), 'utf8');
+    assert.match(patients, /PATIENT_DIRECTORY_CACHE_TTL_MS/);
+    assert.match(patients, /patientDirectoryCache/);
+    assert.match(patients, /invalidateCache\(year/);
+    assert.match(users, /USERS_CACHE_TTL_MS/);
+    assert.match(users, /async getAll\(\)/);
+    assert.match(assignments, /PersonasUsuariasService\.invalidateCache\(globalActiveYear\)/);
+  });
+
   test('la interfaz no ejecuta censos completos de Firestore en segundo plano', () => {
     const notifications = readFileSync(new URL('../src/components/NotificationCenter.tsx', import.meta.url), 'utf8');
     const studentTasks = readFileSync(new URL('../src/components/StudentClinicalTaskBanner.tsx', import.meta.url), 'utf8');
