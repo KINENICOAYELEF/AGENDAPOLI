@@ -41,6 +41,20 @@ function scheduledSlot() {
   return `${slotDate}-${period}`;
 }
 
+function shouldSkipEarlyFallback() {
+  if (process.env.GITHUB_EVENT_NAME !== 'schedule') return false;
+  const { hour } = santiagoDateParts();
+  const localHour = Number(hour);
+  const expression = process.env.GITHUB_EVENT_SCHEDULE || '';
+  const isMorningExpression = expression.includes('30 10 ') || expression.includes('30 11 ');
+
+  // Del par invierno/verano, el respaldo que cae antes de la hora objetivo se
+  // omite. Una ejecución tardía sí se acepta y queda deduplicada por turno.
+  return isMorningExpression
+    ? localHour >= 5 && localHour < 7
+    : localHour >= 6 && localHour < 21;
+}
+
 const wait = (milliseconds) => new Promise(resolve => setTimeout(resolve, milliseconds));
 
 function isNonRetryableQuotaError(error) {
@@ -53,6 +67,11 @@ async function runCron() {
 
   if (!AGENT_SECRET) {
     throw new Error('AGENT_MCP_SECRET no está configurado en GitHub Actions.');
+  }
+
+  if (shouldSkipEarlyFallback()) {
+    console.log('[Antigravity Cron] Respaldo DST anterior a la hora objetivo; se usará el siguiente turno programado.');
+    return;
   }
 
   const scheduleSlot = scheduledSlot();
