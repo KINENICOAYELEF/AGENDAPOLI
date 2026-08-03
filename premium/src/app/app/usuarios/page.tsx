@@ -15,6 +15,7 @@ function SearchParamsHandler({ onOpenFicha }: { onOpenFicha: (id: string, params
     const procesoId = searchParams.get('procesoId') || undefined;
     const recordId = searchParams.get('recordId') || undefined;
     const recordType = searchParams.get('recordType') || undefined;
+    const step = searchParams.get('step') || undefined;
     const returnTo = searchParams.get('returnTo') || undefined;
 
     useEffect(() => {
@@ -24,10 +25,11 @@ function SearchParamsHandler({ onOpenFicha }: { onOpenFicha: (id: string, params
                 procesoId: procesoId || '',
                 recordId: recordId || '',
                 recordType: recordType || '',
+                step: step || '',
                 returnTo: returnTo || ''
             });
         }
-    }, [openFicha, action, procesoId, recordId, recordType, returnTo, onOpenFicha]);
+    }, [openFicha, action, procesoId, recordId, recordType, step, returnTo, onOpenFicha]);
 
     return null;
 }
