@@ -6,7 +6,8 @@ import { Evaluacion, Proceso } from "@/types/clinica";
 import { formatSafeDate } from "@/lib/firebase-utils";
 
 // Placeholder import for the Form we will build next
-import { EvaluacionForm } from "@/components/EvaluacionForm";
+import { EvaluacionExpressForm } from "@/components/EvaluacionExpressForm";
+import { ReevaluacionExpressForm } from "@/components/ReevaluacionExpressForm";
 import { ReadOnlyEvaluacion } from "./evaluacion-steps/ReadOnlyEvaluacion";
 
 interface EvaluacionesManagerProps {
@@ -69,23 +70,34 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
         return (
             <div className="fixed inset-0 z-[9999] bg-white flex flex-col animate-in fade-in duration-200 overscroll-none">
                 <div className="w-full flex-1 h-full text-slate-500 font-medium bg-slate-50 overflow-y-auto">
-                    <EvaluacionForm
-                        usuariaId={usuariaId}
-                        procesoId={proceso.id!}
-                        type={evaluacionType}
-                        initialData={(selectedEvaluacion || (
-                            evaluacionType === 'INITIAL' && (remoteHistorySnapshot || pacienteSnapshot)
-                                ? { remoteHistorySnapshot, paciente: pacienteSnapshot }
-                                : null
-                        )) as any}
-                        reevaluationBaseline={reevaluationBaseline}
-                        procesoContext={proceso}
-                        onClose={() => { 
-                            setView('lista');
-                            loadEvaluaciones();
-                        }}
-                        onSaveSuccess={handleFormSaved}
-                    />
+                    {evaluacionType === 'REEVALUATION' ? (
+                        <ReevaluacionExpressForm
+                            usuariaId={usuariaId}
+                            proceso={proceso}
+                            baselineEvaluation={reevaluationBaseline}
+                            initialData={selectedEvaluacion}
+                            onClose={() => {
+                                setView('lista');
+                                loadEvaluaciones();
+                            }}
+                            onSaveSuccess={handleFormSaved}
+                        />
+                    ) : (
+                        <EvaluacionExpressForm
+                            usuariaId={usuariaId}
+                            procesoId={proceso.id!}
+                            initialData={(selectedEvaluacion || (
+                                remoteHistorySnapshot || pacienteSnapshot
+                                    ? { remoteHistorySnapshot, paciente: pacienteSnapshot }
+                                    : null
+                            )) as any}
+                            onClose={() => {
+                                setView('lista');
+                                loadEvaluaciones();
+                            }}
+                            onSaveSuccess={handleFormSaved}
+                        />
+                    )}
                 </div>
             </div>
         );
@@ -155,7 +167,14 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
             {evaluaciones.length > 0 && (
                 <div className="grid gap-4 md:grid-cols-2">
                     {evaluaciones.map(ev => (
-                        <div key={ev.id} className="bg-white border text-sm border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer" onClick={() => { setSelectedEvaluacion(ev); setEvaluacionType(ev.type); setView('lectura'); }}>
+                        <div key={ev.id} className="bg-white border text-sm border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer" onClick={() => {
+                            setSelectedEvaluacion(ev);
+                            setEvaluacionType(ev.type);
+                            setReevaluationBaseline(ev.type === 'REEVALUATION'
+                                ? (evaluaciones.find(candidate => candidate.id !== ev.id && candidate.status === 'CLOSED') || evaluaciones.find(candidate => candidate.id !== ev.id) || null)
+                                : null);
+                            setView('lectura');
+                        }}>
                             <div className="flex items-center justify-between mb-3">
                                 <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide flex items-center gap-1.5
                                     ${ev.type === 'INITIAL' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}

@@ -47,12 +47,18 @@ export function buildDeidentifiedEvidence(records: ClinicalRecord[]) {
       collection: record.collection,
       sessionAt: text(record.sessionAt || record.fechaHoraAtencion || record.audit?.createdAt, 40),
       sections: record.collection === 'evaluaciones'
-        ? {
-            interview: text(record.interview, 1200),
-            guidedExam: text(record.guidedExam, 1200),
-            clinicalSynthesis: text(record.clinicalSynthesis, 1000),
-            therapeuticPlan: text(record.p4_plan_structured?.diagnostico_kinesiologico_narrativo, 1000),
-          }
+        ? record.type === 'REEVALUATION' && record.reevaluationExpress
+          ? {
+              reassessmentInterview: text(record.reevaluationExpress.interview, 1200),
+              comparablePhysicalExam: text(record.reevaluationExpress.exam, 1200),
+              clinicalIntegration: text(record.reevaluationExpress.reasoning, 1200),
+            }
+          : {
+              interview: text(record.interview || record.expressDraft?.anamnesisProxima, 1200),
+              guidedExam: text(record.guidedExam || record.expressDraft?.evaluacionFisica, 1200),
+              clinicalSynthesis: text(record.clinicalSynthesis || record.expressDraft?.razonamientoIA, 1000),
+              therapeuticPlan: text(record.p4_plan_structured?.diagnostico_kinesiologico_narrativo || record.expressDraft?.p4_plan, 1000),
+            }
         : {
             sessionGoal: text(record.sessionGoal || record.objetivoSesion, 700),
             interventions: text(record.interventions, 1200),
@@ -82,6 +88,7 @@ export async function analyzeStudentLongitudinal(
 
   const prompt = `Analiza exclusivamente el razonamiento clínico longitudinal de un estudiante identificado como ${studentId}.
 Usa únicamente la evidencia entregada. No infieras acciones no documentadas. La historia de la persona atendida es contexto: no penalices cronicidad ni atribuyas al estudiante registros de otra autoría.
+En las reevaluaciones juzga la concordancia completa: cambio referido y prioridad de la persona → selección e interpretación de medidas comparables → hipótesis actual → decisión, dosificación, objetivos y próxima medición. No exijas repetir una evaluación inicial completa ni penalices que se omitan pruebas irrelevantes.
 Cada conclusión debe citar recordId, collection, section y un extracto literalmente presente en la evidencia. Si no hay evidencia suficiente, responde prioridad P3 y explica la limitación.
 El feedback es privado para el docente; nunca contactes al estudiante.
 Responde SOLO JSON válido con esta forma exacta:

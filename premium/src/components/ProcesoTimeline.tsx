@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Evaluacion, Evolucion, Proceso } from "@/types/clinica";
 import { EvaluacionForm } from "./EvaluacionForm";
 import { EvaluacionExpressForm } from "./EvaluacionExpressForm";
+import { ReevaluacionExpressForm } from "./ReevaluacionExpressForm";
 import { EvolucionForm } from "./EvolucionForm";
 import { ReadOnlyEvaluacion } from "./evaluacion-steps/ReadOnlyEvaluacion";
 import {
@@ -169,14 +170,24 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
         return (
             <div className="fixed inset-0 z-[9999] bg-white flex flex-col animate-in fade-in duration-200 overscroll-none">
                 <div className="w-full flex-1 h-full text-slate-500 font-medium bg-slate-50 overflow-y-auto">
-                    {(isEvalInitial || isReeval) && (
+                    {isEvalInitial && (
                         <EvaluacionForm
                             usuariaId={personaUsuariaId}
                             procesoId={proceso.id!}
-                            type={isReeval ? 'REEVALUATION' : 'INITIAL'}
+                            type="INITIAL"
                             initialData={selectedEval}
-                            reevaluationBaseline={isReeval ? latestBaselineEvaluation : null}
+                            reevaluationBaseline={null}
                             procesoContext={proceso}
+                            onClose={() => setView('timeline')}
+                            onSaveSuccess={handleEvalSaved}
+                        />
+                    )}
+                    {isReeval && (
+                        <ReevaluacionExpressForm
+                            usuariaId={personaUsuariaId}
+                            proceso={proceso}
+                            baselineEvaluation={latestBaselineEvaluation}
+                            initialData={selectedEval}
                             onClose={() => setView('timeline')}
                             onSaveSuccess={handleEvalSaved}
                         />

@@ -168,9 +168,33 @@ export async function runCensusEngine() {
         let priority: 'P0' | 'P1' | 'P2' | 'P3' = 'P3';
 
         if (record.collection === 'evaluaciones') {
-          if (!hasValue(record.interview)) missingFields.push('Entrevista / Anamnesis');
-          if (!hasValue(record.guidedExam)) missingFields.push('Examen Físico Guiado');
-          if (!hasValue(record.p4_plan_structured)) missingFields.push('Plan Terapéutico ESTRUCTURADO');
+          const reassessment = record.type === 'REEVALUATION' ? record.reevaluationExpress : null;
+          if (reassessment) {
+            const interviewComplete = hasValue(reassessment.interview?.change)
+              && hasValue(reassessment.interview?.functionParticipation)
+              && hasValue(reassessment.interview?.patientPriority);
+            const examComplete = hasValue(reassessment.exam?.selectedDomains)
+              && hasValue(reassessment.exam?.comparableResult || reassessment.exam?.objectiveFindings)
+              && hasValue(reassessment.exam?.testInterpretation);
+            const reasoningComplete = hasValue(reassessment.reasoning?.hypothesis)
+              && hasValue(reassessment.reasoning?.direction)
+              && hasValue(reassessment.reasoning?.decision)
+              && hasValue(reassessment.reasoning?.plan)
+              && hasValue(reassessment.reasoning?.nextReassessment);
+            if (!interviewComplete) missingFields.push('Entrevista focal de reevaluación');
+            if (!examComplete) missingFields.push('Retest o examen físico comparable interpretado');
+            if (!reasoningComplete) missingFields.push('Integración clínica y ajuste del plan');
+            if (reassessment.interview?.newRedFlags && !hasValue(reassessment.interview?.redFlagDetail)) {
+              missingFields.push('Conducta frente a signos de alerta');
+              priority = 'P0';
+            } else if (missingFields.length > 0) {
+              priority = 'P1';
+            }
+          } else {
+            if (!hasValue(record.interview || record.expressDraft?.anamnesisProxima)) missingFields.push('Entrevista / Anamnesis');
+            if (!hasValue(record.guidedExam || record.expressDraft?.evaluacionFisica)) missingFields.push('Examen Físico Guiado');
+            if (!hasValue(record.p4_plan_structured || record.expressDraft?.p4_plan)) missingFields.push('Plan Terapéutico ESTRUCTURADO');
+          }
           if (record.autoSynthesis?.trafficLight === 'Rojo') priority = 'P0';
           else if (missingFields.length > 0) priority = 'P1';
         } else {
@@ -182,7 +206,12 @@ export async function runCensusEngine() {
         }
 
         if (missingFields.length > 0 || priority === 'P0' || priority === 'P1') {
-          const rawExcerpt = record.summary || record.sessionGoal || 'Registro clínico sin síntesis explícita';
+          const rawExcerpt = record.summary
+            || record.sessionGoal
+            || record.reevaluationExpress?.interview?.change
+            || record.reevaluationExpress?.reasoning?.coherence
+            || record.expressDraft?.razonamientoIA
+            || 'Registro clínico sin síntesis explícita';
           const cleanExcerpt = deidentifyText(rawExcerpt);
 
           const reviewPayload = {
