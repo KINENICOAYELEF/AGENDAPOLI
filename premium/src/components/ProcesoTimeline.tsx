@@ -278,10 +278,10 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
             </div>
 
             {/* FASE 2.2.4: Botones de Acción Rápida */}
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:grid-cols-2">
                 <button
                     onClick={() => { setSelectedEvol(null); setView('formEvol'); }}
-                    className="flex-1 min-w-[140px] bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700"
                 >
                     <PlusIcon className="w-4 h-4" />
                     Nueva Evolución
@@ -291,41 +291,23 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                         setSelectedEval(hasInitialEvaluation ? null : latestInitialEvaluation);
                         setView(hasInitialEvaluation ? 'formReeval' : 'formExpressEval');
                     }}
-                    className="flex-1 min-w-[140px] bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700"
                 >
                     <ArrowPathIcon className="w-4 h-4" />
                     {hasInitialEvaluation ? 'Reevaluación' : latestInitialEvaluation ? 'Completar evaluación inicial' : 'Crear evaluación inicial'}
                 </button>
 
-                {/* Botón v2: Oficial/Recomendado para Docentes e Internos */}
-                {canUseV2 && (
+                {canUseV2 && hasInitialEvaluation && (
                     <button
                         onClick={() => { setSelectedEval(latestInitialEvaluation); setView('formExpressEval'); }}
-                        className="flex-1 min-w-[140px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold px-4 py-3 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 border border-purple-400/30 relative overflow-hidden group/btnv2"
+                        className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 sm:col-span-2"
                     >
-                        <span className="absolute top-0 right-0 bg-amber-400 text-slate-900 font-black text-[8px] px-1.5 py-0.5 rounded-bl tracking-widest uppercase shadow-sm">
-                            Oficial
-                        </span>
-                        <span className="flex h-2 w-2 relative shrink-0">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-300 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-200"></span>
-                        </span>
-                        <span>{latestInitialEvaluation ? '⚡ Abrir Eval Inicial v2' : '⚡ Eval Inicial v2'}</span>
-                    </button>
-                )}
-
-                {/* Botón Antiguo: Oculto para Internos para evitar confusión, visible solo para Docente/Admin si lo necesitan */}
-                {isAdmin && (
-                    <button
-                        onClick={() => { setSelectedEval(null); setView('formEval'); }}
-                        className="flex-1 min-w-[140px] bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 opacity-80 hover:opacity-100"
-                        title="Formulario de Evaluación Inicial Antiguo (Heredado)"
-                    >
-                        <ClipboardIcon className="w-4 h-4 text-slate-400" />
-                        <span className="text-xs">Eval Inicial (Antiguo)</span>
+                        <ClipboardIcon className="h-4 w-4 text-slate-500" />
+                        <span>Consultar evaluación inicial</span>
                     </button>
                 )}
             </div>
+            {isAdmin && <details className="text-xs text-slate-500"><summary className="cursor-pointer py-2 font-semibold">Herramientas docentes heredadas</summary><button onClick={() => { setSelectedEval(null); setView('formEval'); }} className="mt-1 min-h-10 rounded-lg border border-slate-300 bg-white px-3 font-semibold text-slate-600">Abrir formulario inicial antiguo</button></details>}
 
             {/* Pestañas de Navegación del Proceso */}
             <div className="flex bg-slate-100 p-1 rounded-xl">
