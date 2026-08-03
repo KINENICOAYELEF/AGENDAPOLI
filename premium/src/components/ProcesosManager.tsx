@@ -47,7 +47,6 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHi
             if (active) {
                 setSelectedProceso(active);
                 setView('timeline');
-                if (!initialRecordParams?.procesoId) onNavigationChange?.({ action: initialRecordParams?.action || 'PROCESOS', procesoId: active.id });
             }
         } catch (error: any) {
             console.error("Error cargando procesos:", error);
@@ -299,7 +298,11 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHi
 
                                             <div className="flex flex-col gap-2 shrink-0 mt-4 md:mt-0 w-full md:w-auto">
                                                 <button
-                                                    onClick={() => { setSelectedProceso(proc); setView('timeline'); }}
+                                                    onClick={() => {
+                                                        setSelectedProceso(proc);
+                                                        setView('timeline');
+                                                        onNavigationChange?.({ action: 'PROCESOS', procesoId: proc.id });
+                                                    }}
                                                     className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm font-semibold px-4 py-3 md:px-5 md:py-3.5 rounded-xl transition-all shadow-sm hover:shadow-indigo-200 w-full flex items-center justify-center gap-2 group/btn"
                                                 >
                                                     Timeline Clínico (HCE)
@@ -344,7 +347,11 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHi
                                         </div>
                                         <div className="flex flex-col sm:flex-row gap-2 shrink-0 flex-wrap sm:justify-end w-full sm:w-auto mt-2 sm:mt-0">
                                             <button
-                                                onClick={() => { setSelectedProceso(proc); setView('timeline'); }}
+                                                onClick={() => {
+                                                    setSelectedProceso(proc);
+                                                    setView('timeline');
+                                                    onNavigationChange?.({ action: 'PROCESOS', procesoId: proc.id });
+                                                }}
                                                 className="w-full sm:w-auto text-center bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-semibold px-4 py-2 border border-indigo-200 rounded-lg shadow-sm transition-all"
                                             >
                                                 Ver Timeline HCE

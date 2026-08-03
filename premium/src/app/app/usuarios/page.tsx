@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
@@ -49,20 +49,31 @@ export default function UsuariosPage() {
     // Lista completa (FASE 70: sin paginación para evitar bug de usuarios invisibles)
     const [personasUsuarias, setPersonasUsuarias] = useState<PersonaUsuaria[]>([]);
     const [loadingData, setLoadingData] = useState(false);
+    const personasUsuariasRef = useRef<PersonaUsuaria[]>([]);
+
+    useEffect(() => {
+        personasUsuariasRef.current = personasUsuarias;
+    }, [personasUsuarias]);
 
     // Búsqueda en array de memoria
     const [searchTerm, setSearchTerm] = useState("");
 
     const updateClinicalUrl = useCallback((patientId: string | null, state: Record<string, string | undefined> = {}) => {
-        if (!patientId) {
-            router.push('/app/usuarios', { scroll: false });
-            return;
-        }
-        const params = new URLSearchParams({ openFicha: patientId });
-        Object.entries(state).forEach(([key, value]) => {
-            if (value) params.set(key, value);
-        });
-        router.push(`/app/usuarios?${params.toString()}`, { scroll: false });
+        const nextUrl = patientId
+            ? (() => {
+                const params = new URLSearchParams({ openFicha: patientId });
+                Object.entries(state).forEach(([key, value]) => {
+                    if (value) params.set(key, value);
+                });
+                return `/app/usuarios?${params.toString()}`;
+            })()
+            : '/app/usuarios';
+
+        // Evita navegaciones repetidas al mismo destino. En una ficha grande esas
+        // remociones/montajes simultaneos podian dejar el portal del modal en blanco.
+        const currentUrl = `${window.location.pathname}${window.location.search}`;
+        if (currentUrl === nextUrl) return;
+        router.push(nextUrl, { scroll: false });
     }, [router]);
 
     const openClinicalRecord = useCallback((patient: PersonaUsuaria, action?: string) => {
@@ -154,17 +165,18 @@ export default function UsuariosPage() {
         const action = params?.action;
         setInitialRecordParams(params);
         
-        // Try memory first
+        // Primero usar la copia estable en memoria. No vaciar ni remontar el
+        // directorio completo si la persona ya estaba cargada.
+        const userInMem = personasUsuariasRef.current.find(u => u.id === id);
+        if (userInMem) {
+            setSelectedUser(userInMem);
+            setInitialAction(action);
+            setIsFormOpen(true);
+            return;
+        }
+
         setLoadingData(true);
         try {
-            const userInMem = personasUsuarias.find(u => u.id === id);
-            if (userInMem) {
-                setSelectedUser(userInMem);
-                setInitialAction(action);
-                setIsFormOpen(true);
-                return;
-            }
-
             // Force dynamic load
             const fetched = await PersonasUsuariasService.getById(globalActiveYear, id);
             if (fetched) {
@@ -184,7 +196,7 @@ export default function UsuariosPage() {
         } finally {
             setLoadingData(false);
         }
-    }, [globalActiveYear, personasUsuarias]);
+    }, [globalActiveYear]);
 
     if (loadingYear) {
         return <div className="p-8 text-slate-500">Sincronizando reloj clínico...</div>;
