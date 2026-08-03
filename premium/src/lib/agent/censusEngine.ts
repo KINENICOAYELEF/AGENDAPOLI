@@ -26,6 +26,88 @@ function hasValue(val: unknown): boolean {
   return Boolean(val);
 }
 
+/**
+ * La frecuencia no sustituye el juicio clínico: es un recordatorio docente
+ * cuando ya existe una línea basal y el mismo interno ha documentado cinco
+ * sesiones posteriores con la misma persona. Nunca toca la ficha.
+ */
+async function reconcileReevaluationReminders(db: ReturnType<typeof getAdminDb>, year: string, student: any, records: any[]) {
+  const evolutionsByPatient = new Map<string, any[]>();
+  for (const record of records.filter((item) => item.collection === 'evoluciones')) {
+    const patientId = record.usuariaId || record.personaUsuariaId;
+    if (!patientId) continue;
+    const current = evolutionsByPatient.get(patientId) || [];
+    current.push(record);
+    evolutionsByPatient.set(patientId, current);
+  }
+
+  let created = 0;
+  for (const [patientId, evolutions] of evolutionsByPatient) {
+    const evaluations = records
+      .filter((item) => item.collection === 'evaluaciones' && (item.usuariaId || item.personaUsuariaId) === patientId)
+      .sort((a, b) => (recordDate(a) || 0) - (recordDate(b) || 0));
+    if (!evaluations.length) continue;
+
+    const baseline = evaluations[evaluations.length - 1];
+    const baselineDate = recordDate(baseline) || 0;
+    const sessionsSinceBaseline = evolutions.filter((item) => (recordDate(item) || 0) > baselineDate);
+    const reminderId = `reevaluation_due_${year}_${student.id}_${patientId}_${baseline.id}`;
+    const reminderRef = db.collection('teacher_agent_reviews').doc(reminderId);
+
+    // Una reevaluación nueva cierra recordatorios originados en líneas basales
+    // anteriores para esta dupla estudiante-persona.
+    // Solo filtramos por estudiante en Firestore para no exigir un índice
+    // compuesto nuevo durante atención clínica; el resto se filtra en memoria.
+    const previousReminders = await db.collection('teacher_agent_reviews')
+      .where('studentId', '==', student.id)
+      .limit(100)
+      .get();
+    await Promise.all(previousReminders.docs
+      .filter((doc: any) => {
+        const data = doc.data();
+        return doc.id !== reminderId && data.patientId === patientId && data.category === 'REEVALUATION_DUE' && data.status === 'PENDING_TEACHER';
+      })
+      .map((doc: any) => doc.ref.update({ status: 'ACCEPTED_PRIVATE', reviewedAt: new Date().toISOString(), resolution: 'reevaluation_detected' })));
+
+    if (sessionsSinceBaseline.length < 5) {
+      // Si una reevaluación nueva cambió la línea basal, el recordatorio previo
+      // deja de ser pertinente. Conservamos historial, pero no sigue molestando.
+      continue;
+    }
+
+    const latestEvolution = sessionsSinceBaseline.sort((a, b) => (recordDate(b) || 0) - (recordDate(a) || 0))[0];
+    const payload = TeacherAgentReviewSchema.parse({
+      year,
+      studentId: student.id,
+      patientId,
+      sourceReferences: [{
+        year,
+        collection: 'evoluciones' as const,
+        recordId: latestEvolution.id,
+        fieldPath: 'reevaluacion_pendiente',
+        contentHash: `reevaluation_${baseline.id}`,
+        redactedExcerpt: `Se registraron ${sessionsSinceBaseline.length} evoluciones desde la última evaluación/reevaluación del mismo estudiante.`,
+      }],
+      observation: `Reevaluación docente sugerida: ${sessionsSinceBaseline.length} evoluciones posteriores a la línea basal del mismo estudiante.`,
+      pedagogicalInference: 'Antes de continuar el plan, corresponde contrastar signos comparables, objetivos y respuesta a la intervención. La decisión clínica final sigue siendo del estudiante supervisado y del docente.',
+      confidence: 1,
+      priority: 'P2' as const,
+      status: 'PENDING_TEACHER' as const,
+      createdAt: new Date().toISOString(),
+      category: 'REEVALUATION_DUE',
+      baselineEvaluationId: baseline.id,
+      sessionsSinceBaseline: sessionsSinceBaseline.length,
+    });
+    try {
+      await reminderRef.create(payload);
+      created++;
+    } catch (error: any) {
+      if (error?.code !== 6 && error?.code !== 'already-exists') throw error;
+    }
+  }
+  return created;
+}
+
 export async function runCensusEngine() {
   if (!featureFlags.agentWriteEnabled) {
     console.log('[PR9 Census Engine] Execution blocked: featureFlags.agentWriteEnabled is false.');
@@ -142,6 +224,12 @@ export async function runCensusEngine() {
           }
         }
       }
+
+      // Recordatorio persistente de reevaluación: usa todo el historial del
+      // estudiante con esa persona, pero solo se crea una vez por línea basal.
+      const reevaluationReminders = await reconcileReevaluationReminders(db, year, student, allRecords);
+      reviewsCreated += reevaluationReminders;
+      priorityCounts.P2 += reevaluationReminders;
 
       // Actualizar perfil longitudinal real del estudiante en student_learning_profiles
       await db.collection('student_learning_profiles').doc(student.id).set(

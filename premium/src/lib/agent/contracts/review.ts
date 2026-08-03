@@ -30,5 +30,8 @@ export const TeacherAgentReviewSchema = z.object({
   ]),
   createdAt: z.string(),
   reviewedAt: z.string().optional(),
+  category: z.enum(['CLINICAL_AUDIT', 'REEVALUATION_DUE', 'ROTATION_REMINDER', 'INACTIVITY_REMINDER']).optional(),
+  baselineEvaluationId: z.string().optional(),
+  sessionsSinceBaseline: z.number().int().nonnegative().optional(),
 });
 export type TeacherAgentReview = z.infer<typeof TeacherAgentReviewSchema>;

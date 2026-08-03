@@ -80,7 +80,9 @@ export function BandejaDocenteInteligente() {
         }))
         .filter((review) => {
           const created = new Date(review.createdAt).getTime();
-          return Number.isFinite(created) && created >= cutoff;
+          // Las auditorías rutinarias caducan de la vista diaria; el hito de
+          // reevaluación permanece hasta que una reevaluación nueva lo cierre.
+          return review.category === 'REEVALUATION_DUE' || (Number.isFinite(created) && created >= cutoff);
         })
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
       setProfiles(
@@ -191,7 +193,7 @@ export function BandejaDocenteInteligente() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="flex items-center gap-2 text-lg font-black"><Sparkles className="h-5 w-5 text-amber-300" /> Hallazgos & Feedback IA</h2>
-            <p className="mt-1 max-w-2xl text-xs text-indigo-100">Solo muestra hallazgos creados durante las últimas 48 horas. El histórico se conserva, pero no satura tu revisión diaria.</p>
+            <p className="mt-1 max-w-2xl text-xs text-indigo-100">Muestra hallazgos de las últimas 48 horas y recordatorios de reevaluación activos. El histórico rutinario se conserva sin saturar tu revisión diaria.</p>
           </div>
           <button onClick={runCensus} disabled={running} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-500 disabled:bg-slate-600">
             <RefreshCw className={`h-4 w-4 ${running ? "animate-spin" : ""}`} />
@@ -225,6 +227,7 @@ export function BandejaDocenteInteligente() {
             <header className="flex flex-col gap-2 border-b border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${priorityStyle[review.priority]}`}>{review.priority}</span>
+                {review.category === 'REEVALUATION_DUE' && <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-black text-violet-800">REEVALUACIÓN PENDIENTE</span>}
                 <strong className="text-sm text-slate-900">{student}</strong>
                 <span className="text-xs text-slate-500">{formatDate(review.createdAt)}</span>
               </div>
