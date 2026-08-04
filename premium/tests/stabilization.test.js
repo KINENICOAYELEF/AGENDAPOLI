@@ -160,10 +160,14 @@ describe('Circuito de reevaluación y avisos docentes', () => {
 
   test('un enlace clínico fallido muestra reintento sin perder su destino', () => {
     const usersPage = readFileSync(new URL('../src/app/app/usuarios/page.tsx', import.meta.url), 'utf8');
+    const usersError = readFileSync(new URL('../src/app/app/usuarios/error.tsx', import.meta.url), 'utf8');
     assert.match(usersPage, /const \[pendingFicha, setPendingFicha\]/);
     assert.match(usersPage, /Firebase alcanzó temporalmente su cuota de lecturas/);
     assert.match(usersPage, /Reintentar abrir/);
     assert.match(usersPage, /handleOpenFichaFromUrl\(pendingFicha\.id, pendingFicha\.params\)/);
+    assert.match(usersPage, /router\.replace\(nextUrl/);
+    assert.match(usersPage, /hasDirectClinicalLink/);
+    assert.match(usersError, /No pudimos abrir esta vista temporalmente/);
   });
 
   test('el panel docente aplaza módulos que no han sido abiertos', () => {
@@ -218,6 +222,13 @@ describe('Circuito de reevaluación y avisos docentes', () => {
     assert.match(users, /USERS_CACHE_TTL_MS/);
     assert.match(users, /async getAll\(\)/);
     assert.match(assignments, /PersonasUsuariasService\.invalidateCache\(globalActiveYear\)/);
+  });
+
+  test('la bandeja docente solo consulta perfiles de hallazgos visibles', () => {
+    const inbox = readFileSync(new URL('../src/components/revision-docente/BandejaDocenteInteligente.tsx', import.meta.url), 'utf8');
+    assert.match(inbox, /where\(documentId\(\), "in", ids\)/);
+    assert.match(inbox, /chunks\(studentIds, 30\)/);
+    assert.doesNotMatch(inbox, /collection\(db, "student_learning_profiles"\), limit\(100\)/);
   });
 
   test('la interfaz no ejecuta censos completos de Firestore en segundo plano', () => {

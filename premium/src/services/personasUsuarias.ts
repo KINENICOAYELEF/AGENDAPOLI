@@ -89,14 +89,17 @@ export const PersonasUsuariasService = {
      */
     async getById(year: string, id: string): Promise<PersonaUsuaria | null> {
         if (!year || !id) return null;
+        const cached = patientDirectoryCache.get(year);
+        const cachedPatient = cached?.data.find(item => item.id === id);
+        if (cachedPatient) return cachedPatient;
         const { getDoc } = await import("firebase/firestore");
         const docRef = doc(db, "programs", year, "usuarias", id);
         const snapshot = await getDoc(docRef);
         if (!snapshot.exists()) return null;
         const patient = snapshot.data() as PersonaUsuaria;
-        const cached = patientDirectoryCache.get(year);
-        if (cached && !cached.data.some(item => item.id === id)) {
-            cached.data = [...cached.data, patient];
+        const currentCache = patientDirectoryCache.get(year);
+        if (currentCache && !currentCache.data.some(item => item.id === id)) {
+            currentCache.data = [...currentCache.data, patient];
         }
         return patient;
     },

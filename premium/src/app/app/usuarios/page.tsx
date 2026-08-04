@@ -75,7 +75,9 @@ export default function UsuariosPage() {
         // remociones/montajes simultaneos podian dejar el portal del modal en blanco.
         const currentUrl = `${window.location.pathname}${window.location.search}`;
         if (currentUrl === nextUrl) return;
-        router.push(nextUrl, { scroll: false });
+        // La ficha es una vista del mismo directorio: reemplazamos la URL para
+        // que actualizar conserve el destino exacto sin acumular navegaciones.
+        router.replace(nextUrl, { scroll: false });
     }, [router]);
 
     const openClinicalRecord = useCallback((patient: PersonaUsuaria, action?: string) => {
@@ -92,7 +94,19 @@ export default function UsuariosPage() {
         setInitialAction(undefined);
         setInitialRecordParams(undefined);
         updateClinicalUrl(null);
-    }, [updateClinicalUrl]);
+        // Un enlace directo abre primero solo la ficha solicitada. El directorio
+        // completo se carga recién al volver, evitando dos lecturas simultáneas.
+        if (personasUsuariasRef.current.length === 0 && globalActiveYear) {
+            setLoadingData(true);
+            void PersonasUsuariasService.getPaginated(globalActiveYear, null)
+                .then(response => setPersonasUsuarias(response.data))
+                .catch(error => {
+                    console.error("Error recuperando directorio al cerrar ficha", error);
+                    setFichaOpenError("No se pudo cargar el directorio ahora. Puedes reintentar sin volver al inicio.");
+                })
+                .finally(() => setLoadingData(false));
+        }
+    }, [globalActiveYear, updateClinicalUrl]);
 
     // ----- MOTOR DE CONSULTA — CARGA COMPLETA (FASE 70) -----
     const fetchUsuarios = async () => {
@@ -110,7 +124,7 @@ export default function UsuariosPage() {
 
         } catch (error) {
             console.error("Error Obteniendo Personas Usuarias", error);
-            alert("Ocurrió un error cargando el listado. Puede ser problema de red o falta de índice en Firebase.");
+            setFichaOpenError("No se pudo cargar el directorio ahora. Puedes reintentar sin volver al inicio.");
         } finally {
             setLoadingData(false);
         }
@@ -122,7 +136,10 @@ export default function UsuariosPage() {
     useEffect(() => {
         if (!loadingYear && globalActiveYear) {
             setPersonasUsuarias([]);
-            fetchUsuarios();
+            // En una URL clínica directa primero se consulta solo esa ficha. Así
+            // no se lee el directorio entero además del expediente solicitado.
+            const hasDirectClinicalLink = new URLSearchParams(window.location.search).has('openFicha');
+            if (!hasDirectClinicalLink) void fetchUsuarios();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [globalActiveYear, loadingYear]);
@@ -256,6 +273,13 @@ export default function UsuariosPage() {
                 <div role="alert" className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between">
                     <p className="leading-5">{fichaOpenError}</p>
                     <button type="button" onClick={() => void handleOpenFichaFromUrl(pendingFicha.id, pendingFicha.params)} className="min-h-11 shrink-0 rounded-xl border border-amber-300 bg-white px-4 font-bold text-amber-900 hover:bg-amber-100">Reintentar abrir</button>
+                </div>
+            )}
+
+            {fichaOpenError && !pendingFicha && (
+                <div role="alert" className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="leading-5">{fichaOpenError}</p>
+                    <button type="button" onClick={() => void fetchUsuarios()} className="min-h-11 shrink-0 rounded-xl border border-amber-300 bg-white px-4 font-bold text-amber-900 hover:bg-amber-100">Reintentar directorio</button>
                 </div>
             )}
 

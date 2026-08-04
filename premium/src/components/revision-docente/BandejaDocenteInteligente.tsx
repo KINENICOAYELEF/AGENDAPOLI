@@ -10,7 +10,7 @@ import {
   Sparkles,
   XCircle,
 } from "lucide-react";
-import { collection, doc, getDocs, limit, query, setDoc, updateDoc, where } from "firebase/firestore";
+import { collection, doc, documentId, getDocs, limit, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { auth } from "@/lib/firebase";
 import type { TeacherAgentReview } from "@/lib/agent/contracts/review";
@@ -25,6 +25,10 @@ const PERSISTENT_ACTION_CATEGORIES = new Set([
   'INITIAL_EVALUATION_MISSING',
   'INITIAL_EVALUATION_INSUFFICIENT',
 ]);
+
+function chunks<T>(items: T[], size: number): T[][] {
+  return Array.from({ length: Math.ceil(items.length / size) }, (_, index) => items.slice(index * size, index * size + size));
+}
 
 const priorityStyle = {
   P0: "bg-rose-100 text-rose-800 border-rose-200",
@@ -69,17 +73,14 @@ export function BandejaDocenteInteligente() {
     setLoading(true);
     setNotice(null);
     try {
-      const [reviewSnap, profileSnap] = await Promise.all([
-        getDocs(query(
-          collection(db, "teacher_agent_reviews"),
-          where("status", "==", "PENDING_TEACHER"),
-          limit(100),
-        )),
-        getDocs(query(collection(db, "student_learning_profiles"), limit(100))),
-      ]);
+      const reviewSnap = await getDocs(query(
+        collection(db, "teacher_agent_reviews"),
+        where("status", "==", "PENDING_TEACHER"),
+        limit(100),
+      ));
 
       const cutoff = Date.now() - RECENT_REVIEW_WINDOW_MS;
-      setReviews(reviewSnap.docs
+      const visibleReviews = reviewSnap.docs
         .map((snapshot) => ({
           id: snapshot.id,
           ...(snapshot.data() as TeacherAgentReview),
@@ -90,13 +91,25 @@ export function BandejaDocenteInteligente() {
           // reevaluación permanece hasta que una reevaluación nueva lo cierre.
           return PERSISTENT_ACTION_CATEGORIES.has(review.category || '') || (Number.isFinite(created) && created >= cutoff);
         })
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      setReviews(visibleReviews);
+
+      // Antes se leían 100 perfiles aunque solo hubiera pocos hallazgos
+      // recientes. Solo pedimos los estudiantes visibles, en grupos válidos
+      // para Firestore; la bandeja sigue mostrando nombres legibles.
+      const studentIds = [...new Set(visibleReviews.map(review => review.studentId).filter(Boolean))];
+      const profileSnaps = await Promise.all(
+        chunks(studentIds, 30).map(ids => getDocs(query(
+          collection(db, "student_learning_profiles"),
+          where(documentId(), "in", ids),
+        ))),
+      );
       setProfiles(
         Object.fromEntries(
-          profileSnap.docs.map((snapshot) => [
-            snapshot.id,
-            snapshot.data() as ProfileDisplay,
-          ]),
+          profileSnaps.flatMap(profileSnap => profileSnap.docs.map((snapshot) => [
+              snapshot.id,
+              snapshot.data() as ProfileDisplay,
+            ])),
         ),
       );
     } catch (error) {
