@@ -192,7 +192,8 @@ describe('Circuito de reevaluación y avisos docentes', () => {
     assert.match(route, /status: 'failed'/);
     assert.match(route, /throw err/);
     assert.match(script, /isNonRetryableQuotaError/);
-    assert.match(script, /no se repetirán lecturas inútiles/);
+    assert.match(script, /censo quedó aplazado/);
+    assert.match(script, /próximo turno programado/);
     assert.match(script, /shouldSkipEarlyFallback/);
     assert.match(script, /localHour >= 5 && localHour < 7/);
     assert.match(script, /localHour >= 6 && localHour < 21/);

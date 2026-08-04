@@ -112,8 +112,12 @@ async function runCron() {
       lastError = err;
       console.error(`[Antigravity Cron] Intento ${attempt}/3 falló:`, err.message);
       if (isNonRetryableQuotaError(err)) {
-        console.error('[Antigravity Cron] Firebase agotó la cuota diaria; no se repetirán lecturas inútiles.');
-        break;
+        // En Spark la cuota puede agotarse antes del siguiente ciclo diario. No es un
+        // fallo del agente ni algo que un reintento pueda resolver; dejamos una
+        // advertencia visible, terminamos correctamente y conservamos el próximo
+        // turno programado para cuando Firebase vuelva a aceptar lecturas.
+        console.warn('::warning::Firebase agotó la cuota diaria. El censo quedó aplazado y se reintentará en un próximo turno programado.');
+        return;
       }
       if (attempt < 3) await wait(attempt * 15000);
     }
