@@ -17,7 +17,7 @@ const SECTION_STYLES = [
 function normalizeHeading(line: string) {
     return line
         .replace(/^\s*(?:#{1,6}|■|●|◆|\d+[.)])\s*/u, "")
-        .replace(/\s*:\s*$/u, "")
+        .replace(/\s*[.:]\s*$/u, "")
         .trim();
 }
 
