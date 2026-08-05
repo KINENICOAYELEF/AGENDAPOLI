@@ -281,8 +281,8 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     const [isAiProcessing, setIsAiProcessing] = useState(false);
     const [isPlannerLoading, setIsPlannerLoading] = useState(false);
     const [plannerResult, setPlannerResult] = useState<string | null>(null);
+    const [patternResult, setPatternResult] = useState<string | null>(null);
     const [isGrounding, setIsGrounding] = useState(false);
-    const [isEditingIA, setIsEditingIA] = useState(false);
 
     const initialDataAny = initialData as any;
 
@@ -290,7 +290,9 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     const [anamnesisProxima, setAnamnesisProxima] = useState(initialDataAny?.expressDraft?.anamnesisProxima || initialDataAny?.expressDraft?.notasSubjetivas || '');
     const [anamnesisRemota, setAnamnesisRemota] = useState(initialDataAny?.expressDraft?.anamnesisRemota || '');
     const [evaluacionFisica, setEvaluacionFisica] = useState(initialDataAny?.expressDraft?.evaluacionFisica || initialDataAny?.expressDraft?.notasObjetivas || '');
-    const [razonamientoIA, setRazonamientoIA] = useState(initialDataAny?.expressDraft?.razonamientoIA || initialDataAny?.expressDraft?.structuredResult || '');
+    // Conserva orientaciones antiguas ya guardadas, pero las nuevas ayudas de IA
+    // viven solo en pantalla y nunca se incorporan a la ficha oficial.
+    const [razonamientoIA] = useState(initialDataAny?.expressDraft?.razonamientoIA || initialDataAny?.expressDraft?.structuredResult || '');
 
     const [groundingQuery, setGroundingQuery] = useState('');
     const [groundingResult, setGroundingResult] = useState<any>(null);
@@ -370,22 +372,6 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                     clasificacion_dolor: clasificacionDolor
                 }
             };
-
-            // Inject to regular evaluation so they can continue later
-            if (razonamientoIA) {
-                if (!basePayload.interview) basePayload.interview = { v4: { focos: [] } };
-                if (!basePayload.interview.v4) basePayload.interview.v4 = { focos: [] };
-                if (basePayload.interview.v4.focos.length === 0) {
-                    basePayload.interview.v4.focos.push({
-                        id: generateId(),
-                        isPrincipal: true,
-                        region: "Definido por IA",
-                        notaRapida: razonamientoIA
-                    });
-                } else {
-                    basePayload.interview.v4.focos[0].notaRapida = razonamientoIA;
-                }
-            }
 
             const docRef = doc(db, "programs", globalActiveYear, "evaluaciones", targetId);
             await setDoc(docRef, sanitizeForFirestoreDeep(basePayload), { merge: true });
@@ -504,6 +490,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     const handleRazonarIA = async () => {
         if (!anamnesisProxima && !anamnesisRemota && !evaluacionFisica) return alert("Escribe algo primero en las notas.");
         setIsAiProcessing(true);
+        setPatternResult(null);
         try {
             const res = await fetch('/api/ai/express-structure', {
                 method: 'POST',
@@ -512,8 +499,9 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Error AI');
-            // The API now returns standard markdown text
-            setRazonamientoIA(data.data);
+            // La lectura de patrones es deliberadamente temporal: no completa
+            // campos, no se guarda y no se incorpora al registro oficial.
+            setPatternResult(String(data.data || ''));
         } catch (e: any) {
             alert("Error procesando IA: " + e.message);
         } finally {
@@ -561,7 +549,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
         }
     };
 
-    const [activeFullscreen, setActiveFullscreen] = useState<'anamnesisProxima' | 'anamnesisRemota' | 'evaluacionFisica' | 'razonamientoIA' | 'plannerResult' | null>(null);
+    const [activeFullscreen, setActiveFullscreen] = useState<'anamnesisProxima' | 'anamnesisRemota' | 'evaluacionFisica' | 'plannerResult' | 'patternResult' | null>(null);
     const [showHelp, setShowHelp] = useState<'anamnesisProxima' | 'anamnesisRemota' | 'evaluacionFisica' | null>(null);
 
     const plantillas = {
@@ -733,11 +721,11 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             {activeFullscreen === 'anamnesisProxima' && <><span className="text-blue-500">💬</span> Anamnesis Próxima</>}
                             {activeFullscreen === 'anamnesisRemota' && <><span className="text-purple-500">📚</span> Anamnesis Remota / Contexto</>}
                             {activeFullscreen === 'evaluacionFisica' && <><span className="text-emerald-500">🩺</span> Evaluación Física</>}
-                            {activeFullscreen === 'razonamientoIA' && <><span className="text-indigo-500">🤖</span> Razonamiento sugerido por IA</>}
-                            {activeFullscreen === 'plannerResult' && <><span className="text-amber-500">💡</span> Recomendación de Evaluación</>}
+                            {activeFullscreen === 'plannerResult' && <><span className="text-amber-500">🗺️</span> Mapa de exploración segura</>}
+                            {activeFullscreen === 'patternResult' && <><span className="text-indigo-500">🔎</span> Lector de patrones clínicos</>}
                         </h3>
                         <div className="flex items-center gap-2">
-                            {activeFullscreen !== 'razonamientoIA' && activeFullscreen !== 'plannerResult' && (
+                            {activeFullscreen !== 'plannerResult' && activeFullscreen !== 'patternResult' && (
                                 <button onClick={() => handleInsertTemplate(activeFullscreen)} className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1">
                                     📋 Plantilla
                                 </button>
@@ -747,10 +735,10 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             </button>
                         </div>
                     </div>
-                    {activeFullscreen === 'plannerResult' ? (
+                    {activeFullscreen === 'plannerResult' || activeFullscreen === 'patternResult' ? (
                         <div className="flex-1 w-full overflow-y-auto p-4 md:p-8 bg-slate-50/60">
                             <div className="max-w-4xl mx-auto">
-                                <BeautifulClinicalMarkdown text={plannerResult || ''} />
+                                <BeautifulClinicalMarkdown text={activeFullscreen === 'plannerResult' ? plannerResult || '' : patternResult || ''} />
                             </div>
                         </div>
                     ) : (
@@ -761,14 +749,12 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             value={
                                 activeFullscreen === 'anamnesisProxima' ? anamnesisProxima :
                                 activeFullscreen === 'anamnesisRemota' ? anamnesisRemota :
-                                activeFullscreen === 'evaluacionFisica' ? evaluacionFisica :
-                                razonamientoIA || ''
+                                evaluacionFisica
                             }
                             onChange={e => {
                                 if (activeFullscreen === 'anamnesisProxima') setAnamnesisProxima(e.target.value);
                                 else if (activeFullscreen === 'anamnesisRemota') setAnamnesisRemota(e.target.value);
                                 else if (activeFullscreen === 'evaluacionFisica') setEvaluacionFisica(e.target.value);
-                                else if (activeFullscreen === 'razonamientoIA') setRazonamientoIA(e.target.value);
                             }}
                         />
                     )}
@@ -878,7 +864,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                     />
                                 </div>
                                 
-                                {/* AI Planner Button and Result */}
+                                {/* Apoyo 1: orientación previa, solo de lectura */}
                                 <div className="pt-4 pb-2">
                                     {!plannerResult ? (
                                         <button 
@@ -889,14 +875,14 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                             {isPlannerLoading ? (
                                                 <div className="w-4 h-4 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin"></div>
                                             ) : (
-                                                <span>💡 Planificar Evaluación con IA (Basado en Anamnesis)</span>
+                                                <span>🗺️ Abrir mapa de exploración segura</span>
                                             )}
                                         </button>
                                     ) : (
                                         <div className="bg-white border-2 border-indigo-100 rounded-2xl overflow-hidden shadow-sm animate-in zoom-in-95 duration-200">
                                             <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-100 flex justify-between items-center">
                                                 <h4 className="text-xs font-black text-indigo-900 flex items-center gap-2 uppercase tracking-wider">
-                                                    <span className="text-base">💡</span> Recomendación de Evaluación
+                                                    <span className="text-base">🗺️</span> Mapa de exploración segura
                                                 </h4>
                                                 <div className="flex gap-2">
                                                     <button onClick={handlePlanEval} className="text-[10px] text-indigo-600 font-bold hover:underline">Recalcular</button>
@@ -904,6 +890,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                                 </div>
                                             </div>
                                             <div className="p-4 md:p-5 max-h-[500px] overflow-y-auto bg-slate-50/60 backdrop-blur-sm">
+                                                <p className="mb-4 rounded-xl bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-800">Orienta qué conviene contrastar; no indica pruebas, diagnósticos ni pasos para copiar.</p>
                                                 <BeautifulClinicalMarkdown text={plannerResult} />
                                             </div>
                                             <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 flex justify-end">
@@ -928,7 +915,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                                 {showHelp === 'evaluacionFisica' && (
                                                     <div className="absolute z-50 mt-2 w-[85vw] max-w-sm -left-4 md:left-auto md:-right-2 p-4 bg-slate-800 text-slate-100 text-xs rounded-xl shadow-xl border border-slate-700 animate-in fade-in zoom-in-95 leading-relaxed">
                                                         <strong className="text-white block mb-2 text-sm border-b border-slate-600 pb-1">💡 Tips Clínicos:</strong>
-                                                        <p className="text-slate-300">Prioriza clústers ortopédicos, ROM pasivo/activo, control motor, fuerza (MMT/Dinamometría), neurodinamia y evaluación funcional.</p>
+                                                        <p className="text-slate-300">Prioriza seguridad, función prioritaria, movilidad útil, capacidad, tolerancia a carga y el contexto que cambie el razonamiento. Registra qué observaste y cómo influyó en tus decisiones.</p>
                                                     </div>
                                                 )}
                                             </div>
@@ -962,53 +949,50 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                     {isAiProcessing ? (
                                         <>
                                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                            Razonando con IA Clínica...
+                                            Leyendo patrones clínicos...
                                         </>
                                     ) : (
                                         <>
-                                            <span className="text-xl">✨</span> Razonar con IA
+                                            <span className="text-xl">🔎</span> Abrir lector de patrones clínicos
                                         </>
                                     )}
                                 </button>
+                                <p className="mt-2 text-center text-xs text-slate-500">Relaciona datos que ya escribiste; no entrega diagnóstico, plan ni respuestas para copiar.</p>
                             </div>
 
-                            {/* Razonamiento Sugerido por IA */}
-                            {razonamientoIA && (
+                            {/* Apoyo 2: lectura temporal, sin guardar ni completar campos */}
+                            {patternResult && (
                                 <div className="mt-8 pt-8 border-t border-slate-200">
                                     <div className="flex justify-between items-center mb-4">
                                         <h4 className="font-black text-indigo-900 text-lg flex items-center gap-2">
-                                            <span className="text-indigo-500">🤖</span> Razonamiento sugerido por IA
+                                            <span className="text-indigo-500">🔎</span> Lector de patrones clínicos
                                         </h4>
                                         <div className="flex gap-2">
-                                            <button onClick={() => setIsEditingIA(!isEditingIA)} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs flex items-center transition-colors">
-                                                {isEditingIA ? '👁️ Ver Lectura' : '✏️ Editar'}
-                                            </button>
-                                            <button onClick={() => setActiveFullscreen('razonamientoIA')} className="text-xs text-indigo-500 font-bold hover:text-indigo-700 md:hidden flex items-center gap-1">
+                                            <button onClick={handleRazonarIA} className="text-xs text-indigo-500 font-bold hover:text-indigo-700">Actualizar</button>
+                                            <button onClick={() => setPatternResult(null)} className="text-xs text-slate-400 font-bold hover:text-slate-700">Ocultar</button>
+                                            <button onClick={() => setActiveFullscreen('patternResult')} className="text-xs text-indigo-500 font-bold hover:text-indigo-700 md:hidden flex items-center gap-1">
                                                 Ampliar
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
                                             </button>
                                         </div>
                                     </div>
                                     
-                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex gap-3 text-amber-800 text-sm">
-                                        <span className="text-xl">⚠️</span>
-                                        <p><strong>Aviso:</strong> El razonamiento de IA es solo una orientación clínica y debe ser confirmado, ajustado o descartado por el profesional tratante. <strong>Puedes editar este texto antes de guardar.</strong></p>
+                                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-4 flex gap-3 text-indigo-900 text-sm">
+                                        <span className="text-xl">💭</span>
+                                        <p><strong>Úsalo para pensar:</strong> esta lectura es temporal, no se guarda ni modifica la ficha. Tú decides qué significa cada relación clínica y cómo la sostienes.</p>
                                     </div>
-
-                                    {isEditingIA ? (
-                                        <textarea 
-                                            className="w-full bg-white border border-indigo-200 rounded-2xl p-6 text-sm resize-none focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 transition-all shadow-inner leading-relaxed text-slate-700"
-                                            rows={20}
-                                            value={razonamientoIA}
-                                            onChange={e => setRazonamientoIA(e.target.value)}
-                                            onFocus={() => { if(window.innerWidth < 768) setActiveFullscreen('razonamientoIA') }}
-                                        />
-                                    ) : (
-                                        <div className="w-full bg-slate-50/60 rounded-2xl p-4 md:p-5 text-sm max-h-[600px] overflow-y-auto border border-slate-100">
-                                            <BeautifulClinicalMarkdown text={String(razonamientoIA)} />
-                                        </div>
-                                    )}
+                                    <div className="w-full bg-slate-50/60 rounded-2xl p-4 md:p-5 text-sm max-h-[600px] overflow-y-auto border border-slate-100">
+                                        <BeautifulClinicalMarkdown text={patternResult} />
+                                    </div>
                                 </div>
+                            )}
+
+                            {/* Orientaciones generadas antes de este cambio: se conservan, sin edición ni nueva inyección. */}
+                            {razonamientoIA && (
+                                <details className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
+                                    <summary className="cursor-pointer font-bold text-slate-700">Ver orientación IA histórica guardada</summary>
+                                    <div className="mt-4 max-h-[400px] overflow-y-auto"><BeautifulClinicalMarkdown text={String(razonamientoIA)} /></div>
+                                </details>
                             )}
 
                         </div>
@@ -1024,7 +1008,6 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             reglasReeval={reglasReeval} setReglasReeval={setReglasReeval}
                             collapsed={p4Collapsed} setCollapsed={setP4Collapsed}
                             onPublish={handlePublishObjectives} isPublishing={isPublishing} publishSuccess={publishSuccess}
-                            razonamientoIA={razonamientoIA}
                             anamnesisProxima={anamnesisProxima}
                             anamnesisRemota={anamnesisRemota}
                             evaluacionFisica={evaluacionFisica}

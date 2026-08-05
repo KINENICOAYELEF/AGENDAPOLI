@@ -136,6 +136,23 @@ describe('Circuito de reevaluación y avisos docentes', () => {
     assert.match(source, /resolveClinicalTasksAfterEvaluation/);
   });
 
+  test('las ayudas de IA Express orientan sin autocompletar ni contaminar la ficha oficial', () => {
+    const expressForm = readFileSync(new URL('../src/components/EvaluacionExpressForm.tsx', import.meta.url), 'utf8');
+    const planning = readFileSync(new URL('../src/components/ClinicalPlanningSection.tsx', import.meta.url), 'utf8');
+    const exploration = readFileSync(new URL('../src/app/api/ai/eval-planner/route.ts', import.meta.url), 'utf8');
+    const patterns = readFileSync(new URL('../src/app/api/ai/express-structure/route.ts', import.meta.url), 'utf8');
+    const guide = readFileSync(new URL('../src/app/api/ai/plan-guide/route.ts', import.meta.url), 'utf8');
+
+    assert.match(expressForm, /setPatternResult/);
+    assert.doesNotMatch(expressForm, /notaRapida: razonamientoIA/);
+    assert.doesNotMatch(expressForm, /region: "Definido por IA"/);
+    assert.match(planning, /\/api\/ai\/plan-guide/);
+    assert.doesNotMatch(planning, /\/api\/ai\/express-plan/);
+    assert.match(exploration, /No indiques pruebas, maniobras, clusters/);
+    assert.match(patterns, /No des diagnósticos, hipótesis diagnósticas/);
+    assert.match(guide, /No redactes diagnóstico, clasificación de dolor/);
+  });
+
   test('la reevaluación publica una nueva versión de objetivos y resuelve su aviso', () => {
     const source = readFileSync(new URL('../src/components/ReevaluacionExpressForm.tsx', import.meta.url), 'utf8');
     assert.match(source, /activeObjectiveSetVersionId: versionId/);

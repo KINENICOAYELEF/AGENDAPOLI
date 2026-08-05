@@ -28,18 +28,29 @@ interface Props {
     reglasReeval: any; setReglasReeval: (v: any) => void;
     collapsed: Record<string, boolean>; setCollapsed: (v: any) => void;
     onPublish: () => void; isPublishing: boolean; publishSuccess: boolean;
-    razonamientoIA?: string;
     anamnesisProxima?: string; anamnesisRemota?: string; evaluacionFisica?: string;
 }
+
+const GuideResult = ({ text }: { text: string }) => (
+    <div className="space-y-3 text-sm leading-relaxed text-emerald-950">
+        {text.split('\n').map((line, index) => {
+            const clean = line.replace(/^[-•]\s*/, '');
+            if (line.startsWith('## ')) return <h4 key={index} className="pt-2 text-sm font-black text-emerald-900 first:pt-0">{line.slice(3)}</h4>;
+            if (!clean.trim()) return null;
+            return <p key={index} className={line.startsWith('-') || line.startsWith('•') ? 'pl-4 before:mr-2 before:text-emerald-500 before:content-["•"]' : ''}>{clean}</p>;
+        })}
+    </div>
+);
 
 export function ClinicalPlanningSection(props: Props) {
     const { clasificacionDolor, setClasificacionDolor, diagnosticoNarrativo, setDiagnosticoNarrativo,
         objetivoGeneral, setObjetivoGeneral, objetivosSmart, setObjetivosSmart,
         pronostico, setPronostico, fases, setFases, reglasReeval, setReglasReeval,
         collapsed, setCollapsed, onPublish, isPublishing, publishSuccess,
-        razonamientoIA, anamnesisProxima, anamnesisRemota, evaluacionFisica } = props;
+        anamnesisProxima, anamnesisRemota, evaluacionFisica } = props;
 
     const [isGenerating, setIsGenerating] = useState(false);
+    const [planGuide, setPlanGuide] = useState<string | null>(null);
     const toggle = useCallback((id: string) => setCollapsed((prev: any) => ({ ...prev, [id]: !prev[id] })), [setCollapsed]);
     const isC = (id: string) => collapsed[id] !== false;
 
@@ -52,21 +63,14 @@ export function ClinicalPlanningSection(props: Props) {
     const addFase = () => setFases([...fases, { fase: fases.length + 1, nombre: `Fase ${fases.length + 1}: Nueva Fase`, duracion_estimada: 'Semanas...', objetivos_operacionales: [], intervenciones: [], tips_dosificacion: [], criterios_progresion: [] }]);
 
     const handleGenerateAi = async () => {
-        if (!razonamientoIA && !anamnesisProxima && !evaluacionFisica) return alert("Primero genera el razonamiento con IA.");
+        if (!anamnesisProxima && !anamnesisRemota && !evaluacionFisica) return alert("Registra al menos un dato clínico antes de abrir la brújula.");
         setIsGenerating(true);
+        setPlanGuide(null);
         try {
-            const res = await fetch('/api/ai/express-plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ razonamientoIA, anamnesisProxima, anamnesisRemota, evaluacionFisica }) });
+            const res = await fetch('/api/ai/plan-guide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ anamnesisProxima, anamnesisRemota, evaluacionFisica }) });
             const json = await res.json();
             if (!res.ok) throw new Error(json.message || 'Error');
-            const d = json.data;
-            if (d.clasificacion_dolor) setClasificacionDolor(d.clasificacion_dolor);
-            if (d.diagnostico_narrativo) setDiagnosticoNarrativo(d.diagnostico_narrativo);
-            if (d.objetivo_general) setObjetivoGeneral(d.objetivo_general);
-            if (d.objetivos_smart) setObjetivosSmart(d.objetivos_smart.map((o: any) => ({ ...o, id: genId() })));
-            if (d.pronostico) setPronostico(d.pronostico);
-            if (d.fases_rehabilitacion) setFases(d.fases_rehabilitacion);
-            if (d.reglas_reevaluacion) setReglasReeval(d.reglas_reevaluacion);
-            setCollapsed({ A: false, B: false, C: false, D: false, E: false, F: false, G: false });
+            setPlanGuide(String(json.data || ''));
         } catch (err: any) { alert('Error: ' + err.message); } finally { setIsGenerating(false); }
     };
 
@@ -76,9 +80,23 @@ export function ClinicalPlanningSection(props: Props) {
                 <h3 className="font-black text-slate-800 text-lg flex items-center justify-center gap-2">🧠 Síntesis, Diagnóstico y Plan Clínico</h3>
                 <p className="text-xs text-slate-500 mt-1">Diagnóstico funcional en 2 párrafos, SMART ordenados jerárquicamente, fases y reevaluación</p>
             </div>
-            <button onClick={handleGenerateAi} disabled={isGenerating || (!razonamientoIA && !anamnesisProxima)} className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black py-4 px-6 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 disabled:opacity-50">
-                {isGenerating ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Generando Plan Clínico...</>) : (<><span className="text-xl">🧠</span> Generar Diagnóstico y Plan con IA</>)}
+            <button onClick={handleGenerateAi} disabled={isGenerating || (!anamnesisProxima && !anamnesisRemota && !evaluacionFisica)} className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black py-4 px-6 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+                {isGenerating ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Preparando brújula de redacción...</>) : (<><span className="text-xl">🧭</span> Abrir brújula para escribir el plan</>)}
             </button>
+            <p className="-mt-3 text-center text-xs text-slate-500">Solo orienta qué hacer explícito; no rellena, corrige ni guarda tus campos.</p>
+
+            {planGuide && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-sm">
+                    <div className="mb-3 flex items-start justify-between gap-3 border-b border-emerald-200 pb-3">
+                        <div>
+                            <h4 className="font-black text-emerald-950">🧭 Brújula para escribir tu plan</h4>
+                            <p className="mt-1 text-xs text-emerald-800">Lee, decide y redacta con tus propias palabras. Esta guía no modifica la ficha.</p>
+                        </div>
+                        <button onClick={() => setPlanGuide(null)} className="shrink-0 text-xs font-bold text-emerald-700 hover:text-emerald-950">Ocultar</button>
+                    </div>
+                    <GuideResult text={planGuide} />
+                </div>
+            )}
 
             <div className="space-y-3">
                 {/* A. Clasificación del Dolor */}
