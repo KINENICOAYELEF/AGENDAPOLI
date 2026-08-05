@@ -26,6 +26,10 @@ function isHeading(line: string) {
     if (!trimmed) return false;
     if (/^(?:#{1,6}\s+|■\s*|◆\s*)/u.test(trimmed)) return true;
     if (/^[A-ZÁÉÍÓÚÜÑ0-9][A-ZÁÉÍÓÚÜÑ0-9 /(),.-]{3,}:?$/u.test(trimmed) && trimmed.length <= 90) return true;
+    if (trimmed.endsWith(":") && trimmed.length <= 90) return true;
+
+    const normalized = normalizeHeading(trimmed).replace(/[.]$/u, "").toLocaleLowerCase("es");
+    if (/^(?:antecedentes?(?: médicos?| familiares?)?|medicamentos?|exámenes?(?: \/ diagnósticos?)?|diagnósticos?|historial de tratamientos?|deporte|actividad física|contexto (?:académico|laboral|ocupacional|social)|sueño(?: y alimentación)?|alimentación|red de apoyo|traslado|ocupación(?: y entorno)?|hábitos(?: basales)?|síntesis(?: clínica)?|notas adicionales)$/u.test(normalized)) return true;
     return false;
 }
 
@@ -44,7 +48,7 @@ export function parseClinicalNarrative(text?: string | null): NarrativeSection[]
             current = { title: normalizeHeading(line), body: [] };
             continue;
         }
-        current.body.push(line.replace(/^[-•·]\s*/u, "").trim());
+        current.body.push(line.replace(/^(?:[-•·]|[.])\s*/u, "").trim());
     }
 
     if (current.body.length > 0 || sections.length === 0) sections.push(current);
