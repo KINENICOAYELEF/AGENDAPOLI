@@ -3,6 +3,7 @@ import { Evaluacion } from '@/types/clinica';
 import { humanize, humanizeKey, hiddenKeys } from '@/utils/humanizer';
 import { formatSafeDate } from '@/lib/firebase-utils';
 import { BeautifulClinicalMarkdown } from '../EvaluacionExpressForm';
+import { ClinicalNarrativeCards } from '../ClinicalNarrativeCards';
 
 interface ReadOnlyEvaluacionProps {
     evaluacion: Evaluacion;
@@ -98,7 +99,13 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
             const p15_flags = ev.remoteHistorySnapshot?.p15_context_flags;
             const p2_text = ev.guidedExam?.autoSynthesis?.summary_text_structured || ev.autoSynthesis?.physicalSynthesis?.summary_text_structured;
             const p3 = ev.p3_case_organizer || ev.autoSynthesis;
-            const p4 = ev.p4_plan_structured;
+            const p4Source = ev.p4_plan_structured || ev.expressDraft?.p4_plan;
+            const p4 = p4Source ? {
+                ...p4Source,
+                diagnostico_kinesiologico_narrativo: p4Source.diagnostico_kinesiologico_narrativo || p4Source.diagnostico_narrativo,
+                pronostico_biopsicosocial: p4Source.pronostico_biopsicosocial || p4Source.pronostico,
+                plan_maestro: p4Source.plan_maestro || p4Source.fases_rehabilitacion,
+            } : null;
 
             return (
                 <div className="space-y-6">
@@ -360,7 +367,7 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                         ) : ev.expressDraft?.anamnesisProxima ? (
                             <div className="p-5 bg-slate-50 rounded-xl border border-slate-100">
                                 <h4 className="text-[11px] font-black text-indigo-700 uppercase mb-2 tracking-widest">Relato y Motivo de Consulta</h4>
-                                <p className="text-sm text-slate-700 font-medium whitespace-pre-wrap leading-relaxed">{ev.expressDraft.anamnesisProxima}</p>
+                                <ClinicalNarrativeCards text={ev.expressDraft.anamnesisProxima} />
                             </div>
                         ) : ev.interview?.v4?.experienciaPersona?.relatoLibre || ev.interview?.v4?.anamnesisProxima?.motivoPrincipalConsulta ? (
                             <div className="p-5 bg-slate-50 rounded-xl border border-slate-100">
@@ -471,7 +478,7 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                         ) : ev.expressDraft?.anamnesisRemota ? (
                             <div className="p-5 bg-slate-50 rounded-xl border border-slate-100">
                                 <h4 className="text-[11px] font-black text-sky-700 uppercase mb-2 tracking-widest">Antecedentes Remotos</h4>
-                                <p className="text-sm text-slate-700 font-medium whitespace-pre-wrap leading-relaxed">{ev.expressDraft.anamnesisRemota}</p>
+                                <ClinicalNarrativeCards text={ev.expressDraft.anamnesisRemota} />
                             </div>
                         ) : (
                             <div className="text-sm text-slate-500 italic flex items-center gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
@@ -685,7 +692,7 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                         ) : ev.expressDraft?.evaluacionFisica ? (
                             <div className="p-5 rounded-xl border border-slate-100 bg-amber-50/30">
                                 <h4 className="text-[11px] font-black text-amber-700 uppercase mb-2 tracking-widest">Examen Físico</h4>
-                                <p className="text-sm text-slate-700 font-medium whitespace-pre-wrap leading-relaxed">{ev.expressDraft.evaluacionFisica}</p>
+                                <ClinicalNarrativeCards text={ev.expressDraft.evaluacionFisica} />
                             </div>
                         ) : (
                             <div className="text-sm text-slate-500 italic flex items-center justify-center gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
@@ -836,14 +843,14 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                             <div className="space-y-6">
                                 <div>
                                     <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider border-b pb-2">Diagnóstico Kinesiológico Narrativo</h4>
-                                    <p className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">{p4.diagnostico_kinesiologico_narrativo}</p>
+                                    <p className="text-sm text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">{p4.diagnostico_kinesiologico_narrativo || 'No registrado.'}</p>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="bg-rose-50 p-4 rounded-xl border border-rose-100">
                                         <h4 className="text-[11px] uppercase text-rose-800 font-bold mb-2 tracking-wider">Pronóstico Biopsicosocial</h4>
-                                        <div className="font-bold text-rose-900 uppercase text-sm mb-1">{p4.pronostico_biopsicosocial?.categoria}</div>
-                                        <p className="text-sm text-rose-800/90 leading-relaxed">{p4.pronostico_biopsicosocial?.justificacion_clinica_integral}</p>
+                                        <div className="font-bold text-rose-900 uppercase text-sm mb-1">{p4.pronostico_biopsicosocial?.categoria || 'Sin categoría'}</div>
+                                        <p className="text-sm text-rose-800/90 leading-relaxed">{p4.pronostico_biopsicosocial?.justificacion_clinica_integral || p4.pronostico_biopsicosocial?.justificacion || p4.pronostico_biopsicosocial?.corto_plazo || 'Sin fundamento registrado.'}</p>
                                     </div>
                                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                                         <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Plan Maestro</h4>
@@ -851,8 +858,8 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                             <div className="space-y-3">
                                                 {p4.plan_maestro.map((fase: any, idx: number) => (
                                                     <div key={idx} className="border-l-2 border-slate-200 pl-3 py-1">
-                                                        <div className="text-[10px] font-black text-slate-400 uppercase">{fase.nombre_fase || `Fase ${idx+1}`}</div>
-                                                        <div className="text-xs text-slate-700 font-bold">{fase.objetivo_fisiologico}</div>
+                                                        <div className="text-[10px] font-black text-slate-400 uppercase">{fase.nombre_fase || fase.nombre || `Fase ${idx+1}`}</div>
+                                                        <div className="text-xs text-slate-700 font-bold">{fase.objetivo_fisiologico || fase.foco_principal || (fase.objetivos_operacionales || [])[0] || 'Sin objetivo registrado.'}</div>
                                                         <ul className="mt-1 text-[10px] text-slate-500 list-disc pl-3">
                                                             {(fase.intervenciones || []).slice(0,2).map((inter: any, i: number) => (
                                                                 <li key={i}>{typeof inter === 'string' ? inter : inter.nombre}</li>

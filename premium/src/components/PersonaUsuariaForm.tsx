@@ -9,6 +9,7 @@ import { humanize } from "@/utils/humanizer";
 import { AgendaService } from "@/services/agenda";
 import { ProcesosService } from "@/services/procesos";
 import { Proceso } from "@/types/clinica";
+import { ClinicalNarrativeCards } from "@/components/ClinicalNarrativeCards";
 
 // Simple unificador de ID UUID/Timestamp para nuevas creaciones
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -726,13 +727,20 @@ export function PersonaUsuariaForm({ initialData, initialAction, initialRecordPa
                                     </div>
                                 </div>
                             ) : (
-                                <div className="p-5 bg-white border border-indigo-100 rounded-2xl shadow-xs space-y-2">
-                                    <div className="flex items-center gap-2 text-indigo-950 font-bold text-xs border-b border-slate-100 pb-2">
-                                        <span>📝</span> Contexto Basal y Anamnesis Remota (Evaluación Inicial v2)
+                                <div className="space-y-4">
+                                    <div className="rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm sm:p-5">
+                                        <div className="flex items-start gap-3">
+                                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-base text-white shadow-sm">📝</span>
+                                            <div>
+                                                <h4 className="text-sm font-black text-indigo-950">Contexto basal y anamnesis remota</h4>
+                                                <p className="mt-1 text-xs leading-5 text-slate-500">La información original se conserva completa y se organiza visualmente para una lectura clínica más rápida.</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="whitespace-pre-wrap text-[12px] text-slate-700 font-medium leading-relaxed pt-1">
-                                        {formData.remoteHistory.basalSynthesis || formData.remoteHistory.permanentNotes || "Expediente basal registrado sin estructura previa."}
-                                    </div>
+                                    <ClinicalNarrativeCards
+                                        text={formData.remoteHistory.basalSynthesis || formData.remoteHistory.permanentNotes}
+                                        emptyText="Expediente basal registrado sin contenido legible."
+                                    />
                                 </div>
                             )}
                         </div>
