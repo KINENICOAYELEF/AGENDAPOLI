@@ -301,6 +301,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
     // FASE 2.1.21: Continuidad
     const [lastClosedEvol, setLastClosedEvol] = useState<Evolucion | null>(null);
+    const [repeatedFromLast, setRepeatedFromLast] = useState(false);
     const [isLoadingContinuity, setIsLoadingContinuity] = useState(false);
 
     // FASE 2.2.6: Últimos Outcomes
@@ -994,6 +995,60 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         setCopyCandidates(null);
     };
 
+
+    /**
+     * Repite la última sesión firmada en un clic.
+     *
+     * En rehabilitación la mayoría de las sesiones son variaciones pequeñas de
+     * la anterior, y hasta ahora había que reescribirlo todo o acordarse de
+     * abrir el modal de duplicar. Esto usa la evolución previa que el
+     * formulario ya tiene cargada, así que no cuesta ninguna lectura extra.
+     *
+     * Lo que NO se copia es deliberado: el dolor y la respuesta se miden hoy,
+     * no se heredan. Copiarlos sería inventar datos clínicos.
+     */
+    const repeatLastSession = () => {
+        const previous = lastClosedEvol as any;
+        if (!previous) return;
+
+        const previousExercises = previous.exerciseRx?.rows || previous.exercises || [];
+        const previousInterventions = Array.isArray(previous.interventions) ? previous.interventions : [];
+
+        if (previousExercises.length === 0 && previousInterventions.length === 0) {
+            alert("La sesión anterior no tiene ejercicios ni intervenciones registradas para repetir.");
+            return;
+        }
+
+        setFormData((prev: any) => ({
+            ...prev,
+            exercises: [
+                ...(prev.exercises || []),
+                ...previousExercises.map((exercise: any) => ({ ...exercise, id: generateId(), _tempId: undefined })),
+            ],
+            interventions: [
+                ...(Array.isArray(prev.interventions) ? prev.interventions : []),
+                ...previousInterventions.map((intervention: any) => ({
+                    ...intervention,
+                    id: generateId(),
+                    _tempId: undefined,
+                    copiedFromEvolutionId: previous.id,
+                })),
+            ],
+            perceptionMode: previous.exerciseRx?.effortMode || previous.perceptionMode || prev.perceptionMode,
+            // Los objetivos trabajados suelen ser los mismos; se pueden desmarcar.
+            selectedObjectiveIds: prev.selectedObjectiveIds?.length
+                ? prev.selectedObjectiveIds
+                : (previous.selectedObjectiveIds || []),
+            selectedObjectivesSnapshot: prev.selectedObjectivesSnapshot?.length
+                ? prev.selectedObjectivesSnapshot
+                : (previous.selectedObjectivesSnapshot || []),
+            // El plan que dejó pautado la sesión pasada es la meta natural de hoy.
+            sessionGoal: prev.sessionGoal?.trim() ? prev.sessionGoal : (previous.nextPlan || ''),
+            audit: { ...(prev.audit || {}), copiedFromEvolutionId: previous.id },
+        }));
+
+        setRepeatedFromLast(true);
+    };
 
     /**
      * Elimina definitivamente un borrador propio.
@@ -2117,10 +2172,31 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                             <p className="text-xs font-semibold text-indigo-500 mt-0.5">Continuidad Clínica del Paciente</p>
                                         </div>
                                     </div>
-                                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
-                                        Hace {Math.floor(getDifferenceInHours(lastClosedEvol.sessionAt, new Date().toISOString()) / 24)} días
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
+                                            Hace {Math.floor(getDifferenceInHours(lastClosedEvol.sessionAt, new Date().toISOString()) / 24)} días
+                                        </span>
+                                        {/* Atajo de un clic: la mayoría de las sesiones son
+                                            variaciones pequeñas de la anterior. */}
+                                        {!isClosedDynamic && (
+                                            <button
+                                                type="button"
+                                                onClick={repeatLastSession}
+                                                disabled={repeatedFromLast}
+                                                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-indigo-700 disabled:bg-emerald-600"
+                                            >
+                                                {repeatedFromLast ? "✓ Sesión copiada" : "↻ Repetir esta sesión"}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
+
+                                {repeatedFromLast && (
+                                    <div className="relative z-10 mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-900">
+                                        Copiamos ejercicios, intervenciones y objetivos de la sesión anterior. Ajusta lo que cambió y
+                                        registra el dolor y la respuesta de hoy: esos no se copian nunca.
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 relative z-10">
                                     <div className="lg:col-span-2 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100/50 hover:bg-indigo-50 transition-colors flex flex-col">

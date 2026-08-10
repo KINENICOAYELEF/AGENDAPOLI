@@ -23,6 +23,14 @@ export type StudentRotationLine = {
   p0Findings: number;
 };
 
+/** Un aviso de completitud que la estudiante todavía no ha resuelto. */
+export type PendingCompletenessItem = {
+  studentName: string;
+  title: string;
+  message: string;
+  ageDays: number;
+};
+
 export type RotationSummary = {
   year: string;
   windowDays: number;
@@ -32,6 +40,8 @@ export type RotationSummary = {
   totalEvolutions: number;
   totalDrafts: number;
   lines: StudentRotationLine[];
+  /** Evaluaciones incompletas ya avisadas y aún sin resolver. */
+  pendingCompleteness: PendingCompletenessItem[];
 };
 
 function iso(value: any): string {
@@ -52,11 +62,12 @@ export async function buildRotationSummary(year: string, windowDays = 7): Promis
 
   // Las consultas se acotan por fecha en el servidor: el resumen no debe costar
   // una lectura de la colección completa cada vez que se pide.
-  const [studentsSnap, evolsSnap, evalsSnap, findingsSnap] = await Promise.all([
+  const [studentsSnap, evolsSnap, evalsSnap, findingsSnap, tasksSnap] = await Promise.all([
     db.collection('users').where('role', '==', 'INTERNO').get(),
     db.collection(`programs/${year}/evoluciones`).where('sessionAt', '>=', since).get(),
     db.collection(`programs/${year}/evaluaciones`).where('sessionAt', '>=', since).get(),
     db.collection('teacher_agent_reviews').where('status', '==', 'PENDING_TEACHER').get(),
+    db.collection('student_clinical_tasks').where('status', '==', 'ACTIVE').get(),
   ]);
 
   const lines = new Map<string, StudentRotationLine>();
@@ -112,10 +123,24 @@ export async function buildRotationSummary(year: string, windowDays = 7): Promis
     return b.pendingFindings - a.pendingFindings;
   });
 
+  // Avisos que la estudiante ya recibió y todavía no resuelve. Lo que lleva
+  // más días arriba: es donde el docente tiene que intervenir personalmente.
+  const pendingCompleteness: PendingCompletenessItem[] = tasksSnap.docs
+    .map((doc: any) => doc.data())
+    .filter((task: any) => task.year === year)
+    .map((task: any) => ({
+      studentName: lines.get(task.studentId)?.name || task.studentId || 'Estudiante',
+      title: task.title || 'Registro pendiente',
+      message: String(task.message || '').slice(0, 160),
+      ageDays: Math.floor((Date.now() - new Date(task.createdAt || Date.now()).getTime()) / (1000 * 60 * 60 * 24)),
+    }))
+    .sort((a: PendingCompletenessItem, b: PendingCompletenessItem) => b.ageDays - a.ageDays);
+
   return {
     year,
     windowDays,
     generatedAt: new Date().toISOString(),
+    pendingCompleteness,
     activeStudents: result.filter(line => line.evolutions + line.evaluations > 0).length,
     silentStudents: result.filter(line => line.evolutions + line.evaluations === 0).length,
     totalEvolutions: result.reduce((total, line) => total + line.evolutions, 0),
@@ -144,9 +169,20 @@ export function formatRotationSummary(summary: RotationSummary, appBaseUrl: stri
     ? `\n\n🔇 *Sin actividad en ${summary.windowDays} días* (${silent.length})\n${silent.slice(0, 10).map(line => `• ${line.name}`).join('\n')}`
     : '';
 
+  // Bloque explícito de evaluaciones incompletas: la estudiante ya fue avisada
+  // automáticamente, aquí aparece lo que sigue sin resolverse.
+  const stuck = (summary.pendingCompleteness || []).filter(item => item.ageDays >= 2);
+  const completenessBlock = stuck.length
+    ? `\n\n📋 *Evaluaciones incompletas ya avisadas* (${stuck.length})\n`
+      + stuck.slice(0, 8).map(item =>
+          `• *${item.studentName}* — ${item.title.toLowerCase()} · hace ${item.ageDays} día(s)\n   _${item.message}_`,
+        ).join('\n')
+      + (stuck.length > 8 ? `\n_…y ${stuck.length - 8} más._` : '')
+    : '';
+
   return `📊 *Resumen de la rotación — últimos ${summary.windowDays} días*\n\n`
     + `Activas: *${summary.activeStudents}* · Sin actividad: *${summary.silentStudents}*\n`
     + `Evoluciones registradas: *${summary.totalEvolutions}* · Borradores sin firmar: *${summary.totalDrafts}*\n\n`
-    + `${workingBlock}${silentBlock}\n\n`
+    + `${workingBlock}${silentBlock}${completenessBlock}\n\n`
     + `[Abrir bandeja docente](${appBaseUrl}/app/revision-docente)`;
 }

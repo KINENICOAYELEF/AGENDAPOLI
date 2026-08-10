@@ -129,10 +129,69 @@ async function createInitialEvaluationContinuityReview(
   });
   try {
     await db.collection('teacher_agent_reviews').doc(reviewId).create(payload);
+    await publishCompletenessReminder(db, {
+      year, studentId: student.id, patientId, processId, reviewId, isMissing, gaps,
+    });
     return { missing: isMissing ? 1 : 0, insufficient: isMissing ? 0 : 1 };
   } catch (error: any) {
     if (error?.code === 6 || error?.code === 'already-exists') return { missing: 0, insufficient: 0 };
     throw error;
+  }
+}
+
+/**
+ * Aviso automático a la estudiante sobre un registro incompleto.
+ *
+ * Distinción deliberada: esto NO es retroalimentación pedagógica, que sigue
+ * requiriendo la aprobación del docente antes de llegar a nadie. Es un hecho
+ * objetivo y verificable —"a esta evaluación le falta el plan"— del mismo tipo
+ * que el aviso de un borrador sin firmar. Esperar a que el docente publique
+ * cada uno a mano convertía lo rutinario en trabajo suyo.
+ *
+ * El aviso se resuelve solo cuando la estudiante cierra el registro completo
+ * (lo hace `reconcilePublishedStudentTasks` en la siguiente corrida).
+ */
+async function publishCompletenessReminder(
+  db: ReturnType<typeof getAdminDb>,
+  input: {
+    year: string;
+    studentId: string;
+    patientId: string;
+    processId: string;
+    reviewId: string;
+    isMissing: boolean;
+    gaps: string[];
+  },
+) {
+  const { year, studentId, patientId, processId, reviewId, isMissing, gaps } = input;
+  const actionParams = new URLSearchParams({ openFicha: patientId, action: 'EVALUACION_INICIAL' });
+  if (processId) actionParams.set('procesoId', processId);
+
+  const message = isMissing
+    ? 'Esta persona ya tiene sesiones registradas pero todavía no cuenta con una evaluación inicial cerrada. Complétala para poder comparar avances más adelante.'
+    : `A la evaluación inicial le falta: ${gaps.join(', ')}. Complétala y ciérrala para dejar una línea basal utilizable.`;
+
+  try {
+    await db.collection('student_clinical_tasks').doc(`census_${reviewId}`).create({
+      year,
+      studentId,
+      patientId,
+      processId: processId || null,
+      reviewId,
+      kind: isMissing ? 'INITIAL_EVALUATION_MISSING' : 'INITIAL_EVALUATION_INSUFFICIENT',
+      status: 'ACTIVE',
+      title: isMissing ? 'Evaluación inicial pendiente' : 'Completa la evaluación inicial',
+      message,
+      actionLabel: 'Abrir evaluación',
+      actionHref: `/app/usuarios?${actionParams.toString()}`,
+      createdAt: new Date().toISOString(),
+      createdBy: 'census_automatic',
+    });
+  } catch (error: any) {
+    // Ya existía el aviso: no se duplica ni se reinicia su antigüedad.
+    if (error?.code !== 6 && error?.code !== 'already-exists') {
+      console.warn('No se pudo publicar el aviso de completitud', reviewId, error);
+    }
   }
 }
 
