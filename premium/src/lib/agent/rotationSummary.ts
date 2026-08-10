@@ -10,6 +10,7 @@
  */
 
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
+import { buildActiveRoster, rosterInRotation } from './activeRoster';
 
 export type StudentRotationLine = {
   studentId: string;
@@ -62,8 +63,10 @@ export async function buildRotationSummary(year: string, windowDays = 7): Promis
 
   // Las consultas se acotan por fecha en el servidor: el resumen no debe costar
   // una lectura de la colección completa cada vez que se pide.
-  const [studentsSnap, evolsSnap, evalsSnap, findingsSnap, tasksSnap] = await Promise.all([
-    db.collection('users').where('role', '==', 'INTERNO').get(),
+  const [roster, evolsSnap, evalsSnap, findingsSnap, tasksSnap] = await Promise.all([
+    // Solo quienes están en la rotación: un resumen que lista como "sin
+    // actividad" a gente que egresó en marzo es ruido que se deja de leer.
+    buildActiveRoster(year),
     db.collection(`programs/${year}/evoluciones`).where('sessionAt', '>=', since).get(),
     db.collection(`programs/${year}/evaluaciones`).where('sessionAt', '>=', since).get(),
     db.collection('teacher_agent_reviews').where('status', '==', 'PENDING_TEACHER').get(),
@@ -71,11 +74,10 @@ export async function buildRotationSummary(year: string, windowDays = 7): Promis
   ]);
 
   const lines = new Map<string, StudentRotationLine>();
-  studentsSnap.docs.forEach((doc: any) => {
-    const data = doc.data();
-    lines.set(doc.id, {
-      studentId: doc.id,
-      name: data.displayName || data.email || doc.id,
+  rosterInRotation(roster).forEach((entry) => {
+    lines.set(entry.id, {
+      studentId: entry.id,
+      name: entry.status === 'CERRANDO' ? `${entry.name} (cerrando)` : entry.name,
       evolutions: 0,
       evaluations: 0,
       drafts: 0,
@@ -188,8 +190,8 @@ export async function buildWatchAlerts(year: string): Promise<WatchAlert[]> {
 
   // 2. Cumplimiento de simulaciones. El cálculo existía pero nadie lo ejecutaba.
   try {
-    const [studentsSnap, osceSnap, defenseSnap] = await Promise.all([
-      db.collection('users').where('role', '==', 'INTERNO').get(),
+    const [roster, osceSnap, defenseSnap] = await Promise.all([
+      buildActiveRoster(year),
       db.collection('simulador_intentos').get(),
       db.collection('defensas_voz_intentos').get(),
     ]);
@@ -198,9 +200,10 @@ export async function buildWatchAlerts(year: string): Promise<WatchAlert[]> {
       const userId = doc.data().userId;
       if (userId) counts.set(userId, (counts.get(userId) || 0) + 1);
     });
-    const behind = studentsSnap.docs
-      .map((doc: any) => ({ name: doc.data().displayName || doc.data().email || doc.id, done: counts.get(doc.id) || 0 }))
-      .filter((item: any) => item.done < 15);
+    // No tiene sentido reclamar prácticas a quien ya terminó su rotación.
+    const behind = rosterInRotation(roster)
+      .map((entry) => ({ name: entry.name, done: counts.get(entry.id) || 0 }))
+      .filter((item) => item.done < 15);
     if (behind.length > 0) {
       alerts.push({
         kind: 'SIMULACIONES_INSUFICIENTES',
@@ -278,16 +281,15 @@ const COURSE_PATTERN_MIN_STUDENTS = 3;
 export async function buildCoursePatterns(year: string): Promise<CoursePattern[]> {
   const db = getAdminDb();
 
-  const [findingsSnap, studentsSnap] = await Promise.all([
+  const [findingsSnap, roster] = await Promise.all([
     db.collection('teacher_agent_reviews').where('year', '==', year).get(),
-    db.collection('users').where('role', '==', 'INTERNO').get(),
+    buildActiveRoster(year),
   ]);
 
+  // El umbral de "3 o más estudiantes" solo tiene sentido sobre quienes están
+  // en la rotación: contar egresadas distorsionaba el patrón.
   const names = new Map<string, string>();
-  studentsSnap.docs.forEach((doc: any) => {
-    const data = doc.data();
-    names.set(doc.id, data.displayName || data.email || doc.id);
-  });
+  rosterInRotation(roster).forEach((entry) => names.set(entry.id, entry.name));
 
   // Se cuentan ESTUDIANTES distintas, no hallazgos: una sola persona con el
   // mismo error diez veces no constituye un patrón de curso.
@@ -295,6 +297,7 @@ export async function buildCoursePatterns(year: string): Promise<CoursePattern[]
   findingsSnap.docs.forEach((doc: any) => {
     const data = doc.data();
     if (!Array.isArray(data.coherenceFindings) || !data.studentId) return;
+    if (!names.has(data.studentId)) return;
     data.coherenceFindings.forEach((finding: any) => {
       if (!finding?.type) return;
       const current = byType.get(finding.type) || { students: new Set<string>(), example: '' };

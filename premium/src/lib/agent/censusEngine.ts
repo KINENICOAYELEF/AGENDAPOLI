@@ -12,6 +12,7 @@ import { deidentifyText } from './deidentify';
 import { TeacherAgentReviewSchema } from './contracts/review';
 import { analyzeStudentLongitudinal } from './longitudinalAnalysis';
 import { calibrationInstruction, getTeacherCalibration } from './teacherCalibration';
+import { buildActiveRoster, rosterInRotation } from './activeRoster';
 
 const CLINICAL_ACTIVITY_WINDOW_DAYS = 14;
 
@@ -329,14 +330,16 @@ export async function runCensusEngine() {
   const year = new Date().getFullYear().toString();
 
   try {
-    // 1. Obtener estudiantes activos con rol INTERNO
-    const usersSnap = await db.collection('users').where('role', '==', 'INTERNO').get();
-    if (usersSnap.empty) {
-      console.log('[PR9 Census Engine] No active INTERNO students found.');
+    // 1. Solo las estudiantes que de verdad están en la rotación.
+    // Antes se tomaba toda cuenta con rol INTERNO: 24 personas, incluidas
+    // rotaciones pasadas y cuentas de prueba. Eso gastaba lecturas y cuota de
+    // IA en gente que ya egresó, y llenaba los avisos de ruido.
+    const roster = await buildActiveRoster(year);
+    const students = rosterInRotation(roster);
+    if (students.length === 0) {
+      console.log('[PR9 Census Engine] Ninguna estudiante con actividad reciente en la rotación.');
       return { status: 'completed', studentsProcessed: 0, recordsProcessed: 0, reviewsCreated: 0, priorityCounts: { P0: 0, P1: 0, P2: 0, P3: 0 } };
     }
-
-    const students = usersSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
     const [initialsSnap, reevaluationsSnap, processesSnap, patientsSnap, pendingReviewsSnap] = await Promise.all([
       db.collection(`programs/${year}/evaluaciones`).where('type', '==', 'INITIAL').get(),
       db.collection(`programs/${year}/evaluaciones`).where('type', '==', 'REEVALUATION').get(),
@@ -620,9 +623,11 @@ export async function runCensusEngine() {
         {
           year,
           studentId: student.id,
-          displayName: student.displayName || student.email || 'Estudiante INTERNO',
-          studentCode: student.studentCode || `INT-${student.id.slice(0, 6).toUpperCase()}`,
-          universityCode: student.university || 'UCH',
+          displayName: student.name || student.email || 'Estudiante INTERNO',
+          studentCode: `INT-${student.id.slice(0, 6).toUpperCase()}`,
+          // El estado en la rotación queda visible en el perfil: distingue a
+          // quien está trabajando de quien ya está cerrando su período.
+          rotationStatus: student.status,
           auditedRecordsCount: allRecords.length,
           lastUpdatedAt: new Date().toISOString(),
         },
