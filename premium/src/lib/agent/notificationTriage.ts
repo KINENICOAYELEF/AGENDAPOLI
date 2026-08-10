@@ -1,6 +1,7 @@
 import { featureFlags } from '@/lib/agent/config';
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { getAllowedTelegramChatId, sendTelegramMessage } from '@/lib/server/telegram';
+import { buildRotationSummary, formatRotationSummary } from '@/lib/agent/rotationSummary';
 
 export const RECENT_REVIEW_WINDOW_HOURS = 48;
 
@@ -37,6 +38,54 @@ function recentCutoff(hours = RECENT_REVIEW_WINDOW_HOURS) {
 function isRecent(value: unknown, hours = RECENT_REVIEW_WINDOW_HOURS) {
   const time = new Date(String(value || '')).getTime();
   return Number.isFinite(time) && time >= recentCutoff(hours);
+}
+
+/**
+ * Resumen diario de la rotación, enviado una sola vez por día.
+ *
+ * Es el mensaje que el docente pidió: quién trabajó, quién está en silencio y
+ * qué quedó sin firmar, sin tener que preguntarlo. La marca por fecha impide
+ * que las cuatro corridas diarias del cron lo manden cuatro veces.
+ */
+export async function sendDailyRotationDigest(year: string) {
+  if (!featureFlags.telegramTeacherEnabled) {
+    return { delivered: false, reason: 'telegram_disabled' };
+  }
+  const chatId = getAllowedTelegramChatId();
+  if (!chatId) return { delivered: false, reason: 'telegram_chat_not_configured' };
+
+  const db = getAdminDb();
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+  const digestRef = db.collection('teacher_notifications').doc(`rotation_digest_${today}`);
+
+  try {
+    await digestRef.create({
+      kind: 'ROTATION_DIGEST',
+      channel: 'telegram',
+      audience: 'DOCENTE_ONLY',
+      status: 'QUEUED',
+      forDate: today,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    // Ya se envió hoy: la segunda corrida no vuelve a escribir en el chat.
+    if (error?.code === 6 || error?.code === 'already-exists') {
+      return { delivered: false, reason: 'already_sent_today' };
+    }
+    throw error;
+  }
+
+  try {
+    const summary = await buildRotationSummary(year, 7);
+    await sendTelegramMessage(chatId, formatRotationSummary(summary, APP_BASE_URL), {
+      inline_keyboard: [[{ text: '🔎 Abrir Bandeja Docente', url: `${APP_BASE_URL}/app/revision-docente` }]],
+    });
+    await digestRef.update({ status: 'DELIVERED', deliveredAt: new Date().toISOString() });
+    return { delivered: true, silentStudents: summary.silentStudents };
+  } catch (error: any) {
+    await digestRef.update({ status: 'FAILED', error: error?.message || 'fallo de entrega' });
+    return { delivered: false, reason: error?.message || 'telegram_delivery_failed' };
+  }
 }
 
 /**

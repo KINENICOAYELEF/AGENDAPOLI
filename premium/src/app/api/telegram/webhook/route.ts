@@ -13,6 +13,9 @@ import {
   type TelegramInlineKeyboard,
 } from '@/lib/server/telegram';
 import { getRecentPendingReviewSummary } from '@/lib/agent/notificationTriage';
+import { buildRotationSummary, formatRotationSummary } from '@/lib/agent/rotationSummary';
+
+const APP_BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://agendapoli.vercel.app').replace(/\/$/, '');
 import { callGemini } from '@/lib/ai/geminiClient';
 import { runAgentInteraction } from '@/lib/agent/client';
 
@@ -165,11 +168,12 @@ export async function POST(req: Request) {
     } else if (command === 'reevaluations') {
       const pending = await getRecentPendingReviewSummary();
       await sendOrUpdate(senderChatId, `🔁 *Reevaluaciones sugeridas*\n\n• Pendientes de decisión docente: *${pending.reevaluationDue}*\n\nAcción: revisa la evidencia y publica el aviso solo si corresponde.`, callback);
-    } else if (command === 'summary') {
-      const profilesSnap = await adminDb.collection('student_learning_profiles').get();
-      await sendOrUpdate(senderChatId, `🧠 *Síntesis de cátedra*\n\n• Perfiles en seguimiento: *${profilesSnap.size}*\n• Los hallazgos quedan privados hasta tu revisión.`, callback);
-    } else if (command === 'students') {
-      await sendOrUpdate(senderChatId, `🎓 *Estudiantes*\n\nDesde la Bandeja Docente puedes revisar expediente, evidencia y borradores antes de aprobarlos.`, callback);
+    } else if (command === 'summary' || command === 'students') {
+      // Estos dos comandos devolvían texto genérico sin un solo dato real.
+      // Ahora entregan el estado concreto de la rotación, ordenado por urgencia.
+      const year = new Date().getFullYear().toString();
+      const summary = await buildRotationSummary(year, command === 'summary' ? 7 : 14);
+      await sendOrUpdate(senderChatId, formatRotationSummary(summary, APP_BASE_URL), callback);
     } else if (command === 'rotations') {
       const year = new Date().getFullYear().toString();
       const rotSnap = await adminDb.collection(`programs/${year}/rotations`).get();
