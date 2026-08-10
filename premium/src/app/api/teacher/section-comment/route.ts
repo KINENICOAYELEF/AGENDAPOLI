@@ -56,6 +56,9 @@ REGLAS:
 - No uses encabezados, viñetas ni firma. Solo el texto del comentario.
 
 Responde únicamente con el texto del comentario, sin comillas ni explicaciones.`,
+      undefined,
+      undefined,
+      'short',
     );
 
     if (response.status !== 'success') {

@@ -10,25 +10,50 @@ import { callGemini } from '@/lib/ai/geminiClient';
 import { deidentifyText } from './deidentify';
 
 /**
- * Modelos de respaldo, del más capaz al más disponible.
+ * Cascadas de respaldo según lo que exige cada tarea.
  *
- * Antigravity es preview y su cuota se agota: cuando fallaba, el censo entero
- * terminaba "exitoso" sin haber analizado nada, y nadie se enteraba. Bajar por
- * esta escalera convierte una caída total en una degradación anunciada.
+ * Cuotas reales de la API gratuita (ago-2026), por DÍA:
+ *   Antigravity ............ 100
+ *   Gemini 3.6 / 3.5 / 3 Flash ... 20 cada uno
+ *   Gemini 2.5 Flash ....... 200
+ *   Gemini 3.5 / 3.1 Flash Lite .. 500 cada uno
+ *   Gemini 2.5 Flash Lite ... 20   (inservible como respaldo)
+ *
+ * La lección es que los modelos "buenos" alcanzan para 20 peticiones diarias,
+ * no más. Usar una sola cascada global los gastaba en tareas triviales —como
+ * elegir qué consulta ejecutar— y dejaba sin cupo al análisis clínico, que es
+ * lo único que de verdad necesita capacidad de razonamiento.
  */
-const FALLBACK_MODELS = [
-  'gemini-3.6-flash',
-  'gemini-3.5-flash',
-  'gemini-2.5-flash',
-  'gemini-3.1-flash-lite',
-];
+export type AgentTaskKind = 'deep' | 'routing' | 'conversational' | 'short';
+
+const FALLBACK_BY_TASK: Record<AgentTaskKind, string[]> = {
+  // Análisis longitudinal y coherencia clínica: pocas llamadas al día, cada una
+  // vale mucho. Aquí sí corresponde gastar los modelos de mayor capacidad.
+  deep: ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3-flash', 'gemini-2.5-flash', 'gemini-3.5-flash-lite'],
+
+  // Elegir el nombre de una consulta no requiere razonamiento clínico. Va
+  // directo a los modelos de 500/día para no tocar la cuota escasa.
+  routing: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'],
+
+  // Responder al docente con datos ya consultados: volumen alto durante el día.
+  conversational: ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
+
+  // Comentarios de una sección: texto corto y acotado.
+  short: ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
+};
 
 // El identificador enviado a Google debe ser el agente publicado, no un alias
 // interno de la plataforma. El alias puede conservarse en los metadatos del run.
 export const ACTIVE_AGENT_VERSION_ID =
   process.env.ANTIGRAVITY_AGENT_ID || agentConfig.base_agent;
 
-export async function runAgentInteraction(prompt: string, context?: any, teacherCalibration?: { preferredTone?: string }) {
+export async function runAgentInteraction(
+  prompt: string,
+  context?: any,
+  teacherCalibration?: { preferredTone?: string },
+  // Por defecto 'deep' para no cambiar el comportamiento de quien no lo declare.
+  task: AgentTaskKind = 'deep',
+) {
   if (!featureFlags.agentShadowMode && !featureFlags.agentWriteEnabled) {
     console.log('[PR7 Client] Interaction skipped: featureFlags.agentShadowMode & agentWriteEnabled are false.');
     return {
@@ -54,35 +79,39 @@ ${prompt}
 
   let engineNote = '';
 
-  try {
-    const interaction = await callAntigravityAgent({
-      agent: ACTIVE_AGENT_VERSION_ID,
-      systemInstruction: agentConfig.system_instruction,
-      prompt: finalPrompt,
-    });
+  // Antigravity rinde 100 peticiones diarias: se reservan para el análisis
+  // clínico. Gastarlas enrutando preguntas del chat dejaría el censo sin motor.
+  if (task === 'deep') {
+    try {
+      const interaction = await callAntigravityAgent({
+        agent: ACTIVE_AGENT_VERSION_ID,
+        systemInstruction: agentConfig.system_instruction,
+        prompt: finalPrompt,
+      });
 
-    if (!interaction.textOutput?.trim()) {
-      throw new Error('Antigravity respondió sin texto utilizable.');
+      if (!interaction.textOutput?.trim()) {
+        throw new Error('Antigravity respondió sin texto utilizable.');
+      }
+
+      return {
+        status: 'success',
+        agentVersion: ACTIVE_AGENT_VERSION_ID,
+        engine: 'antigravity',
+        model: ACTIVE_AGENT_VERSION_ID,
+        interactionId: interaction.id,
+        result: interaction.textOutput,
+        thoughts: interaction.thoughts,
+      };
+    } catch (error: any) {
+      // El motivo del fallo viaja en la respuesta y termina en el resumen del
+      // censo y en Telegram: un Antigravity caído deja de disfrazarse de "todo
+      // en orden" y se ve como lo que es.
+      engineNote = `Antigravity falló (${String(error?.message || error).slice(0, 160)})`;
+      console.warn('[Agente]', engineNote);
     }
-
-    return {
-      status: 'success',
-      agentVersion: ACTIVE_AGENT_VERSION_ID,
-      engine: 'antigravity',
-      model: ACTIVE_AGENT_VERSION_ID,
-      interactionId: interaction.id,
-      result: interaction.textOutput,
-      thoughts: interaction.thoughts,
-    };
-  } catch (error: any) {
-    // El motivo del fallo viaja en la respuesta y termina en el resumen del
-    // censo y en Telegram: un Antigravity caído deja de disfrazarse de "todo
-    // en orden" y se ve como lo que es.
-    engineNote = `Antigravity falló (${String(error?.message || error).slice(0, 160)})`;
-    console.warn('[Agente]', engineNote);
   }
 
-  for (const model of FALLBACK_MODELS) {
+  for (const model of FALLBACK_BY_TASK[task]) {
     try {
       const text = await callGemini({
         systemInstruction: agentConfig.system_instruction,

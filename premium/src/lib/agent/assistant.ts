@@ -101,6 +101,10 @@ Responde SOLO un JSON con esta forma exacta, sin texto adicional:
 {"tool":"nombre_de_la_consulta","args":{"clave":"valor"}}
 
 Si la pregunta menciona a una persona por su nombre, ponlo tal cual en el argumento correspondiente. Si ninguna consulta encaja, usa {"tool":"resumen_rotacion","args":{}}.`,
+    undefined,
+    undefined,
+    // Elegir un nombre de consulta no consume razonamiento clínico.
+    'routing',
   );
 
   if (planResponse.status !== 'success') {
@@ -140,6 +144,9 @@ Pregunta: "${question}"
 
 Datos consultados (${plan.tool}):
 ${JSON.stringify(data).slice(0, 24000)}`,
+    undefined,
+    undefined,
+    'conversational',
   );
 
   if (answerResponse.status !== 'success') {
