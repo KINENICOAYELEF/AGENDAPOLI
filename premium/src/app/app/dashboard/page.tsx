@@ -9,6 +9,7 @@ import { Cita, Evolucion } from "@/types/clinica";
 import { AgendaProView } from "@/components/AgendaProView";
 import { AgendaGridView } from "@/components/AgendaGridView";
 import { UsersService } from "@/services/users";
+import { RecordCommentsService, type RecordComment } from "@/services/recordComments";
 import { addDays, format, startOfWeek, subDays } from "date-fns";
 import Link from "next/link";
 import { 
@@ -88,6 +89,32 @@ export default function DashboardPage() {
             setDiscardingId(null);
         }
     };
+    const [openComments, setOpenComments] = useState<RecordComment[]>([]);
+    const [resolvingComment, setResolvingComment] = useState<string | null>(null);
+
+    // Comentarios del docente sobre secciones concretas de sus registros. El
+    // texto se muestra aquí mismo: el punto es que le lleguen a la pantalla, no
+    // que los encuentre por casualidad al abrir una ficha.
+    useEffect(() => {
+        if (!globalActiveYear || !user || user.role !== 'INTERNO') return;
+        RecordCommentsService.listOpenForStudent(user.uid, globalActiveYear)
+            .then(setOpenComments)
+            .catch(error => console.error("No se pudieron cargar los comentarios docentes:", error));
+    }, [globalActiveYear, user]);
+
+    const resolveComment = async (comment: RecordComment) => {
+        setResolvingComment(comment.id);
+        try {
+            await RecordCommentsService.resolve(comment.id);
+            setOpenComments(prev => prev.filter(item => item.id !== comment.id));
+        } catch (error) {
+            console.error("No se pudo marcar el comentario como corregido", error);
+            alert("No se pudo marcar como corregido. Reintenta.");
+        } finally {
+            setResolvingComment(null);
+        }
+    };
+
     const [unevolvedTodayCitas, setUnevolvedTodayCitas] = useState<Cita[]>([]);
     const [todayCompletedCount, setTodayCompletedCount] = useState<number>(0);
     const [todayTotalCount, setTodayTotalCount] = useState<number>(0);
@@ -404,6 +431,48 @@ export default function DashboardPage() {
                                     <span>Ver y Corregir</span>
                                     <ChevronRight className="w-3.5 h-3.5" />
                                 </Link>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* COMENTARIOS DEL DOCENTE ANCLADOS A UNA SECCIÓN */}
+            {openComments.length > 0 && (
+                <div className="bg-indigo-50 border border-indigo-200/80 rounded-2xl p-4 space-y-3 shadow-xs">
+                    <div className="flex items-center gap-2 text-indigo-800 font-bold text-xs uppercase tracking-wider">
+                        <MessageSquare className="w-4 h-4 text-indigo-600" />
+                        <span>Comentarios de tu docente ({openComments.length})</span>
+                    </div>
+
+                    <div className="space-y-2">
+                        {openComments.map(comment => (
+                            <div key={comment.id} className="bg-white p-3 rounded-xl border border-indigo-200">
+                                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                    <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-black">
+                                        {comment.section}
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 font-semibold">
+                                        {comment.patientName || 'Persona usuaria'}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-800 leading-relaxed whitespace-pre-line">{comment.comment}</p>
+                                <div className="flex flex-wrap items-center justify-end gap-2 mt-2.5">
+                                    <Link
+                                        href={comment.patientId ? `/app/usuarios?openFicha=${comment.patientId}&recordId=${comment.recordId}&recordType=${comment.recordKind === 'EVOLUCION' ? 'evolucion' : 'evaluacion'}` : '/app/usuarios'}
+                                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition"
+                                    >
+                                        Abrir registro
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        onClick={() => resolveComment(comment)}
+                                        disabled={resolvingComment === comment.id}
+                                        className="px-3 py-1.5 text-emerald-700 hover:bg-emerald-50 text-xs font-bold rounded-lg transition disabled:opacity-40"
+                                    >
+                                        {resolvingComment === comment.id ? '…' : 'Ya lo corregí'}
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>

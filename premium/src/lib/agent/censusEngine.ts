@@ -565,19 +565,32 @@ export async function runCensusEngine() {
         reevaluationRemindersCreated += reevaluationReminders;
         priorityCounts.P2 += reevaluationReminders;
 
-        const result = await createInitialEvaluationContinuityReview(
-          db,
-          year,
-          student,
-          process.personaUsuariaId,
-          processId,
-          evolutions,
-          processInitials,
-        );
-        initialEvaluationMissingCreated += result.missing;
-        initialEvaluationInsufficientCreated += result.insufficient;
-        reviewsCreated += result.missing + result.insufficient;
-        priorityCounts.P1 += result.missing + result.insufficient;
+        // Solo se reclama la evaluación de personas realmente en tratamiento.
+        // Un proceso en pausa, o uno activo pero sin sesiones hace más de un
+        // mes, no es una evaluación pendiente: es un caso abandonado, y eso ya
+        // se avisa por separado. Presionar por completarla solo generaba ruido.
+        const lastSessionAt = evolutions
+          .map((evolution: any) => recordDate(evolution) || 0)
+          .reduce((latest: number, current: number) => Math.max(latest, current), 0);
+        const isUnderActiveCare = process.estado === 'ACTIVO'
+          && lastSessionAt > 0
+          && Date.now() - lastSessionAt <= 30 * 24 * 60 * 60 * 1000;
+
+        if (isUnderActiveCare) {
+          const result = await createInitialEvaluationContinuityReview(
+            db,
+            year,
+            student,
+            process.personaUsuariaId,
+            processId,
+            evolutions,
+            processInitials,
+          );
+          initialEvaluationMissingCreated += result.missing;
+          initialEvaluationInsufficientCreated += result.insufficient;
+          reviewsCreated += result.missing + result.insufficient;
+          priorityCounts.P1 += result.missing + result.insufficient;
+        }
       }
 
       // Actualizar perfil longitudinal real del estudiante en student_learning_profiles

@@ -10,7 +10,7 @@ import { featureFlags } from '@/lib/agent/config';
 import { requireTeacher } from '@/lib/server/firebaseAdmin';
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { runCensusEngine } from '@/lib/agent/censusEngine';
-import { notifyTeacherOfCensus, sendCriticalAlerts, sendDailyRotationDigest } from '@/lib/agent/notificationTriage';
+import { notifyTeacherOfCensus, sendCriticalAlerts, sendDailyRotationDigest, sendPeriodicAnalysis } from '@/lib/agent/notificationTriage';
 
 const SCHEDULE_SLOT_PATTERN = /^\d{4}-\d{2}-\d{2}-(morning|evening)$/;
 const SCHEDULE_LEASE_MS = 45 * 60 * 1000;
@@ -143,6 +143,14 @@ export async function POST(req: Request) {
           await sendDailyRotationDigest(new Date().getFullYear().toString());
         } catch (digestError: any) {
           console.error(`[Rotation Digest Error ${runId}]:`, digestError);
+        }
+
+        // Análisis de período: lunes y jueves. La propia función decide si hoy
+        // corresponde, así que puede llamarse en cada corrida sin repetirse.
+        try {
+          await sendPeriodicAnalysis(new Date().getFullYear().toString());
+        } catch (periodicError: any) {
+          console.error(`[Periodic Analysis Error ${runId}]:`, periodicError);
         }
         await runRef.update({
           status: 'completed',

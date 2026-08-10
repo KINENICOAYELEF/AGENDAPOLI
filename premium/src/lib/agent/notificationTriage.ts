@@ -41,6 +41,88 @@ function isRecent(value: unknown, hours = RECENT_REVIEW_WINDOW_HOURS) {
 }
 
 /**
+ * Análisis de período, dos veces por semana.
+ *
+ * El resumen diario responde "qué pasó hoy". Esto responde otra cosa: cómo
+ * viene cada estudiante comparada consigo misma. Es el material que sirve para
+ * la evaluación formativa, no para apagar incendios.
+ *
+ * Sale lunes y jueves, con marca por fecha para no repetirse entre corridas.
+ */
+export async function sendPeriodicAnalysis(year: string) {
+  if (!featureFlags.telegramTeacherEnabled) return { delivered: false, reason: 'telegram_disabled' };
+
+  const santiagoNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
+  const weekday = santiagoNow.getDay(); // 1 = lunes, 4 = jueves
+  if (weekday !== 1 && weekday !== 4) return { delivered: false, reason: 'not_a_report_day' };
+
+  const chatId = getAllowedTelegramChatId();
+  if (!chatId) return { delivered: false, reason: 'telegram_chat_not_configured' };
+
+  const db = getAdminDb();
+  const today = santiagoNow.toLocaleDateString('en-CA');
+  const reportRef = db.collection('teacher_notifications').doc(`periodic_${today}`);
+
+  try {
+    await reportRef.create({
+      kind: 'PERIODIC_ANALYSIS',
+      channel: 'telegram',
+      audience: 'DOCENTE_ONLY',
+      status: 'QUEUED',
+      forDate: today,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    if (error?.code === 6 || error?.code === 'already-exists') {
+      return { delivered: false, reason: 'already_sent_today' };
+    }
+    throw error;
+  }
+
+  try {
+    // Se comparan dos ventanas iguales: los últimos días contra los anteriores.
+    const [current, previous] = await Promise.all([
+      buildRotationSummary(year, 3),
+      buildRotationSummary(year, 7),
+    ]);
+
+    const previousById = new Map(previous.lines.map(line => [line.studentId, line]));
+    const movements = current.lines.map(line => {
+      const older = previousById.get(line.studentId);
+      const olderActivity = Math.max(0, (older?.evolutions || 0) - line.evolutions);
+      const nowActivity = line.evolutions;
+      const trend = nowActivity > olderActivity ? '📈'
+        : nowActivity < olderActivity ? '📉'
+        : '➡️';
+      return { name: line.name, trend, nowActivity, olderActivity, drafts: line.drafts, p0: line.p0Findings };
+    });
+
+    const body = movements
+      .sort((a, b) => (b.p0 - a.p0) || (a.nowActivity - b.nowActivity))
+      .slice(0, 12)
+      .map(item =>
+        `${item.trend} *${item.name}* — ${item.nowActivity} sesión(es) en los últimos 3 días `
+        + `(antes ${item.olderActivity})`
+        + `${item.drafts ? ` · 📝 ${item.drafts} sin firmar` : ''}`
+        + `${item.p0 ? ` · 🔴 ${item.p0} P0` : ''}`,
+      ).join('\n');
+
+    const day = weekday === 1 ? 'Inicio de semana' : 'Medio de semana';
+    await sendTelegramMessage(
+      chatId,
+      `🗓 *${day} — cómo viene cada estudiante*\n\n${body || '_Sin actividad registrada en el período._'}`
+      + `\n\n📈 subió · ➡️ igual · 📉 bajó, comparado con los días previos.`
+      + `\n\n[Ver fichas completas](${APP_BASE_URL}/app/revision-docente)`,
+    );
+    await reportRef.update({ status: 'DELIVERED', deliveredAt: new Date().toISOString() });
+    return { delivered: true };
+  } catch (error: any) {
+    await reportRef.update({ status: 'FAILED', error: error?.message || 'fallo de entrega' });
+    return { delivered: false, reason: error?.message || 'telegram_delivery_failed' };
+  }
+}
+
+/**
  * Alerta inmediata por riesgo clínico.
  *
  * Un P0 detectado a media mañana esperaba hasta el resumen de la noche. Lo que
