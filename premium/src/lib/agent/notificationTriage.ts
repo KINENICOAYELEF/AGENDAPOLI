@@ -414,8 +414,12 @@ export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
   const reevaluationLine = input.reevaluationRemindersCreated
     ? `\n🔄 Reevaluación sugerida: *${input.reevaluationRemindersCreated}*.`
     : '';
+  // Estos hallazgos ya NO se le publican solos a la estudiante: esperan que el
+  // docente apruebe el aviso. Si nadie los mira, la estudiante nunca se entera,
+  // así que el mensaje tiene que dejar claro que están detenidos esperándolo.
   const initialLine = input.initialEvaluationMissingCreated || input.initialEvaluationInsufficientCreated
     ? `\n📋 Sin evaluación inicial: *${input.initialEvaluationMissingCreated || 0}* · línea basal insuficiente: *${input.initialEvaluationInsufficientCreated || 0}*.`
+      + `\n   _Esperan tu aprobación para avisarle; no se envió nada todavía._`
     : '';
   // Distinguir "nuevo" de "acumulado" evita que un aviso de cero hallazgos
   // nuevos se lea como si no hubiera nada pendiente en la bandeja.
@@ -461,7 +465,7 @@ export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
       + `\n_Si ya no es suplencia, conviene reasignar desde el Panel Admin._`
     : '';
 
-  const message = `${header}${reevaluationLine}${initialLine}${pendingLine}${llmLine}${staleLine}${caseLines}\n\n_Nada de esto se envía a las estudiantes: tú decides qué reenviar._`;
+  const message = `${header}${reevaluationLine}${initialLine}${pendingLine}${llmLine}${staleLine}${caseLines}\n\n_Nada de esto llega a las estudiantes hasta que tú lo apruebes._`;
 
   // Un botón de aprobar y otro de descartar por caso: la decisión se toma desde
   // el celular sin abrir el navegador. Aprobar deja el texto guardado y listo;
