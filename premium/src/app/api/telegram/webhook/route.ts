@@ -198,13 +198,37 @@ export async function POST(req: Request) {
       if (!response.ok || !run.success) throw new Error(run.error || 'No se pudo iniciar el censo.');
       await sendOrUpdate(senderChatId, `▶️ *Censo iniciado ahora*\n\n• Ejecución: \`${String(run.runId || '').slice(0, 8)}\`\n• Te avisaré por este chat si aparecen hallazgos nuevos.\n• No se enviará nada a estudiantes sin tu aprobación.`, callback);
     } else if (command === 'errors') {
-      const errorSnap = await adminDb.collection('agent_execution_logs').where('status', '==', 'ERROR').get();
+      // Consultaba `agent_execution_logs`, una colección que ningún código
+      // escribe: siempre informaba cero errores aunque el agente estuviera
+      // fallando. Las ejecuciones reales viven en `agent_runs`.
       const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-      const recentErrors = errorSnap.docs.filter((item: any) => {
-        const data = item.data();
-        return new Date(data.createdAt || data.failedAt || data.timestamp || 0).getTime() >= cutoff;
+      const runsSnap = await adminDb.collection('agent_runs').get();
+      const recentRuns = runsSnap.docs
+        .map((item: any) => ({ id: item.id, ...item.data() }))
+        .filter((run: any) => new Date(run.startedAt || run.createdAt || 0).getTime() >= cutoff);
+      const failedRuns = recentRuns.filter((run: any) => run.status === 'failed' || run.errorMessage);
+
+      // Una corrida "completed" puede haber dejado la IA sin ejecutar: eso
+      // también es un fallo operativo, aunque GitHub aparezca en verde.
+      const withoutLlm = recentRuns.filter((run: any) => {
+        const llm = run.censusResult?.llm;
+        return llm && llm.enabled && llm.attempted > 0 && llm.succeeded === 0;
       });
-      await sendOrUpdate(senderChatId, `🛠 *Registro de errores*\n\n• Últimas 24 horas: *${recentErrors.length}*\n• Estado: \`${recentErrors.length === 0 ? 'OK' : 'requiere revisión'}\``, callback);
+
+      const detail = failedRuns.slice(0, 3)
+        .map((run: any) => `  · \`${String(run.id).slice(0, 8)}\`: ${String(run.errorMessage || 'sin mensaje').slice(0, 120)}`)
+        .join('\n');
+
+      await sendOrUpdate(
+        senderChatId,
+        `🛠 *Registro de errores (24 h)*\n\n`
+        + `• Ejecuciones: *${recentRuns.length}*\n`
+        + `• Fallidas: *${failedRuns.length}*\n`
+        + `• Terminaron sin análisis de IA: *${withoutLlm.length}*\n`
+        + `• Estado: \`${failedRuns.length === 0 && withoutLlm.length === 0 ? 'OK' : 'requiere revisión'}\``
+        + (detail ? `\n\n${detail}` : ''),
+        callback,
+      );
     } else if (command === 'next_run') {
       await sendOrUpdate(senderChatId, `⏰ *Próximos ciclos*\n\n• 07:30 America/Santiago\n• 21:30 America/Santiago`, callback);
     } else {

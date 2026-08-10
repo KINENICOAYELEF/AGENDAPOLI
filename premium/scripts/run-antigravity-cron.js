@@ -106,6 +106,16 @@ async function runCron() {
       const data = await response.json();
       if (!data.success || data.status !== 'completed') throw new Error(`Respuesta incompleta: ${JSON.stringify(data)}`);
       console.log('[Antigravity Cron Success] Resultado de la ejecución:', JSON.stringify(data, null, 2));
+
+      // Una corrida puede terminar "completed" con la IA sin ejecutar. En verde
+      // eso era indistinguible de un censo real, y por eso el agente pudo estar
+      // apagado durante semanas sin que nadie lo notara.
+      const llm = data.censusResult?.llm;
+      if (llm && !llm.enabled) {
+        console.warn(`::warning::El censo corrió SIN análisis de razonamiento clínico. Motivo: ${llm.skippedReason || 'FF_AGENT_LLM_ANALYSIS no habilitado'}.`);
+      } else if (llm && llm.attempted > 0 && llm.succeeded === 0) {
+        console.warn(`::warning::La IA se intentó ${llm.attempted} vez/veces y ninguna completó. Último error: ${llm.lastError || 'sin detalle'}.`);
+      }
       return;
     } catch (err) {
       clearTimeout(timeout);

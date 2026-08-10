@@ -14,6 +14,16 @@ import { analyzeStudentLongitudinal } from './longitudinalAnalysis';
 
 const CLINICAL_ACTIVITY_WINDOW_DAYS = 14;
 
+/**
+ * Cuántas estudiantes analiza la IA por corrida.
+ *
+ * El análisis longitudinal es la parte lenta y la que consume cuota. Intentarlo
+ * con las 24 cuentas de una vez agotaba el tiempo de la función y dejaba el
+ * censo cortado sin avisar. Con cuatro corridas diarias, este presupuesto cubre
+ * a toda la rotación en menos de un día.
+ */
+const LLM_CALLS_PER_RUN = Number(process.env.AGENT_LLM_CALLS_PER_RUN || 6);
+
 function recordDate(record: any) {
   const value = record.sessionAt || record.fechaHoraAtencion || record.audit?.createdAt || record.createdAt;
   const time = new Date(typeof value?.toDate === 'function' ? value.toDate() : value || '').getTime();
@@ -297,6 +307,20 @@ export async function runCensusEngine() {
     const priorityCounts: Record<'P0' | 'P1' | 'P2' | 'P3', number> = { P0: 0, P1: 0, P2: 0, P3: 0 };
     const recentCutoff = Date.now() - CLINICAL_ACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
+    // Diagnóstico explícito del análisis generativo. Sin esto era imposible
+    // distinguir "la IA corrió y no encontró nada" de "la IA nunca corrió",
+    // que es exactamente lo que venía pasando en producción.
+    const llmDiagnostics = {
+      enabled: featureFlags.agentLlmAnalysisEnabled,
+      attempted: 0,
+      succeeded: 0,
+      failed: 0,
+      deferred: 0,
+      enginesUsed: new Set<string>(),
+      skippedReason: '',
+      lastError: '',
+    };
+
     for (const student of students) {
       // 2. Consulta incremental de evaluaciones reales creadas por el estudiante
       const evalsSnap = await db
@@ -516,8 +540,29 @@ export async function runCensusEngine() {
       // anterior sigue siendo válido y queda registrado de forma privada.
       // Solo se activa cuando existe actividad reciente, pero conserva los
       // registros previos como contexto longitudinal del estudiante.
-      if (featureFlags.agentLlmAnalysisEnabled && recentRecords.length > 0) {
-        const analysis = await analyzeStudentLongitudinal(student.id, allRecords);
+      // Presupuesto por corrida: analizar a todas las internas en una sola
+      // ejecución agota tiempo y cuota, y el censo terminaba a medias sin
+      // decirlo. Se analiza un grupo por corrida y el resto entra en la
+      // siguiente, priorizando a quien lleva más tiempo sin análisis.
+      const withinLlmBudget = llmDiagnostics.attempted < LLM_CALLS_PER_RUN;
+
+      if (!featureFlags.agentLlmAnalysisEnabled) {
+        llmDiagnostics.skippedReason = 'FF_AGENT_LLM_ANALYSIS no está en true';
+      } else if (recentRecords.length === 0) {
+        // Sin actividad reciente no hay nada nuevo que analizar.
+      } else if (!withinLlmBudget) {
+        llmDiagnostics.deferred++;
+      } else {
+        llmDiagnostics.attempted++;
+        const { analysis, engine, note } = await analyzeStudentLongitudinal(student.id, allRecords);
+        if (!analysis) {
+          llmDiagnostics.failed++;
+          if (note) llmDiagnostics.lastError = note;
+        } else {
+          llmDiagnostics.succeeded++;
+          if (engine) llmDiagnostics.enginesUsed.add(engine);
+          if (note) llmDiagnostics.lastError = note;
+        }
         if (analysis) {
           const sourceReferences = analysis.evidence.flatMap((evidence) => {
             const source = allRecords.find((record: any) =>
@@ -586,6 +631,17 @@ export async function runCensusEngine() {
 
     return {
       status: 'completed',
+      // El resumen dice ahora si la IA corrió, con qué motor y por qué no.
+      llm: {
+        enabled: llmDiagnostics.enabled,
+        attempted: llmDiagnostics.attempted,
+        succeeded: llmDiagnostics.succeeded,
+        failed: llmDiagnostics.failed,
+        deferred: llmDiagnostics.deferred,
+        engines: Array.from(llmDiagnostics.enginesUsed),
+        skippedReason: llmDiagnostics.skippedReason || undefined,
+        lastError: llmDiagnostics.lastError || undefined,
+      },
       studentsProcessed: students.length,
       recordsProcessed,
       reviewsCreated,

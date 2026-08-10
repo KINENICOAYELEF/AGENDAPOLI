@@ -4,6 +4,8 @@ import { getAllowedTelegramChatId, sendTelegramMessage } from '@/lib/server/tele
 
 export const RECENT_REVIEW_WINDOW_HOURS = 48;
 
+const APP_BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://agendapoli.vercel.app').replace(/\/$/, '');
+
 type Priority = 'P0' | 'P1' | 'P2' | 'P3';
 
 export type CensusNotificationInput = {
@@ -15,6 +17,17 @@ export type CensusNotificationInput = {
   initialEvaluationMissingCreated?: number;
   initialEvaluationInsufficientCreated?: number;
   priorityCounts: Record<Priority, number>;
+  /** Diagnóstico del análisis generativo, para no confundir "sin hallazgos" con "no corrió". */
+  llm?: {
+    enabled: boolean;
+    attempted: number;
+    succeeded: number;
+    failed: number;
+    deferred: number;
+    engines?: string[];
+    skippedReason?: string;
+    lastError?: string;
+  };
 };
 
 function recentCutoff(hours = RECENT_REVIEW_WINDOW_HOURS) {
@@ -24,6 +37,51 @@ function recentCutoff(hours = RECENT_REVIEW_WINDOW_HOURS) {
 function isRecent(value: unknown, hours = RECENT_REVIEW_WINDOW_HOURS) {
   const time = new Date(String(value || '')).getTime();
   return Number.isFinite(time) && time >= recentCutoff(hours);
+}
+
+/**
+ * Los casos concretos que el docente necesita para decidir sin abrir el navegador.
+ *
+ * El mensaje anterior solo llevaba conteos ("3 hallazgos P1"), que no permiten
+ * saber de quién se trata ni si urge. Aquí se resuelven los nombres reales y el
+ * enlace al registro exacto.
+ */
+async function getTopPendingCases(limit = 5) {
+  const db = getAdminDb();
+  const snapshot = await db.collection('teacher_agent_reviews').where('status', '==', 'PENDING_TEACHER').get();
+
+  const priorityRank: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
+  const reviews = snapshot.docs
+    .map((doc: any) => ({ id: doc.id, ...doc.data() }))
+    .sort((a: any, b: any) => {
+      const byPriority = (priorityRank[a.priority] ?? 9) - (priorityRank[b.priority] ?? 9);
+      return byPriority !== 0 ? byPriority : String(b.createdAt).localeCompare(String(a.createdAt));
+    })
+    .slice(0, limit);
+
+  // Un UID no le dice nada a nadie: resolvemos el nombre de cada estudiante.
+  const studentIds = [...new Set(reviews.map((review: any) => review.studentId).filter(Boolean))];
+  const names = new Map<string, string>();
+  await Promise.all(studentIds.map(async (id: any) => {
+    try {
+      const userSnap = await db.collection('users').doc(id).get();
+      const data = userSnap.data();
+      if (data) names.set(id, data.displayName || data.email || id);
+    } catch { /* si no se resuelve, se muestra el identificador */ }
+  }));
+
+  return reviews.map((review: any) => {
+    const source = review.sourceReferences?.[0];
+    const href = source?.recordId
+      ? `${APP_BASE_URL}/app/revision-docente/registros/${source.collection === 'evoluciones' ? 'EVOLUCION' : 'EVALUACION'}/${source.recordId}`
+      : `${APP_BASE_URL}/app/revision-docente`;
+    return {
+      priority: review.priority as Priority,
+      studentName: names.get(review.studentId) || review.studentId || 'Estudiante sin identificar',
+      observation: String(review.observation || 'Sin observación registrada').slice(0, 220),
+      href,
+    };
+  });
 }
 
 /** Solo muestra hallazgos recientes; el histórico se conserva pero no satura al docente. */
@@ -98,15 +156,36 @@ export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
   const pendingLine = pending
     ? `\n📥 Pendientes sin revisar en bandeja: *${pending.total}* (P0 ${pending.p0} · P1 ${pending.p1}).`
     : '';
-  const message = urgent
-    ? `🔴 *Atención docente*\n\nEl censo detectó *${input.priorityCounts.P0}* hallazgo(s) P0 de seguridad y *${input.priorityCounts.P1}* P1 nuevos.${reevaluationLine}${initialLine}${pendingLine}\n\nAcción: revisa la Bandeja Docente antes de continuar.`
+  // Los casos concretos son lo que convierte el aviso en algo accionable.
+  const cases = await getTopPendingCases(5).catch(() => []);
+  const caseLines = cases.length
+    ? `\n\n${cases.map((item: { priority: Priority; studentName: string; observation: string; href: string }) =>
+        `${item.priority === 'P0' ? '🔴' : item.priority === 'P1' ? '🟠' : '🔵'} *${item.studentName}* — ${item.observation}\n[Abrir registro](${item.href})`,
+      ).join('\n\n')}`
+    : '';
+
+  // Estado real del motor de análisis: "sin hallazgos" y "la IA nunca corrió"
+  // se veían idénticos, y eso ocultaba semanas de agente apagado.
+  const llm = input.llm;
+  const llmLine = !llm
+    ? ''
+    : !llm.enabled
+      ? `\n\n⚠️ _Análisis de razonamiento clínico desactivado_${llm.skippedReason ? ` (${llm.skippedReason})` : ''}. Solo se revisó completitud de campos.`
+      : llm.attempted === 0
+        ? `\n\n⚠️ _La IA no analizó a nadie en esta corrida_ (sin actividad reciente que revisar).`
+        : `\n\n🧠 _IA: ${llm.succeeded}/${llm.attempted} análisis completos${llm.failed ? `, ${llm.failed} fallidos` : ''}${llm.deferred ? `, ${llm.deferred} en cola` : ''}${llm.engines?.length ? ` · motor: ${llm.engines.join(', ')}` : ''}._${llm.failed && llm.lastError ? `\n⚠️ ${llm.lastError.slice(0, 180)}` : ''}`;
+
+  const header = urgent
+    ? `🔴 *Atención docente*\n\nEl censo detectó *${input.priorityCounts.P0}* hallazgo(s) P0 de seguridad y *${input.priorityCounts.P1}* P1 nuevos.`
     : input.reviewsCreated === 0
-      ? `🧠 *Censo Agenda Poli completado*\n\nSin hallazgos nuevos en esta corrida.${pendingLine}${reevaluationLine}${initialLine}\n\nAcción: la bandeja todavía tiene casos esperando tu decisión.`
-      : `🧠 *Censo Agenda Poli completado*\n\nHay *${input.reviewsCreated}* hallazgo(s) nuevos para revisión: P1 ${input.priorityCounts.P1} · P2 ${input.priorityCounts.P2}.${reevaluationLine}${initialLine}${pendingLine}\n\nAcción: revisa la línea basal y decide si corresponde enviar un aviso al estudiante.`;
+      ? `🧠 *Censo Agenda Poli completado*\n\nSin hallazgos nuevos en esta corrida.`
+      : `🧠 *Censo Agenda Poli completado*\n\nHay *${input.reviewsCreated}* hallazgo(s) nuevos: P1 ${input.priorityCounts.P1} · P2 ${input.priorityCounts.P2}.`;
+
+  const message = `${header}${reevaluationLine}${initialLine}${pendingLine}${llmLine}${caseLines}\n\n_Nada de esto se envía a las estudiantes: tú decides qué reenviar._`;
 
   try {
     await sendTelegramMessage(chatId, message, {
-      inline_keyboard: [[{ text: '🔎 Abrir Bandeja Docente', url: 'https://agendapoli.vercel.app/app/revision-docente' }]],
+      inline_keyboard: [[{ text: '🔎 Abrir Bandeja Docente', url: `${APP_BASE_URL}/app/revision-docente` }]],
     });
     await notificationRef.update({ status: 'DELIVERED', deliveredAt: new Date().toISOString() });
     return { delivered: true };

@@ -78,13 +78,22 @@ export function parseLongitudinalAnalysis(raw: string): LongitudinalAnalysis | n
   }
 }
 
+/** Resultado del análisis y por qué falló, cuando falla. */
+export type LongitudinalAnalysisOutcome = {
+  analysis: LongitudinalAnalysis | null;
+  engine: string | null;
+  note: string;
+};
+
 export async function analyzeStudentLongitudinal(
   studentId: string,
   records: ClinicalRecord[],
   preferredTone: 'direct' | 'constructive' | 'detailed' = 'constructive',
-) {
+): Promise<LongitudinalAnalysisOutcome> {
   const evidence = buildDeidentifiedEvidence(records);
-  if (evidence.length === 0) return null;
+  if (evidence.length === 0) {
+    return { analysis: null, engine: null, note: 'Sin evidencia utilizable para analizar.' };
+  }
 
   const prompt = `Analiza exclusivamente el razonamiento clínico longitudinal de un estudiante identificado como ${studentId}.
 Usa únicamente la evidencia entregada. No infieras acciones no documentadas. La historia de la persona atendida es contexto: no penalices cronicidad ni atribuyas al estudiante registros de otra autoría.
@@ -97,6 +106,18 @@ Tono recomendado para un posterior borrador docente: ${preferredTone}.
 EVIDENCIA DESIDENTIFICADA:\n${JSON.stringify(evidence)}`;
 
   const response = await runAgentInteraction(prompt, undefined, { preferredTone });
-  if (response.status !== 'success') return null;
-  return parseLongitudinalAnalysis(response.result || '');
+  if (response.status !== 'success') {
+    // Devolver `null` a secas hacía que el censo continuara como exitoso sin
+    // haber analizado nada. El motivo tiene que poder llegar al resumen.
+    return { analysis: null, engine: null, note: (response as any).message || 'El motor de análisis no respondió.' };
+  }
+
+  const analysis = parseLongitudinalAnalysis(response.result || '');
+  return {
+    analysis,
+    engine: (response as any).engine || 'antigravity',
+    note: analysis
+      ? (response as any).engineNote || ''
+      : 'El motor respondió, pero el JSON no cumplió el contrato esperado.',
+  };
 }
