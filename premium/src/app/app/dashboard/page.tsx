@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, where, getDocs, doc, getDoc, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, limit, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth, AppUser } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
@@ -61,6 +61,33 @@ export default function DashboardPage() {
     // Alertas y Notificaciones Específicas del Interno
     const [docenteFeedbackList, setDocenteFeedbackList] = useState<any[]>([]);
     const [yesterdayDrafts, setYesterdayDrafts] = useState<any[]>([]);
+    const [discardingId, setDiscardingId] = useState<string | null>(null);
+
+    /**
+     * Descarta un borrador propio directamente desde el aviso.
+     *
+     * La consulta que alimenta esta lista ya filtra por `audit.createdBy` igual
+     * al usuario en sesión, así que aquí solo aparecen borradores propios.
+     */
+    const discardDraft = async (item: { id: string; usuariaName?: string }) => {
+        if (!globalActiveYear || !item?.id) return;
+        if (!window.confirm(
+            `¿Descartar el borrador de ${item.usuariaName || 'esta persona'}?\n\n`
+            + "Desaparecerá de tus evoluciones pendientes y no podrás recuperarlo.\n"
+            + "Úsalo solo si lo abriste por error."
+        )) return;
+
+        setDiscardingId(item.id);
+        try {
+            await deleteDoc(doc(db, "programs", globalActiveYear, "evoluciones", item.id));
+            setYesterdayDrafts(prev => prev.filter(draft => draft.id !== item.id));
+        } catch (error) {
+            console.error("No se pudo descartar el borrador", error);
+            alert("No se pudo descartar el borrador. Revisa tu conexión y reintenta.");
+        } finally {
+            setDiscardingId(null);
+        }
+    };
     const [unevolvedTodayCitas, setUnevolvedTodayCitas] = useState<Cita[]>([]);
     const [todayCompletedCount, setTodayCompletedCount] = useState<number>(0);
     const [todayTotalCount, setTodayTotalCount] = useState<number>(0);
@@ -399,12 +426,25 @@ export default function DashboardPage() {
                                     <span className="text-[10px] text-rose-600 font-semibold block">Borrador no cerrado del {item.date}</span>
                                     <span className="text-[10px] text-slate-400 font-medium block">Registro {String(item.id).slice(0, 8)}</span>
                                 </div>
-                                <Link
-                                    href={buildDraftHref(item)}
-                                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition shrink-0"
-                                >
-                                    Firmar Evolución
-                                </Link>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <Link
+                                        href={buildDraftHref(item)}
+                                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition"
+                                    >
+                                        Firmar Evolución
+                                    </Link>
+                                    {/* Un borrador abierto por error quedaba pendiente para
+                                        siempre: la interna no tenía forma de sacarlo sola. */}
+                                    <button
+                                        type="button"
+                                        onClick={() => discardDraft(item)}
+                                        disabled={discardingId === item.id}
+                                        className="px-2.5 py-1.5 text-slate-500 hover:text-rose-700 hover:bg-rose-50 text-xs font-bold rounded-lg transition disabled:opacity-40"
+                                        title="Eliminar este borrador si lo abriste por error"
+                                    >
+                                        {discardingId === item.id ? '…' : 'Descartar'}
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>

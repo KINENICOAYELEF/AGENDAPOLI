@@ -995,6 +995,55 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
     };
 
 
+    /**
+     * Elimina definitivamente un borrador propio.
+     *
+     * "Limpiar Borrador" solo vacía los campos en pantalla: el documento sigue
+     * en Firestore y reaparece cada día como evolución pendiente de firmar. Sin
+     * esta acción, un borrador abierto por error quedaba atrapado hasta que un
+     * docente lo borraba a mano.
+     *
+     * Solo alcanza a borradores propios: una evolución firmada, o de otra
+     * persona, nunca se puede eliminar desde aquí.
+     */
+    const handleDiscardDraft = async () => {
+        const draftId = formData.id || initialData?.id;
+        const author = (initialData?.audit as any)?.createdBy || initialData?.clinicianResponsible;
+        const isOwnDraft = !author || author === user?.uid || author === user?.email;
+
+        if (isClosedDynamic) {
+            alert("Esta evolución ya está firmada y no puede descartarse.");
+            return;
+        }
+        if (!isOwnDraft) {
+            alert("Este borrador fue creado por otra persona. Pídele a tu docente que lo revise.");
+            return;
+        }
+        if (!window.confirm(
+            "¿Descartar definitivamente este borrador?\n\n"
+            + "Se eliminará de tu lista de evoluciones pendientes y no podrás recuperarlo.\n"
+            + "Úsalo solo si abriste esta evolución por error."
+        )) return;
+
+        try {
+            setLoading(true);
+            if (draftId && globalActiveYear) {
+                await deleteDoc(doc(db, "programs", globalActiveYear, "evoluciones", draftId));
+            }
+            try {
+                localStorage.removeItem(draftKey);
+                localStorage.removeItem(`evoDraft_new_${usuariaId}`);
+                if (procesoId) localStorage.removeItem(`evoDraft_new_${procesoId}_${usuariaId}`);
+            } catch (e) { }
+            onClose();
+        } catch (error) {
+            console.error("No se pudo descartar el borrador", error);
+            alert(explainSaveError(error));
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Método universal de Guardado para Borrador o Cierre
     const executeSave = async (willClose: boolean, overrideReason?: string, isAutoSave = false, extraProps?: Partial<Evolucion>) => {
         if (!globalActiveYear || !user) {
@@ -1482,9 +1531,17 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             const evaOut = Number(formData.pain?.evaEnd);
             if (evaOut > evaIn) {
                 const txt = (formData.nextPlan || "").toLowerCase();
-                const progWords = ["mejor", "alivio", "disminuy", "baj", "positivo", "excelent", "exito", "buen", "favorable", "progreso", "progres", "aument", "subir carga"];
+                // "aument" a secas es ambiguo: "aumentó el dolor" es exactamente
+                // lo contrario a progresar carga, y bloqueaba a quien describía
+                // bien la agudización. Solo cuenta cuando lo que aumenta es la
+                // carga, no el síntoma.
+                const loadProgression = /(aument|subir|progres|increment)\w*\s+(la\s+|el\s+)?(carga|intensidad|volumen|dosis|peso|repeticiones|series)/.test(txt);
+                const positiveWords = ["mejor", "alivio", "disminuy", "positivo", "excelent", "exito", "favorable", "progreso"];
+                // "baj" y "buen" salen de la lista: "bajar carga" es la conducta
+                // correcta ante una agudización, no una contradicción.
+                const suggestsProgress = loadProgression || positiveWords.some(w => txt.includes(w));
 
-                if (progWords.some(w => txt.includes(w))) {
+                if (suggestsProgress) {
                     const justification = formData.pain?.contradictionReason || "";
                     if (justification.trim().length < 5) {
                         missingFields.push("Justificación de Agudización (El Dolor aumentó pero el Plan sugiere progreso)");
@@ -1519,13 +1576,26 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         if (formData.sessionAt) {
             const hoursPassed = getDifferenceInHours(formData.sessionAt, new Date().toISOString());
             if (hoursPassed > 36) {
+                // La justificación de cierre tardío es un requisito real de
+                // cierre, así que tiene que contar como campo faltante. Antes el
+                // botón se veía habilitado, la interna lo apretaba y recién ahí
+                // aparecía una alerta pidiéndole algo en otra sección.
+                const lateJustificationReady = Boolean(lateCategory) && lateText.trim().length >= 20;
+                if (!lateJustificationReady) {
+                    missingFields.push("Justificación de cierre tardío (en Datos Administrativos)");
+                }
+
                 assistantCards.push({
                     id: 'late_closure',
-                    type: 'alert',
+                    type: lateJustificationReady ? 'alert' : 'error',
                     title: 'Excedido Plazo Bioético (>36h)',
-                    message: `Han pasado ${hoursPassed.toFixed(1)} horas. Se exigirá causal de auditoría al cerrar.`,
+                    message: lateJustificationReady
+                        ? `Han pasado ${hoursPassed.toFixed(1)} horas. Tu justificación de auditoría ya está registrada.`
+                        : `Han pasado ${hoursPassed.toFixed(1)} horas. Para poder cerrar, elige una causal y escribe al menos 20 caracteres de justificación en "Datos Administrativos".`,
                     icon: <ClockIcon className="w-5 h-5 text-orange-500" />,
-                    style: "bg-orange-50 border-orange-200 text-orange-800"
+                    style: lateJustificationReady
+                        ? "bg-orange-50 border-orange-200 text-orange-800"
+                        : "bg-rose-50 border-rose-200 text-rose-800",
                 });
             }
         }
@@ -1907,7 +1977,21 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                 className="flex text-xs font-bold text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 md:py-2 rounded-xl transition-colors items-center gap-1.5 border border-rose-200"
                             >
                                 <svg className="w-4 h-4 md:w-3.5 md:h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                <span className="hidden md:inline">Limpiar Borrador</span>
+                                <span className="hidden md:inline">Vaciar campos</span>
+                            </button>
+                        )}
+                        {/* Distinto de "vaciar campos": esto elimina el registro y lo
+                            saca de las evoluciones pendientes de firmar. */}
+                        {!isClosedDynamic && (
+                            <button
+                                type="button"
+                                onClick={handleDiscardDraft}
+                                disabled={loading}
+                                title="Elimina este borrador y lo quita de tus pendientes"
+                                className="flex text-xs font-bold text-slate-600 hover:text-rose-700 bg-slate-100 hover:bg-rose-50 px-3 py-1.5 md:py-2 rounded-xl transition-colors items-center gap-1.5 border border-slate-200 disabled:opacity-50"
+                            >
+                                <span className="hidden md:inline">Descartar borrador</span>
+                                <span className="md:hidden">Descartar</span>
                             </button>
                         )}
                         {/* Botón Volver Mobile/Desktop */}
