@@ -25,7 +25,19 @@ const CLINICAL_ACTIVITY_WINDOW_DAYS = 14;
  * censo cortado sin avisar. Con cuatro corridas diarias, este presupuesto cubre
  * a toda la rotación en menos de un día.
  */
-const LLM_CALLS_PER_RUN = Number(process.env.AGENT_LLM_CALLS_PER_RUN || 6);
+const LLM_CALLS_PER_RUN = Number(process.env.AGENT_LLM_CALLS_PER_RUN || 3);
+
+/**
+ * Plazo propio para terminar antes de que la plataforma mate la función.
+ *
+ * Seis análisis seguidos, de hasta ~50 s cada uno, superaban el límite de la
+ * función serverless y Vercel la cortaba con FUNCTION_INVOCATION_TIMEOUT: el
+ * censo entero se perdía, incluida la parte estructural que ya había terminado.
+ *
+ * Con un plazo propio el censo deja de iniciar análisis nuevos cuando se acerca
+ * al límite, devuelve lo que alcanzó y deja el resto para la corrida siguiente.
+ */
+const RUN_BUDGET_MS = Number(process.env.AGENT_RUN_BUDGET_MS || 45_000);
 
 function recordDate(record: any) {
   const value = record.sessionAt || record.fechaHoraAtencion || record.audit?.createdAt || record.createdAt;
@@ -369,6 +381,8 @@ export async function runCensusEngine() {
     let initialEvaluationMissingCreated = 0;
     let initialEvaluationInsufficientCreated = 0;
     const priorityCounts: Record<'P0' | 'P1' | 'P2' | 'P3', number> = { P0: 0, P1: 0, P2: 0, P3: 0 };
+    const runStartedAt = Date.now();
+    const withinTimeBudget = () => Date.now() - runStartedAt < RUN_BUDGET_MS;
     const recentCutoff = Date.now() - CLINICAL_ACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
     // Registros recientes de TODA la rotación, en dos consultas acotadas por
@@ -657,7 +671,7 @@ export async function runCensusEngine() {
       // Rendimiento oral: OSCE y defensas quedaban guardadas y nadie las leía.
       // Ahí se ve la diferencia entre quien redacta bien y quien razona bien.
       let oralEvidence: any[] = [];
-      if (featureFlags.agentLlmAnalysisEnabled && llmDiagnostics.attempted < LLM_CALLS_PER_RUN) {
+      if (featureFlags.agentLlmAnalysisEnabled && llmDiagnostics.attempted < LLM_CALLS_PER_RUN && withinTimeBudget()) {
         try {
           const [osceSnap, defenseSnap] = await Promise.all([
             db.collection('simulador_intentos').where('userId', '==', student.id).limit(10).get(),
@@ -685,7 +699,9 @@ export async function runCensusEngine() {
       // ejecución agota tiempo y cuota, y el censo terminaba a medias sin
       // decirlo. Se analiza un grupo por corrida y el resto entra en la
       // siguiente, priorizando a quien lleva más tiempo sin análisis.
-      const withinLlmBudget = llmDiagnostics.attempted < LLM_CALLS_PER_RUN;
+      // Dos topes: cuántos análisis por corrida y cuánto tiempo queda antes de
+      // que la plataforma corte la función.
+      const withinLlmBudget = llmDiagnostics.attempted < LLM_CALLS_PER_RUN && withinTimeBudget();
 
       if (!featureFlags.agentLlmAnalysisEnabled) {
         llmDiagnostics.skippedReason = 'FF_AGENT_LLM_ANALYSIS no está en true';
@@ -810,6 +826,7 @@ export async function runCensusEngine() {
         deferred: llmDiagnostics.deferred,
         engines: Array.from(llmDiagnostics.enginesUsed),
         skippedReason: llmDiagnostics.skippedReason || undefined,
+        timeBudgetExhausted: !withinTimeBudget(),
         lastError: llmDiagnostics.lastError || undefined,
       },
       studentsProcessed: students.length,

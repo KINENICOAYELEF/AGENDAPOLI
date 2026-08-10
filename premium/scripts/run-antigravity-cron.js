@@ -62,6 +62,21 @@ function isNonRetryableQuotaError(error) {
   return message.includes('resource_exhausted') || message.includes('quota exceeded');
 }
 
+/**
+ * Un tiempo agotado en la función no se arregla reintentando: el segundo
+ * intento hace exactamente el mismo trabajo y vuelve a agotarse. Solo consume
+ * cuota de IA tres veces y alarga la ejecución a diez minutos.
+ *
+ * El censo tiene su propio plazo interno y deja lo pendiente para la próxima
+ * corrida, así que aquí basta con avisar y salir.
+ */
+function isTimeoutError(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+  return message.includes('function_invocation_timeout')
+    || message.includes('http error 504')
+    || message.includes('gateway timeout');
+}
+
 async function runCron() {
   console.log(`[Antigravity Cron] Iniciando censo y síntesis nocturna en: ${APP_URL}`);
 
@@ -121,6 +136,10 @@ async function runCron() {
       clearTimeout(timeout);
       lastError = err;
       console.error(`[Antigravity Cron] Intento ${attempt}/3 falló:`, err.message);
+      if (isTimeoutError(err)) {
+        console.warn('::warning::La función agotó su tiempo antes de responder. El censo aplica un plazo interno y continúa en la próxima corrida; reintentar aquí solo repetiría el mismo trabajo.');
+        return;
+      }
       if (isNonRetryableQuotaError(err)) {
         // En Spark la cuota puede agotarse antes del siguiente ciclo diario. No es un
         // fallo del agente ni algo que un reintento pueda resolver; dejamos una
