@@ -210,6 +210,16 @@ service cloud.firestore {
       allow read: if isAuthenticated() && resource.data.studentId == request.auth.uid;
     }
 
+    // Declaración de a cargo de quién queda una persona tras atenderla sin
+    // tenerla asignada. La estudiante crea la pregunta al firmar y la responde;
+    // el docente ve y corrige todo.
+    match /pending_assignment_decisions/{decisionId} {
+      allow read, write: if isDocente();
+      allow read, create, update: if isAuthenticated()
+                                  && request.resource.data.studentId == request.auth.uid;
+      allow delete: if isDocente();
+    }
+
     // Comentarios anclados a una sección de la ficha.
     match /record_comments/{commentId} {
       // El docente comenta, lee y corrige todo.

@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { DebugOverlay } from '@/components/DebugOverlay';
 import { SimuladorAlertaModal } from '@/components/SimuladorAlertaModal';
 import { NotificationCenter } from '@/components/NotificationCenter';
+import { AssignmentDecisionGate } from '@/components/AssignmentDecisionGate';
 import { StudentClinicalTaskBanner } from '@/components/StudentClinicalTaskBanner';
 import { 
     LayoutDashboard, 
@@ -347,6 +348,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </header>
 
                 <div className="flex-1 overflow-auto p-4 sm:p-6 w-full">
+                    {/* Bloquea la plataforma hasta declarar a cargo de quién
+                        está una persona que se atendió sin tenerla asignada. */}
+                    <AssignmentDecisionGate />
                     {children}
                 </div>
             </main>

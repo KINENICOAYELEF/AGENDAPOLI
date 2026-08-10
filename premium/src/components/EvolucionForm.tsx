@@ -6,6 +6,7 @@ import { setDocCounted } from "@/services/firestore";
 import { OutcomesService } from "@/services/outcomes";
 import { AgendaService } from "@/services/agenda";
 import { PersonasUsuariasService } from "@/services/personasUsuarias";
+import { AssignmentDecisionsService } from "@/services/assignmentDecisions";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { sanitizeForFirestoreDeep, resolveSafeAudit } from "@/lib/firebase-utils";
@@ -1214,6 +1215,39 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             // persistido. Si la escritura falla, el debounce vuelve a intentarlo
             // en lugar de dar el contenido por guardado y perderlo en silencio.
             lastSavedDataRef.current = attemptedSnapshot;
+
+            // Al firmar, comprobar si corresponde exigirle declarar de quién es
+            // esta persona. Se pregunta después de dos sesiones propias, en el
+            // dashboard: interrumpir aquí arriesgaría perder lo escrito.
+            if (willClose && usuariaId && user?.uid) {
+                try {
+                    const ownClosedSessions = (evolucionesAnteriores || []).filter((previous: any) => {
+                        const isClosed = previous.status === 'CLOSED' || previous.estado === 'CERRADA';
+                        const author = previous.audit?.createdBy || previous.clinicianResponsible;
+                        return isClosed && author === user.uid && previous.id !== targetId;
+                    }).length + 1; // + la que se está firmando ahora
+
+                    const usuariaSnap = await getDoc(doc(db, "programs", globalActiveYear, "usuarias", usuariaId));
+                    const usuariaData = usuariaSnap.data();
+                    const assignedInternId = usuariaData?.meta?.assignedInternId || usuariaData?.assignedInternId;
+
+                    if (assignedInternId !== user.uid) {
+                        await AssignmentDecisionsService.requestIfNeeded({
+                            year: globalActiveYear,
+                            studentId: user.uid,
+                            studentName: user.displayName || user.email || undefined,
+                            patientId: usuariaId,
+                            patientName: usuariaData?.identity?.fullName || usuariaData?.nombreCompleto || 'Persona usuaria',
+                            processId: procesoId || undefined,
+                            assignedInternId: assignedInternId || undefined,
+                            assignedInternName: usuariaData?.meta?.assignedInternName || undefined,
+                            sessionsByStudent: ownClosedSessions,
+                        });
+                    }
+                } catch (e) {
+                    console.warn("No se pudo evaluar la asignación de la persona usuaria:", e);
+                }
+            }
 
             // Vincular al interno con la Persona Usuaria si aún no tiene un interno asignado y confirma que es su paciente regular
             if (usuariaId && user?.uid && !isAutoSave) {
