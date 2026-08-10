@@ -149,6 +149,116 @@ export async function buildRotationSummary(year: string, windowDays = 7): Promis
   };
 }
 
+/**
+ * Vigilancia de los puntos que el agente nunca miró: agenda, cumplimiento de
+ * simulaciones, exámenes de rotación y personas abandonadas.
+ *
+ * Todos estos datos existían y nadie los auditaba, así que el docente tenía que
+ * acordarse de revisarlos por su cuenta.
+ */
+export type WatchAlert = {
+  kind: 'CITA_SIN_EVOLUCIONAR' | 'SIMULACIONES_INSUFICIENTES' | 'EXAMEN_PROXIMO' | 'PERSONA_ABANDONADA';
+  severity: 'ALTA' | 'MEDIA';
+  message: string;
+};
+
+export async function buildWatchAlerts(year: string): Promise<WatchAlert[]> {
+  const db = getAdminDb();
+  const alerts: WatchAlert[] = [];
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+
+  // 1. Citas ya pasadas que siguen sin evolucionar.
+  try {
+    const citasSnap = await db.collection(`programs/${year}/citas`)
+      .where('date', '>=', weekAgo)
+      .where('date', '<', today)
+      .get();
+    const unevolved = citasSnap.docs.filter((doc: any) => doc.data().status === 'SCHEDULED');
+    if (unevolved.length > 0) {
+      alerts.push({
+        kind: 'CITA_SIN_EVOLUCIONAR',
+        severity: unevolved.length >= 5 ? 'ALTA' : 'MEDIA',
+        message: `${unevolved.length} cita(s) de los últimos 7 días siguen sin evolucionar ni marcarse como inasistencia.`,
+      });
+    }
+  } catch (error) {
+    console.warn('No se pudo revisar la agenda para alertas:', error);
+  }
+
+  // 2. Cumplimiento de simulaciones. El cálculo existía pero nadie lo ejecutaba.
+  try {
+    const [studentsSnap, osceSnap, defenseSnap] = await Promise.all([
+      db.collection('users').where('role', '==', 'INTERNO').get(),
+      db.collection('simulador_intentos').get(),
+      db.collection('defensas_voz_intentos').get(),
+    ]);
+    const counts = new Map<string, number>();
+    [...osceSnap.docs, ...defenseSnap.docs].forEach((doc: any) => {
+      const userId = doc.data().userId;
+      if (userId) counts.set(userId, (counts.get(userId) || 0) + 1);
+    });
+    const behind = studentsSnap.docs
+      .map((doc: any) => ({ name: doc.data().displayName || doc.data().email || doc.id, done: counts.get(doc.id) || 0 }))
+      .filter((item: any) => item.done < 15);
+    if (behind.length > 0) {
+      alerts.push({
+        kind: 'SIMULACIONES_INSUFICIENTES',
+        severity: 'MEDIA',
+        message: `${behind.length} estudiante(s) bajo el mínimo de 15 prácticas: `
+          + behind.slice(0, 6).map((item: any) => `${item.name} (${item.done})`).join(', ') + '.',
+      });
+    }
+  } catch (error) {
+    console.warn('No se pudo revisar el cumplimiento de simulaciones:', error);
+  }
+
+  // 3. Exámenes de rotación que se acercan.
+  try {
+    const rotationsSnap = await db.collection(`programs/${year}/rotations`).get();
+    rotationsSnap.docs.forEach((doc: any) => {
+      const data = doc.data();
+      const endValue = data.endDate || data.fechaTermino;
+      if (!endValue) return;
+      const endTime = new Date(iso(endValue)).getTime();
+      if (Number.isNaN(endTime)) return;
+      const remaining = Math.ceil((endTime - Date.now()) / 86400000);
+      if (remaining >= 0 && remaining <= 21) {
+        alerts.push({
+          kind: 'EXAMEN_PROXIMO',
+          severity: remaining <= 7 ? 'ALTA' : 'MEDIA',
+          message: `La rotación "${data.name || data.nombre || 'sin nombre'}" termina en ${remaining} día(s): conviene fijar el examen final.`,
+        });
+      }
+    });
+  } catch (error) {
+    console.warn('No se pudo revisar las rotaciones:', error);
+  }
+
+  // 4. Personas activas que dejaron de recibir sesiones.
+  try {
+    const processesSnap = await db.collection(`programs/${year}/procesos`).where('estado', '==', 'ACTIVO').get();
+    const abandoned = processesSnap.docs.filter((doc: any) => {
+      const data = doc.data();
+      const last = data.lastClosedEvolution?.sessionAt || data.fechaInicio;
+      if (!last) return false;
+      const days = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
+      return days >= 21;
+    });
+    if (abandoned.length > 0) {
+      alerts.push({
+        kind: 'PERSONA_ABANDONADA',
+        severity: 'ALTA',
+        message: `${abandoned.length} persona(s) con proceso activo llevan 21 días o más sin sesión registrada.`,
+      });
+    }
+  } catch (error) {
+    console.warn('No se pudo revisar la continuidad de procesos:', error);
+  }
+
+  return alerts;
+}
+
 /** Formato listo para Telegram, con lo urgente arriba. */
 export function formatRotationSummary(summary: RotationSummary, appBaseUrl: string): string {
   const working = summary.lines.filter(line => line.evolutions + line.evaluations > 0);

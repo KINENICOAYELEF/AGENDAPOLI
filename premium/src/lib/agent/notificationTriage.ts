@@ -1,7 +1,7 @@
 import { featureFlags } from '@/lib/agent/config';
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { getAllowedTelegramChatId, sendTelegramMessage } from '@/lib/server/telegram';
-import { buildRotationSummary, formatRotationSummary } from '@/lib/agent/rotationSummary';
+import { buildRotationSummary, buildWatchAlerts, formatRotationSummary } from '@/lib/agent/rotationSummary';
 
 export const RECENT_REVIEW_WINDOW_HOURS = 48;
 
@@ -41,6 +41,75 @@ function isRecent(value: unknown, hours = RECENT_REVIEW_WINDOW_HOURS) {
 }
 
 /**
+ * Alerta inmediata por riesgo clínico.
+ *
+ * Un P0 detectado a media mañana esperaba hasta el resumen de la noche. Lo que
+ * compromete la seguridad de una persona atendida no puede compartir cola con
+ * "faltan tres borradores por firmar".
+ *
+ * Se envía una sola vez por hallazgo: la marca por ID evita que las cuatro
+ * corridas diarias repitan la misma alarma.
+ */
+export async function sendCriticalAlerts() {
+  if (!featureFlags.telegramTeacherEnabled) return { delivered: 0, reason: 'telegram_disabled' };
+  const chatId = getAllowedTelegramChatId();
+  if (!chatId) return { delivered: 0, reason: 'telegram_chat_not_configured' };
+
+  const db = getAdminDb();
+  const snapshot = await db.collection('teacher_agent_reviews')
+    .where('status', '==', 'PENDING_TEACHER')
+    .where('priority', '==', 'P0')
+    .get();
+
+  let delivered = 0;
+  for (const doc of snapshot.docs) {
+    const review: any = doc.data();
+    const alertRef = db.collection('teacher_notifications').doc(`critical_${doc.id}`);
+    try {
+      await alertRef.create({
+        kind: 'CRITICAL_ALERT',
+        channel: 'telegram',
+        audience: 'DOCENTE_ONLY',
+        status: 'QUEUED',
+        reviewId: doc.id,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      // Ya se avisó de este hallazgo: no se repite en cada corrida.
+      if (error?.code === 6 || error?.code === 'already-exists') continue;
+      throw error;
+    }
+
+    let studentName = review.studentId;
+    try {
+      const userSnap = await db.collection('users').doc(review.studentId).get();
+      studentName = userSnap.data()?.displayName || userSnap.data()?.email || review.studentId;
+    } catch { /* se muestra el identificador */ }
+
+    const coherence = Array.isArray(review.coherenceFindings)
+      ? review.coherenceFindings.map((finding: any) => `\n🚩 ${finding.explanation}`).join('')
+      : '';
+    const source = review.sourceReferences?.[0];
+    const href = source?.recordId
+      ? `${APP_BASE_URL}/app/revision-docente/registros/${source.collection === 'evoluciones' ? 'EVOLUCION' : 'EVALUACION'}/${source.recordId}`
+      : `${APP_BASE_URL}/app/revision-docente`;
+
+    try {
+      await sendTelegramMessage(
+        chatId,
+        `🔴 *RIESGO CLÍNICO DETECTADO*\n\n*${studentName}*\n${review.observation || ''}${coherence}\n\n[Abrir el registro](${href})\n\n_Esto no espera al resumen diario. Nada se envió a la estudiante._`,
+      );
+      await alertRef.update({ status: 'DELIVERED', deliveredAt: new Date().toISOString() });
+      delivered++;
+    } catch (error: any) {
+      await alertRef.update({ status: 'FAILED', error: error?.message || 'fallo de entrega' });
+    }
+  }
+
+  return { delivered };
+}
+
+/**
  * Resumen diario de la rotación, enviado una sola vez por día.
  *
  * Es el mensaje que el docente pidió: quién trabajó, quién está en silencio y
@@ -76,8 +145,16 @@ export async function sendDailyRotationDigest(year: string) {
   }
 
   try {
-    const summary = await buildRotationSummary(year, 7);
-    await sendTelegramMessage(chatId, formatRotationSummary(summary, APP_BASE_URL), {
+    const [summary, watchAlerts] = await Promise.all([
+      buildRotationSummary(year, 7),
+      buildWatchAlerts(year).catch(() => []),
+    ]);
+    // Agenda, simulaciones, exámenes y personas abandonadas: datos que ya
+    // existían y que nadie auditaba.
+    const watchBlock = watchAlerts.length
+      ? `\n\n👀 *Vigilancia*\n${watchAlerts.map(alert => `${alert.severity === 'ALTA' ? '🔴' : '🟡'} ${alert.message}`).join('\n')}`
+      : '';
+    await sendTelegramMessage(chatId, `${formatRotationSummary(summary, APP_BASE_URL)}${watchBlock}`, {
       inline_keyboard: [[{ text: '🔎 Abrir Bandeja Docente', url: `${APP_BASE_URL}/app/revision-docente` }]],
     });
     await digestRef.update({ status: 'DELIVERED', deliveredAt: new Date().toISOString() });
@@ -119,6 +196,21 @@ async function getTopPendingCases(limit = 5) {
     } catch { /* si no se resuelve, se muestra el identificador */ }
   }));
 
+  // Token corto por hallazgo: los botones de Telegram admiten 64 bytes de
+  // callback_data y los IDs de hallazgo los exceden.
+  const tokens = new Map<string, string>();
+  await Promise.all(reviews.map(async (review: any) => {
+    try {
+      const ref = await db.collection('telegram_actions').add({
+        reviewId: review.id,
+        createdAt: new Date().toISOString(),
+      });
+      tokens.set(review.id, ref.id);
+    } catch (error) {
+      console.warn('No se pudo crear el token de acción para', review.id, error);
+    }
+  }));
+
   return reviews.map((review: any) => {
     const source = review.sourceReferences?.[0];
     const href = source?.recordId
@@ -135,6 +227,8 @@ async function getTopPendingCases(limit = 5) {
       : '';
 
     return {
+      id: review.id as string,
+      token: tokens.get(review.id) || '',
       priority: review.priority as Priority,
       studentName: names.get(review.studentId) || review.studentId || 'Estudiante sin identificar',
       observation: String(review.observation || 'Sin observación registrada').slice(0, 220),
@@ -249,9 +343,23 @@ export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
 
   const message = `${header}${reevaluationLine}${initialLine}${pendingLine}${llmLine}${caseLines}\n\n_Nada de esto se envía a las estudiantes: tú decides qué reenviar._`;
 
+  // Un botón de aprobar y otro de descartar por caso: la decisión se toma desde
+  // el celular sin abrir el navegador. Aprobar deja el texto guardado y listo;
+  // no lo envía a la estudiante.
+  const caseButtons = cases
+    .filter((item: any) => item.token)
+    .slice(0, 3)
+    .map((item: any) => ([
+      { text: `✅ Aprobar · ${String(item.studentName).split(' ')[0]}`, callback_data: `approve:${item.token}` },
+      { text: '🗑 Descartar', callback_data: `dismiss:${item.token}` },
+    ]));
+
   try {
     await sendTelegramMessage(chatId, message, {
-      inline_keyboard: [[{ text: '🔎 Abrir Bandeja Docente', url: `${APP_BASE_URL}/app/revision-docente` }]],
+      inline_keyboard: [
+        ...caseButtons,
+        [{ text: '🔎 Abrir Bandeja Docente', url: `${APP_BASE_URL}/app/revision-docente` }],
+      ],
     });
     await notificationRef.update({ status: 'DELIVERED', deliveredAt: new Date().toISOString() });
     return { delivered: true };

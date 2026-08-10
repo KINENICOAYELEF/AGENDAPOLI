@@ -10,7 +10,7 @@ import { featureFlags } from '@/lib/agent/config';
 import { requireTeacher } from '@/lib/server/firebaseAdmin';
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { runCensusEngine } from '@/lib/agent/censusEngine';
-import { notifyTeacherOfCensus, sendDailyRotationDigest } from '@/lib/agent/notificationTriage';
+import { notifyTeacherOfCensus, sendCriticalAlerts, sendDailyRotationDigest } from '@/lib/agent/notificationTriage';
 
 const SCHEDULE_SLOT_PATTERN = /^\d{4}-\d{2}-\d{2}-(morning|evening)$/;
 const SCHEDULE_LEASE_MS = 45 * 60 * 1000;
@@ -127,6 +127,14 @@ export async function POST(req: Request) {
           // El fallo queda trazable sin convertir una revisión clínica en error.
           console.error(`[Telegram Notification Error ${runId}]:`, notificationError);
           notification = { delivered: false, reason: notificationError?.message || 'telegram_delivery_failed' };
+        }
+
+        // El riesgo clínico sale primero y por separado: no puede esperar al
+        // resumen de la noche ni competir con avisos administrativos.
+        try {
+          await sendCriticalAlerts();
+        } catch (criticalError: any) {
+          console.error(`[Critical Alert Error ${runId}]:`, criticalError);
         }
 
         // Resumen diario de la rotación: se envía una sola vez al día, aunque el
