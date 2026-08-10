@@ -28,6 +28,13 @@ export type CensusNotificationInput = {
   initialEvaluationMissingCreated?: number;
   initialEvaluationInsufficientCreated?: number;
   priorityCounts: Record<Priority, number>;
+  /** Personas que otra interna lleva varias sesiones atendiendo sin estar asignada. */
+  staleAssignmentCases?: Array<{
+    patientName: string;
+    assignedTo: string;
+    actuallyTreatedBy: string;
+    sessions: number;
+  }>;
   /** Diagnóstico del análisis generativo, para no confundir "sin hallazgos" con "no corrió". */
   llm?: {
     enabled: boolean;
@@ -443,7 +450,18 @@ export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
       ? `🧠 *Censo Agenda Poli completado*\n\nSin hallazgos nuevos en esta corrida.`
       : `🧠 *Censo Agenda Poli completado*\n\nHay *${input.reviewsCreated}* hallazgo(s) nuevos: P1 ${input.priorityCounts.P1} · P2 ${input.priorityCounts.P2}.`;
 
-  const message = `${header}${reevaluationLine}${initialLine}${pendingLine}${llmLine}${caseLines}\n\n_Nada de esto se envía a las estudiantes: tú decides qué reenviar._`;
+  // Suplencias que dejaron de ser puntuales: la asignación quedó obsoleta y
+  // los avisos de continuidad estaban yendo a quien ya no atiende.
+  const staleLine = input.staleAssignmentCases?.length
+    ? `\n\n🔄 *Asignaciones desactualizadas* (${input.staleAssignmentCases.length})\n`
+      + input.staleAssignmentCases.slice(0, 5).map(item =>
+          `• *${item.patientName}* figura con ${item.assignedTo}, pero las últimas `
+          + `${item.sessions} sesiones las hizo ${item.actuallyTreatedBy}.`,
+        ).join('\n')
+      + `\n_Si ya no es suplencia, conviene reasignar desde el Panel Admin._`
+    : '';
+
+  const message = `${header}${reevaluationLine}${initialLine}${pendingLine}${llmLine}${staleLine}${caseLines}\n\n_Nada de esto se envía a las estudiantes: tú decides qué reenviar._`;
 
   // Un botón de aprobar y otro de descartar por caso: la decisión se toma desde
   // el celular sin abrir el navegador. Aprobar deja el texto guardado y listo;

@@ -13,6 +13,7 @@ import { TeacherAgentReviewSchema } from './contracts/review';
 import { analyzeStudentLongitudinal } from './longitudinalAnalysis';
 import { calibrationInstruction, getTeacherCalibration } from './teacherCalibration';
 import { buildActiveRoster, rosterInRotation } from './activeRoster';
+import { detectCoverage, staleAssignments } from './coverage';
 
 const CLINICAL_ACTIVITY_WINDOW_DAYS = 14;
 
@@ -396,6 +397,12 @@ export async function runCensusEngine() {
     recentEvalsSnap.docs.forEach((doc: any) => indexByAuthor(doc, 'evaluaciones'));
     recentEvolsSnap.docs.forEach((doc: any) => indexByAuthor(doc, 'evoluciones'));
 
+    // Cobertura real: quién está atendiendo cada proceso, más allá de a quién
+    // figura asignado. Se calcula con los datos ya cargados, sin lecturas extra.
+    const allRecentEvolutions = recentEvolsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+    const coverage = detectCoverage({ processes, patients, evolutions: allRecentEvolutions });
+    const coverageByProcess = new Map(coverage.map(item => [item.processId, item]));
+
     // Criterio aprendido de lo que el docente aprueba y descarta. Evita
     // insistir con hallazgos que él ya rechazó una y otra vez.
     const calibration = await getTeacherCalibration();
@@ -571,7 +578,15 @@ export async function runCensusEngine() {
           || patient?.assignedInternId
           || process.primaryInternId
           || process.attendancePlan?.primaryInternId;
-        if (assignedInternId !== student.id) continue;
+        // La responsabilidad de la continuidad es de quien está atendiendo.
+        // Antes se exigía coincidir con la asignación, así que una suplencia
+        // sostenida dejaba los avisos yendo a alguien que ya no ve a la persona
+        // —y el trabajo de quien sí la atiende no se le contaba a ella.
+        const processCoverage = coverageByProcess.get(processId);
+        const responsibleInternId = processCoverage?.assignmentIsStale
+          ? processCoverage.actualCarerId
+          : assignedInternId;
+        if (responsibleInternId !== student.id) continue;
         const processInitials = globalInitials.filter((evaluation: any) => evaluation.procesoId === processId);
         const processBaselines = globalBaselines.filter((evaluation: any) => evaluation.procesoId === processId);
 
@@ -765,6 +780,19 @@ export async function runCensusEngine() {
       }
     }
 
+    // Asignaciones que la realidad dejó atrás: alguien más lleva varias
+    // sesiones seguidas con esa persona. No se reasigna sola; se informa para
+    // que el docente decida si fue una suplencia larga o un cambio real.
+    const stale = staleAssignments(coverage);
+    const rosterById = new Map(roster.map(entry => [entry.id, entry.name]));
+    const staleAssignmentCases = stale.slice(0, 15).map(item => ({
+      patientName: patients.find((patient: any) => patient.id === item.patientId)?.identity?.fullName
+        || `Persona (${item.patientId.slice(0, 6)})`,
+      assignedTo: rosterById.get(item.assignedInternId) || 'sin interna asignada',
+      actuallyTreatedBy: rosterById.get(item.actualCarerId) || item.actualCarerId,
+      sessions: item.sessionsConsidered,
+    }));
+
     const studentTasksResolved = await reconcilePublishedStudentTasks(db, year, globalBaselines);
 
     console.log(
@@ -785,6 +813,7 @@ export async function runCensusEngine() {
         lastError: llmDiagnostics.lastError || undefined,
       },
       studentsProcessed: students.length,
+      staleAssignmentCases,
       recordsProcessed,
       reviewsCreated,
       reevaluationRemindersCreated,

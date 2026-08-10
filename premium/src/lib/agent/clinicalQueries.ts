@@ -11,6 +11,7 @@
  */
 
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
+import { detectCoverage } from './coverage';
 
 function iso(value: any): string {
   if (!value) return '';
@@ -57,11 +58,13 @@ async function findStudent(db: any, nameOrId: string) {
 export async function censoAsignaciones(year: string, studentQuery?: string) {
   const db = getAdminDb();
 
-  const [studentsSnap, patientsSnap, processesSnap, findingsSnap] = await Promise.all([
+  const recentCutoff = new Date(Date.now() - 60 * 86400000).toISOString();
+  const [studentsSnap, patientsSnap, processesSnap, findingsSnap, evolsSnap] = await Promise.all([
     db.collection('users').where('role', '==', 'INTERNO').get(),
     db.collection(`programs/${year}/usuarias`).get(),
     db.collection(`programs/${year}/procesos`).get(),
     db.collection('teacher_agent_reviews').get(),
+    db.collection(`programs/${year}/evoluciones`).where('sessionAt', '>=', recentCutoff).get(),
   ]);
 
   const students = studentsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
@@ -95,10 +98,30 @@ export async function censoAsignaciones(year: string, studentQuery?: string) {
 
   const patients = patientsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
 
+  // Quién atiende de verdad. Las internas se cubren entre ellas y la asignación
+  // no se mueve, así que preguntar "qué pacientes tiene X" por asignación
+  // devolvía a gente que X no está viendo, y omitía a la que sí atiende.
+  const processes = processesSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+  const coverage = detectCoverage({
+    processes,
+    patients,
+    evolutions: evolsSnap.docs.map((doc: any) => doc.data()),
+  });
+  const coverageByProcess = new Map(coverage.map(item => [item.processId, item]));
+  const studentNames = new Map(students.map((student: any) => [student.id, student.displayName || student.email || student.id]));
+
   return {
     year,
     students: target.map((student: any) => {
-      const assigned = patients.filter((patient: any) => patient.meta?.assignedInternId === student.id);
+      // Además de las asignadas, las personas que está atendiendo de hecho
+      // aunque figuren a nombre de otra: es trabajo suyo y hay que contarlo.
+      const coveredPatientIds = new Set(
+        coverage
+          .filter(item => item.actualCarerId === student.id)
+          .map(item => item.patientId),
+      );
+      const assigned = patients.filter((patient: any) =>
+        patient.meta?.assignedInternId === student.id || coveredPatientIds.has(patient.id));
       return {
         studentId: student.id,
         name: student.displayName || student.email || student.id,
@@ -107,8 +130,16 @@ export async function censoAsignaciones(year: string, studentQuery?: string) {
         patients: assigned.map((patient: any) => {
           const process = processByPatient.get(patient.id);
           const lastSession = process?.lastClosedEvolution;
+          const cover = process?.id ? coverageByProcess.get(process.id) : undefined;
           return {
             name: patient.identity?.fullName || 'Sin nombre',
+            // Estas dos claves son distintas a propósito: la asignación puede
+            // haber quedado obsoleta tras una suplencia sostenida.
+            actuallyTreatedBy: cover && cover.actualCarerId !== student.id
+              ? (studentNames.get(cover.actualCarerId) || cover.actualCarerId)
+              : 'esta misma estudiante',
+            assignmentLooksOutdated: Boolean(cover?.assignmentIsStale),
+            hasOccasionalCover: Boolean(cover?.hasOccasionalCover),
             processState: process?.estado || 'sin proceso registrado',
             reasonForAdmission: String(process?.motivoIngresoLibre || '').slice(0, 200),
             currentDiagnosis: String(process?.diagnosisVigente || 'sin diagnóstico vigente registrado').slice(0, 300),
