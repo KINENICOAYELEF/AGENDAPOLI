@@ -1,4 +1,4 @@
-import { collection, doc, query, getDocs, orderBy, QueryDocumentSnapshot, deleteDoc, where, writeBatch } from "firebase/firestore";
+import { collection, doc, query, getDoc, getDocs, getCountFromServer, orderBy, QueryDocumentSnapshot, deleteDoc, deleteField, setDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { PersonaUsuaria } from "@/types/personaUsuaria";
@@ -9,11 +9,151 @@ type PatientCacheEntry = {
     inFlight?: Promise<PersonaUsuaria[]>;
 };
 
+/**
+ * ÍNDICE LIGERO DEL DIRECTORIO
+ *
+ * Firestore cobra por documento leído, no por tamaño: abrir /app/usuarios
+ * costaba una lectura por cada persona del año (≈120), en cada carga y en cada
+ * navegador. Ese único listado era el mayor consumidor de cuota de la
+ * plataforma, y solo se usaba para pintar nombre, RUT, teléfono y asignación.
+ *
+ * Ahora esos campos viven denormalizados en UN documento. La lista completa
+ * cuesta 2 lecturas: el índice y un conteo agregado que detecta si quedó
+ * desactualizado. La ficha clínica completa se lee aparte, solo al abrirla.
+ */
+const DIRECTORY_DOC_SEGMENTS = ['meta', 'patientDirectory'] as const;
+
+export type PatientDirectoryEntry = {
+    id: string;
+    fullName: string;
+    rut: string;
+    telefono: string;
+    correo: string;
+    observaciones: string;
+    assignedInternId: string;
+    assignedInternName: string;
+};
+
+/**
+ * Marca que este objeto trae SOLO los campos del listado.
+ *
+ * Es imprescindible: abrir una ficha con un objeto ligero y guardarla borraría
+ * el resto del expediente. Todo consumidor debe pedir el documento completo
+ * antes de editar (`getById` lo hace).
+ */
+export const LIGHT_PATIENT_FLAG = '__directoryOnly' as const;
+
+export function isLightPatient(patient: unknown): boolean {
+    return Boolean(patient && (patient as any)[LIGHT_PATIENT_FLAG]);
+}
+
+function directoryRef(year: string) {
+    return doc(db, "programs", year, ...DIRECTORY_DOC_SEGMENTS);
+}
+
+/** Reduce el expediente completo a lo que el listado necesita mostrar. */
+export function toDirectoryEntry(patient: PersonaUsuaria): PatientDirectoryEntry {
+    const anyPatient = patient as any;
+    return {
+        id: patient.id || '',
+        fullName: patient.identity?.fullName || anyPatient.nombreCompleto || '',
+        rut: patient.identity?.rut || anyPatient.rut || '',
+        telefono: patient.identity?.telefono || anyPatient.telefono || '',
+        correo: patient.identity?.correo || anyPatient.email || '',
+        observaciones: patient.identity?.observacionesAdministrativas || anyPatient.notasAdministrativas || '',
+        assignedInternId: patient.meta?.assignedInternId || '',
+        assignedInternName: patient.meta?.assignedInternName || '',
+    };
+}
+
+/** Reconstruye el objeto que consume el listado, marcado como incompleto. */
+function fromDirectoryEntry(entry: PatientDirectoryEntry): PersonaUsuaria {
+    return {
+        id: entry.id,
+        identity: {
+            fullName: entry.fullName,
+            rut: entry.rut,
+            telefono: entry.telefono,
+            correo: entry.correo,
+            observacionesAdministrativas: entry.observaciones,
+        },
+        meta: {
+            assignedInternId: entry.assignedInternId || undefined,
+            assignedInternName: entry.assignedInternName || undefined,
+        },
+        [LIGHT_PATIENT_FLAG]: true,
+    } as unknown as PersonaUsuaria;
+}
+
+function sortByName(list: PersonaUsuaria[]): PersonaUsuaria[] {
+    return list.sort((a, b) => {
+        const nameA = (a.identity?.fullName || (a as any).nombreCompleto || '').toLowerCase();
+        const nameB = (b.identity?.fullName || (b as any).nombreCompleto || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+}
+
+/** Lee la colección completa y deja el índice al día. Solo cuando hace falta. */
+async function rebuildDirectory(year: string): Promise<PersonaUsuaria[]> {
+    const snapshot = await getDocs(query(collection(db, "programs", year, "usuarias")));
+    const loaded = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as PersonaUsuaria) }));
+
+    const entries: Record<string, PatientDirectoryEntry> = {};
+    loaded.forEach(patient => {
+        if (patient.id) entries[patient.id] = toDirectoryEntry(patient);
+    });
+
+    // Si el índice no se puede escribir (por ejemplo un interno sin permiso
+    // sobre /meta), el listado igual funciona: solo se pierde el ahorro.
+    try {
+        await setDoc(directoryRef(year), { entries, updatedAt: new Date().toISOString() });
+    } catch (error) {
+        console.warn("No se pudo actualizar el índice del directorio:", error);
+    }
+
+    return sortByName(loaded);
+}
+
+/**
+ * Camino rápido: índice + conteo agregado (2 lecturas).
+ *
+ * El conteo es la red de seguridad contra el bug que ya costó caro antes: si el
+ * índice quedó corto, una persona real se vuelve invisible en el listado.
+ * Cuando el número no calza, se relee todo y se reconstruye.
+ */
+async function loadDirectory(year: string): Promise<PersonaUsuaria[]> {
+    try {
+        const [indexSnap, countSnap] = await Promise.all([
+            getDoc(directoryRef(year)),
+            getCountFromServer(collection(db, "programs", year, "usuarias")),
+        ]);
+
+        const entries = (indexSnap.data()?.entries || {}) as Record<string, PatientDirectoryEntry>;
+        const indexed = Object.values(entries).filter(entry => entry && entry.id);
+        const realCount = countSnap.data().count;
+
+        if (indexSnap.exists() && indexed.length === realCount && realCount > 0) {
+            return sortByName(indexed.map(fromDirectoryEntry));
+        }
+    } catch (error) {
+        // Índice ausente, permisos o agregación no disponible: seguimos por el
+        // camino completo, que es más caro pero siempre correcto.
+        console.warn("Índice del directorio no utilizable, se relee la colección:", error);
+    }
+
+    return rebuildDirectory(year);
+}
+
 // Cache exclusivamente en memoria del navegador. Evita que el mismo directorio
 // se lea varias veces al navegar entre usuarios, alertas y asignaciones, sin
 // persistir información clínica en disco/localStorage.
 const patientDirectoryCache = new Map<string, PatientCacheEntry>();
 const PATIENT_DIRECTORY_CACHE_TTL_MS = 5 * 60 * 1000;
+
+/** 12.345.678-K, 12345678K y 12.345.678-k son el mismo RUT. */
+function normalizeRut(rut?: string | null): string {
+    return String(rut || '').replace(/[.\-\s]/g, '').toUpperCase().trim();
+}
 
 /**
  * REPOSITORIO DE PERSONAS USUARIAS
@@ -56,14 +196,7 @@ export const PersonasUsuariasService = {
             data = await cached.inFlight;
         } else {
             const load = async () => {
-                const collectionRef = collection(db, "programs", year, "usuarias");
-                const snapshot = await getDocs(query(collectionRef));
-                const loaded = snapshot.docs.map(d => d.data() as PersonaUsuaria);
-                loaded.sort((a, b) => {
-                    const nameA = (a.identity?.fullName || (a as any).nombreCompleto || '').toLowerCase();
-                    const nameB = (b.identity?.fullName || (b as any).nombreCompleto || '').toLowerCase();
-                    return nameA.localeCompare(nameB);
-                });
+                const loaded = await loadDirectory(year);
                 patientDirectoryCache.set(year, { data: loaded, fetchedAt: Date.now() });
                 return loaded;
             };
@@ -91,15 +224,21 @@ export const PersonasUsuariasService = {
         if (!year || !id) return null;
         const cached = patientDirectoryCache.get(year);
         const cachedPatient = cached?.data.find(item => item.id === id);
-        if (cachedPatient) return cachedPatient;
-        const { getDoc } = await import("firebase/firestore");
+        // Una entrada del índice solo tiene los campos del listado. Devolverla
+        // aquí haría que la ficha se abriera a medias y que guardarla borrara el
+        // resto del expediente: si es ligera, se lee el documento real.
+        if (cachedPatient && !isLightPatient(cachedPatient)) return cachedPatient;
+
         const docRef = doc(db, "programs", year, "usuarias", id);
         const snapshot = await getDoc(docRef);
         if (!snapshot.exists()) return null;
-        const patient = snapshot.data() as PersonaUsuaria;
+        const patient = { id: snapshot.id, ...(snapshot.data() as PersonaUsuaria) };
+
         const currentCache = patientDirectoryCache.get(year);
-        if (currentCache && !currentCache.data.some(item => item.id === id)) {
-            currentCache.data = [...currentCache.data, patient];
+        if (currentCache) {
+            // Sustituye la entrada ligera por el expediente completo.
+            const rest = currentCache.data.filter(item => item.id !== id);
+            currentCache.data = sortByName([...rest, patient]);
         }
         return patient;
     },
@@ -110,6 +249,90 @@ export const PersonasUsuariasService = {
      * Por ahora, si se requiere búsqueda real en DB habría que hacer "IN" o Range Queries.
      * En la implementación actual, la búsqueda local se hace en el frontend.
      */
+
+    /**
+     * Busca una persona ya registrada con el mismo RUT.
+     *
+     * No existía ninguna comprobación de unicidad, así que la misma persona podía
+     * quedar creada dos veces con distinta asignación: sus procesos, evoluciones
+     * y citas quedaban repartidos entre dos expedientes y el historial clínico
+     * aparecía partido. Reutiliza el directorio cacheado, sin lecturas extra.
+     */
+    async findByRut(year: string, rut: string, excludeId?: string): Promise<PersonaUsuaria | null> {
+        const normalized = normalizeRut(rut);
+        if (!year || !normalized) return null;
+
+        const { data } = await this.getPaginated(year);
+        return data.find(persona => {
+            if (excludeId && persona.id === excludeId) return false;
+            const candidate = normalizeRut(persona.identity?.rut || (persona as any).rut || '');
+            return candidate !== '' && candidate === normalized;
+        }) || null;
+    },
+
+    /**
+     * Actualiza UNA entrada del índice sin tocar las demás.
+     *
+     * La escritura es por campo (`entries.<id>`), así dos internas guardando a
+     * la vez no se pisan. Un fallo aquí nunca debe romper el guardado clínico:
+     * el conteo de `loadDirectory` detectará el desfase y reconstruirá.
+     */
+    async syncDirectoryEntry(year: string, patient: PersonaUsuaria): Promise<void> {
+        if (!year || !patient?.id) return;
+        try {
+            await setDoc(
+                directoryRef(year),
+                { entries: { [patient.id]: toDirectoryEntry(patient) }, updatedAt: new Date().toISOString() },
+                { merge: true },
+            );
+        } catch (error) {
+            console.warn("No se pudo sincronizar el índice del directorio:", error);
+        }
+    },
+
+    /**
+     * Actualiza solo la asignación dentro del índice.
+     *
+     * Varios formularios vinculan a la interna con la persona al firmar sin
+     * tener el expediente completo en memoria. Cambiar el número de personas no
+     * ocurre aquí, así que el chequeo por conteo no detectaría el desfase.
+     */
+    async patchDirectoryAssignment(year: string, id: string, internId: string, internName: string): Promise<void> {
+        if (!year || !id) return;
+        try {
+            await setDoc(
+                directoryRef(year),
+                {
+                    entries: { [id]: { assignedInternId: internId || '', assignedInternName: internName || '' } },
+                    updatedAt: new Date().toISOString(),
+                },
+                { merge: true },
+            );
+        } catch (error) {
+            console.warn("No se pudo sincronizar la asignación en el índice:", error);
+        }
+    },
+
+    /** Quita una persona del índice tras eliminarla. */
+    async removeDirectoryEntry(year: string, id: string): Promise<void> {
+        if (!year || !id) return;
+        try {
+            await setDoc(
+                directoryRef(year),
+                { entries: { [id]: deleteField() }, updatedAt: new Date().toISOString() },
+                { merge: true },
+            );
+        } catch (error) {
+            console.warn("No se pudo limpiar el índice del directorio:", error);
+        }
+    },
+
+    /** Fuerza la reconstrucción completa del índice (acción de mantenimiento). */
+    async rebuildDirectoryIndex(year: string): Promise<number> {
+        const loaded = await rebuildDirectory(year);
+        patientDirectoryCache.set(year, { data: loaded, fetchedAt: Date.now() });
+        return loaded.length;
+    },
 
     /**
      * Guarda (Crea o Actualiza) una Persona Usuaria
@@ -123,6 +346,7 @@ export const PersonasUsuariasService = {
 
         // Hacemos el volcado a la base de datos real
         await setDocCounted(targetRef, data, { merge: true });
+        await this.syncDirectoryEntry(year, data);
         this.invalidateCache(year);
     },
 
@@ -179,6 +403,7 @@ export const PersonasUsuariasService = {
         // 4. Finalmente, eliminar la Persona Usuaria
         const targetRef = doc(db, "programs", year, "usuarias", id);
         await deleteDoc(targetRef);
+        await this.removeDirectoryEntry(year, id);
         this.invalidateCache(year);
 
         console.log(`[CASCADE DELETE] Persona ${id}: ${procesosSnap.size} procesos, ${citasSnap.size} citas, ${evalsSnap.size} evaluaciones eliminadas.`);

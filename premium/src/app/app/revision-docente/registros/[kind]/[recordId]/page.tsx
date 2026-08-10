@@ -18,6 +18,8 @@ import { useYear } from "@/context/YearContext";
 import { db } from "@/lib/firebase";
 import { buildClinicalRecordLink } from "@/lib/navigation/clinicalRecordLink";
 import { hiddenKeys, humanize, humanizeKey } from "@/utils/humanizer";
+import { SectionCommentBox } from "@/components/revision-docente/SectionCommentBox";
+import { RecordCommentsService, type RecordComment } from "@/services/recordComments";
 
 type RecordKind = "EVALUACION" | "EVOLUCION";
 type DataRecord = Record<string, unknown>;
@@ -141,7 +143,7 @@ function ClinicalValue({ value, depth = 0 }: { value: unknown; depth?: number })
   );
 }
 
-function ClinicalSection({ title, value }: { title: string; value: unknown }) {
+function ClinicalSection({ title, value, footer }: { title: string; value: unknown; footer?: ReactNode }) {
   if (!hasContent(value)) return null;
   return (
     <section className="rounded-2xl border border-slate-200/80 bg-slate-50 p-4">
@@ -149,6 +151,7 @@ function ClinicalSection({ title, value }: { title: string; value: unknown }) {
       <div className="text-xs leading-relaxed text-slate-700">
         <ClinicalValue value={value} />
       </div>
+      {footer}
     </section>
   );
 }
@@ -174,6 +177,16 @@ export default function VisorRegistroSoloLecturaPage() {
   const [authorUniversity, setAuthorUniversity] = useState<string>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [comments, setComments] = useState<RecordComment[]>([]);
+
+  // Los comentarios ya publicados sobre este registro, para pintarlos junto a
+  // su sección y no duplicar los que el docente ya dejó.
+  useEffect(() => {
+    if (!recordId) return;
+    RecordCommentsService.listByRecord(recordId)
+      .then(setComments)
+      .catch(commentError => console.error("No se pudieron cargar los comentarios", commentError));
+  }, [recordId]);
 
   useEffect(() => {
     if (!globalActiveYear || !recordId || !kind) return;
@@ -377,7 +390,29 @@ export default function VisorRegistroSoloLecturaPage() {
               <ClipboardList className="h-4 w-4" /> Contenido clínico registrado
             </h2>
             <div className="grid gap-4">
-              {contentSections.map(([title, value]) => <ClinicalSection key={title} title={title} value={value} />)}
+              {contentSections.map(([title, value]) => (
+                <ClinicalSection
+                  key={title}
+                  title={title}
+                  value={value}
+                  footer={authorUid && globalActiveYear && kind ? (
+                    // El comentario queda anclado a esta sección: la estudiante
+                    // ve exactamente a qué parte de su registro se refiere.
+                    <SectionCommentBox
+                      year={globalActiveYear}
+                      recordId={recordId}
+                      recordKind={kind}
+                      section={title}
+                      sectionContent={value}
+                      studentId={authorUid}
+                      patientId={patientId || ''}
+                      patientName={patientName}
+                      existing={comments.filter(comment => comment.section === title)}
+                      onCreated={(comment) => setComments(current => [...current, comment])}
+                    />
+                  ) : undefined}
+                />
+              ))}
             </div>
           </section>
 

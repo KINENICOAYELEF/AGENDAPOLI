@@ -8,6 +8,7 @@ import { ProcesosManager } from "@/components/ProcesosManager";
 import { humanize } from "@/utils/humanizer";
 import { AgendaService } from "@/services/agenda";
 import { ProcesosService } from "@/services/procesos";
+import { PersonasUsuariasService } from "@/services/personasUsuarias";
 import { Proceso } from "@/types/clinica";
 import { ClinicalNarrativeCards } from "@/components/ClinicalNarrativeCards";
 
@@ -230,6 +231,27 @@ export function PersonaUsuariaForm({ initialData, initialAction, initialRecordPa
 
         try {
             setLoading(true);
+
+            // Un RUT repetido parte el historial clínico en dos expedientes.
+            // Se avisa antes de escribir, indicando a quién pertenece el registro
+            // existente para que la interna abra ese en lugar de crear otro.
+            const duplicate = await PersonasUsuariasService.findByRut(
+                globalActiveYear,
+                rut,
+                isEditMode ? formData.id : undefined,
+            );
+            if (duplicate) {
+                const owner = duplicate.meta?.assignedInternName || 'sin interno asignado';
+                alert(
+                    `Ya existe una persona registrada con el RUT ${rut}:\n\n` +
+                    `${duplicate.identity?.fullName || 'Sin nombre'} (${owner}).\n\n` +
+                    `Abre esa ficha desde Personas Usuarias en lugar de crear una nueva, ` +
+                    `así el historial clínico no queda dividido.`
+                );
+                setLoading(false);
+                return;
+            }
+
             const targetId = isEditMode && formData.id ? formData.id : generateId();
 
             // Auto-calcular edad antes de guardar para fines de queries rápidas si se desea

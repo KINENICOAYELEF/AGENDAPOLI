@@ -117,9 +117,19 @@ export async function fetchServerInbox(query: InboxQuery) {
         const alerts: string[] = [];
 
         if (data.status === 'DRAFT') alerts.push('Guardada como borrador');
-        if (!hasValue(data.interview)) missing.push('Anamnesis');
-        if (!hasValue(data.guidedExam)) missing.push('Examen físico');
-        if (!hasValue(data.p4_plan_structured)) missing.push('Plan terapéutico');
+        // La Evaluación Inicial Express guarda en `expressDraft`, no en los
+        // campos del formulario antiguo. Mirar solo los campos legacy declaraba
+        // incompleta toda evaluación Express correctamente registrada.
+        const reeval = data.type === 'REEVALUATION' ? data.reevaluationExpress : null;
+        if (reeval) {
+          if (!hasValue(reeval.interview?.change)) missing.push('Entrevista focalizada');
+          if (!hasValue(reeval.exam?.comparableResult || reeval.exam?.objectiveFindings)) missing.push('Examen físico');
+          if (!hasValue(reeval.reasoning?.plan)) missing.push('Decisión sobre el plan');
+        } else {
+          if (!hasValue(data.interview || data.expressDraft?.anamnesisProxima)) missing.push('Anamnesis');
+          if (!hasValue(data.guidedExam || data.expressDraft?.evaluacionFisica)) missing.push('Examen físico');
+          if (!hasValue(data.p4_plan_structured || data.expressDraft?.p4_plan)) missing.push('Plan terapéutico');
+        }
 
         let priority: 'P0' | 'P1' | 'P2' | 'P3' = 'P3';
         if (alerts.length > 0) priority = 'P1';

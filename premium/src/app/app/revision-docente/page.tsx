@@ -8,6 +8,7 @@ import { auth } from "@/lib/firebase";
 import { BandejaDocenteInteligente } from "@/components/revision-docente/BandejaDocenteInteligente";
 import type { ClientInboxRecord } from "@/lib/teacher-inbox/clientQuery";
 import { buildClinicalRecordLink } from "@/lib/navigation/clinicalRecordLink";
+import { UsersService } from "@/services/users";
 
 type RecordKind = "EVALUACION" | "EVOLUCION";
 type DateRangePreset = "HOY" | "AYER" | "7DIAS" | "HISTORICO";
@@ -128,6 +129,19 @@ export default function RevisionDocentePage() {
 
   const [activeTab, setActiveTab] = useState<'REGISTROS' | 'AGENTE_IA'>('REGISTROS');
 
+  // Lista de estudiantes para el acceso directo a su ficha longitudinal.
+  const [internsList, setInternsList] = useState<Array<{ uid: string; displayName?: string; email?: string }>>([]);
+  useEffect(() => {
+    if (user?.role !== 'DOCENTE') return;
+    UsersService.getInterns()
+      .then(list => setInternsList(list.map(intern => ({
+        uid: intern.uid,
+        displayName: intern.displayName || undefined,
+        email: intern.email || undefined,
+      }))))
+      .catch(error => console.error('No se pudo cargar la lista de estudiantes:', error));
+  }, [user?.role]);
+
   const counts = useMemo(() => {
     return {
       p0: records.filter((r) => r.priority === "P0").length,
@@ -242,6 +256,29 @@ export default function RevisionDocentePage() {
           <div className="text-xs font-bold uppercase tracking-wide opacity-70">Borradores</div>
           <div className="mt-1 text-2xl font-black">{counts.drafts}</div>
         </div>
+      </div>
+
+      {/* ACCESO DIRECTO A LAS FICHAS LONGITUDINALES.
+          El historial de una estudiante no debería depender de que exista un
+          hallazgo abierto: es la vista que se usa para evaluar y poner nota. */}
+      <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-4">
+        <h2 className="text-xs font-black uppercase tracking-wide text-slate-600">Fichas longitudinales</h2>
+        <p className="mt-1 text-xs text-slate-500">Historial completo de cada estudiante: registros, simulaciones, errores repetidos y tu feedback previo.</p>
+        {internsList.length === 0 ? (
+          <p className="mt-3 text-sm text-slate-400">Cargando estudiantes…</p>
+        ) : (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {internsList.map(intern => (
+              <button
+                key={intern.uid}
+                onClick={() => router.push(`/app/revision-docente/alumno/${intern.uid}`)}
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800"
+              >
+                {intern.displayName || intern.email}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* FILTROS Y BÚSQUEDA */}

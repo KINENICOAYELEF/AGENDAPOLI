@@ -13,6 +13,11 @@ import {
   type TelegramInlineKeyboard,
 } from '@/lib/server/telegram';
 import { getRecentPendingReviewSummary } from '@/lib/agent/notificationTriage';
+import { buildRotationSummary, formatRotationSummary } from '@/lib/agent/rotationSummary';
+import { answerTeacherQuestion } from '@/lib/agent/assistant';
+import { censoAsignaciones } from '@/lib/agent/clinicalQueries';
+
+const APP_BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://agendapoli.vercel.app').replace(/\/$/, '');
 import { callGemini } from '@/lib/ai/geminiClient';
 import { runAgentInteraction } from '@/lib/agent/client';
 
@@ -23,7 +28,8 @@ const teacherMenu: TelegramInlineKeyboard = {
   inline_keyboard: [
     [{ text: '📌 Hoy', callback_data: 'today' }, { text: '📋 Pendientes', callback_data: 'pending' }],
     [{ text: '🎓 Estudiantes', callback_data: 'students' }, { text: '🔄 Rotaciones', callback_data: 'rotations' }],
-    [{ text: '🧠 Resumen', callback_data: 'summary' }, { text: '⚡ Estado IA', callback_data: 'status' }],
+    [{ text: '🧠 Resumen', callback_data: 'summary' }, { text: '🗺 Quién atiende a quién', callback_data: 'assignments' }],
+    [{ text: '⚡ Estado IA', callback_data: 'status' }],
     [{ text: '🧾 Líneas basales', callback_data: 'initials' }, { text: '🔁 Reevaluaciones', callback_data: 'reevaluations' }],
     [{ text: '▶️ Solicitar censo', callback_data: 'run' }, { text: '🛠 Errores', callback_data: 'errors' }],
     [{ text: '🔎 Abrir bandeja docente', url: `${APP_URL}/app/revision-docente` }],
@@ -38,6 +44,7 @@ function normalizeCommand(text: string) {
     '/estudiantes': 'students', '/rotaciones': 'rotations', '/estado': 'status',
     '/iniciales': 'initials', '/reevaluaciones': 'reevaluations',
     '/ejecutar': 'run', '/errores': 'errors', '/proxima_ejecucion': 'next_run',
+    '/asignaciones': 'assignments', '/pacientes': 'assignments', '/censo': 'assignments',
   };
   if (commands[value]) return commands[value];
   if (value.startsWith('/alumno') || value.startsWith('/estudiante')) return 'students';
@@ -46,6 +53,15 @@ function normalizeCommand(text: string) {
 
 function inferVoiceCommand(transcript: string) {
   const value = transcript.toLowerCase();
+
+  // Un atajo de menú solo tiene sentido para una orden corta ("pendientes",
+  // "ejecuta el censo"). Una pregunta real —"cómo va la Javiera con la señora
+  // del hombro"— contiene esas mismas palabras y terminaba respondida con un
+  // resumen genérico. Todo lo que parezca pregunta va al asistente.
+  const looksLikeQuestion = /[?¿]/.test(transcript)
+    || /\b(qu[ée]|qui[ée]n|c[oó]mo|cu[aá]l|cu[aá]nt|cu[aá]ndo|d[oó]nde|por qu[ée]|dime|cu[eé]ntame|revisa a|mira a)\b/.test(value);
+  if (looksLikeQuestion || value.split(/\s+/).length > 6) return 'unknown';
+
   if (/\b(hoy|resumen del día|qué tengo hoy)\b/.test(value)) return 'today';
   if (/\b(pendiente|bandeja|revisiones)\b/.test(value)) return 'pending';
   if (/\b(línea basal|evaluación inicial|evaluaciones iniciales)\b/.test(value)) return 'initials';
@@ -132,14 +148,21 @@ export async function POST(req: Request) {
             await intakeRef.update({ status: 'COMMAND_EXECUTED' });
             return;
           }
-          const answer = await runAgentInteraction(
-            `Responde brevemente a esta solicitud docente recibida por Telegram. No inventes datos, no modifiques fichas ni contactes estudiantes. Si requiere información clínica específica que no fue aportada, indica qué vista debe revisar. Solicitud: ${transcript}`,
+          // Antes el modelo recibía solo la transcripción, sin acceso a la base
+          // de datos: por eso respondía en generalidades. Ahora consulta de
+          // verdad antes de contestar.
+          const year = new Date().getFullYear().toString();
+          const answer = await answerTeacherQuestion(transcript, year);
+          await intakeRef.update({
+            status: answer.failed ? 'TRANSCRIBED_AGENT_FAILED' : 'ANSWERED',
+            toolUsed: answer.toolUsed || null,
+            toolArgs: answer.toolArgs || null,
+          });
+          await sendOrUpdate(
+            senderChatId,
+            `🎙️ *${transcript.slice(0, 90)}${transcript.length > 90 ? '…' : ''}*\n\n${answer.text}`
+            + (answer.toolUsed ? `\n\n_Consulté: ${answer.toolUsed}_` : ''),
           );
-          const responseText = answer.status === 'success'
-            ? answer.result
-            : 'Entendí la nota, pero el agente no pudo completar el análisis ahora. Usa el menú o revisa la Bandeja Docente.';
-          await intakeRef.update({ status: answer.status === 'success' ? 'ANSWERED' : 'TRANSCRIBED_AGENT_FAILED', agentStatus: answer.status });
-          await sendOrUpdate(senderChatId, `🎙️ *Nota entendida*\n\n${responseText}\n\nNo se modificó ninguna ficha ni se contactó a estudiantes.`);
         } catch (voiceError: any) {
           await intakeRef.update({ status: 'FAILED', error: voiceError?.message || 'voice_processing_failed', failedAt: new Date().toISOString() });
           await sendOrUpdate(senderChatId, '⚠️ No pude procesar esa nota de voz. Puedes reintentarlo o usar los botones del menú.');
@@ -165,11 +188,12 @@ export async function POST(req: Request) {
     } else if (command === 'reevaluations') {
       const pending = await getRecentPendingReviewSummary();
       await sendOrUpdate(senderChatId, `🔁 *Reevaluaciones sugeridas*\n\n• Pendientes de decisión docente: *${pending.reevaluationDue}*\n\nAcción: revisa la evidencia y publica el aviso solo si corresponde.`, callback);
-    } else if (command === 'summary') {
-      const profilesSnap = await adminDb.collection('student_learning_profiles').get();
-      await sendOrUpdate(senderChatId, `🧠 *Síntesis de cátedra*\n\n• Perfiles en seguimiento: *${profilesSnap.size}*\n• Los hallazgos quedan privados hasta tu revisión.`, callback);
-    } else if (command === 'students') {
-      await sendOrUpdate(senderChatId, `🎓 *Estudiantes*\n\nDesde la Bandeja Docente puedes revisar expediente, evidencia y borradores antes de aprobarlos.`, callback);
+    } else if (command === 'summary' || command === 'students') {
+      // Estos dos comandos devolvían texto genérico sin un solo dato real.
+      // Ahora entregan el estado concreto de la rotación, ordenado por urgencia.
+      const year = new Date().getFullYear().toString();
+      const summary = await buildRotationSummary(year, command === 'summary' ? 7 : 14);
+      await sendOrUpdate(senderChatId, formatRotationSummary(summary, APP_BASE_URL), callback);
     } else if (command === 'rotations') {
       const year = new Date().getFullYear().toString();
       const rotSnap = await adminDb.collection(`programs/${year}/rotations`).get();
@@ -198,15 +222,120 @@ export async function POST(req: Request) {
       if (!response.ok || !run.success) throw new Error(run.error || 'No se pudo iniciar el censo.');
       await sendOrUpdate(senderChatId, `▶️ *Censo iniciado ahora*\n\n• Ejecución: \`${String(run.runId || '').slice(0, 8)}\`\n• Te avisaré por este chat si aparecen hallazgos nuevos.\n• No se enviará nada a estudiantes sin tu aprobación.`, callback);
     } else if (command === 'errors') {
-      const errorSnap = await adminDb.collection('agent_execution_logs').where('status', '==', 'ERROR').get();
+      // Consultaba `agent_execution_logs`, una colección que ningún código
+      // escribe: siempre informaba cero errores aunque el agente estuviera
+      // fallando. Las ejecuciones reales viven en `agent_runs`.
       const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-      const recentErrors = errorSnap.docs.filter((item: any) => {
-        const data = item.data();
-        return new Date(data.createdAt || data.failedAt || data.timestamp || 0).getTime() >= cutoff;
+      const runsSnap = await adminDb.collection('agent_runs').get();
+      const recentRuns = runsSnap.docs
+        .map((item: any) => ({ id: item.id, ...item.data() }))
+        .filter((run: any) => new Date(run.startedAt || run.createdAt || 0).getTime() >= cutoff);
+      const failedRuns = recentRuns.filter((run: any) => run.status === 'failed' || run.errorMessage);
+
+      // Una corrida "completed" puede haber dejado la IA sin ejecutar: eso
+      // también es un fallo operativo, aunque GitHub aparezca en verde.
+      const withoutLlm = recentRuns.filter((run: any) => {
+        const llm = run.censusResult?.llm;
+        return llm && llm.enabled && llm.attempted > 0 && llm.succeeded === 0;
       });
-      await sendOrUpdate(senderChatId, `🛠 *Registro de errores*\n\n• Últimas 24 horas: *${recentErrors.length}*\n• Estado: \`${recentErrors.length === 0 ? 'OK' : 'requiere revisión'}\``, callback);
+
+      const detail = failedRuns.slice(0, 3)
+        .map((run: any) => `  · \`${String(run.id).slice(0, 8)}\`: ${String(run.errorMessage || 'sin mensaje').slice(0, 120)}`)
+        .join('\n');
+
+      await sendOrUpdate(
+        senderChatId,
+        `🛠 *Registro de errores (24 h)*\n\n`
+        + `• Ejecuciones: *${recentRuns.length}*\n`
+        + `• Fallidas: *${failedRuns.length}*\n`
+        + `• Terminaron sin análisis de IA: *${withoutLlm.length}*\n`
+        + `• Estado: \`${failedRuns.length === 0 && withoutLlm.length === 0 ? 'OK' : 'requiere revisión'}\``
+        + (detail ? `\n\n${detail}` : ''),
+        callback,
+      );
     } else if (command === 'next_run') {
       await sendOrUpdate(senderChatId, `⏰ *Próximos ciclos*\n\n• 07:30 America/Santiago\n• 21:30 America/Santiago`, callback);
+    } else if (command === 'assignments') {
+      // El mapa que el docente pidió: qué persona tiene cada interna, en qué
+      // está y qué coherencia muestra lo que registra.
+      const year = new Date().getFullYear().toString();
+      const censo: any = await censoAsignaciones(year);
+      const blocks = (censo.students || [])
+        .filter((student: any) => student.patientCount > 0)
+        .map((student: any) => {
+          const patients = student.patients.slice(0, 6).map((patient: any) => {
+            const silence = patient.daysSinceLastSession !== null && patient.daysSinceLastSession >= 14
+              ? ` ⚠️ ${patient.daysSinceLastSession}d sin sesión`
+              : '';
+            return `   · ${patient.name} — ${patient.currentDiagnosis.slice(0, 90)}${silence}`;
+          }).join('\n');
+          const issues = student.coherenceIssues.length
+            ? `\n   🚩 ${student.coherenceIssues.length} incoherencia(s) detectada(s)`
+            : '';
+          return `👤 *${student.name}* (${student.patientCount} persona(s))${issues}\n${patients}`;
+        });
+      await sendOrUpdate(
+        senderChatId,
+        blocks.length
+          ? `🗺 *Quién atiende a quién*\n\n${blocks.join('\n\n')}\n\n_Pregúntame por cualquiera de ellas para ver el detalle._`
+          : '🗺 *Quién atiende a quién*\n\nNo hay personas asignadas a estudiantes en el año activo.',
+        callback,
+      );
+    } else if (command.startsWith('approve:') || command.startsWith('dismiss:')) {
+      // Aprobar o descartar un hallazgo sin salir del chat. La decisión sigue
+      // siendo del docente: el bot nunca resuelve nada por su cuenta, y aprobar
+      // NO envía el texto a la estudiante — lo deja guardado y listo.
+      // callback_data de Telegram admite 64 bytes y los IDs de hallazgo son más
+      // largos, así que viaja un token corto que se resuelve aquí.
+      const [action, token] = command.split(':');
+      const tokenSnap = await adminDb.collection('telegram_actions').doc(token).get();
+      const reviewId = tokenSnap.data()?.reviewId;
+
+      if (!reviewId) {
+        await sendOrUpdate(senderChatId, '⚠️ Ese botón ya expiró. Abre la bandeja docente para resolverlo.', callback);
+        return NextResponse.json({ status: 'ok' });
+      }
+
+      const reviewRef = adminDb.collection('teacher_agent_reviews').doc(reviewId);
+      const reviewSnap = await reviewRef.get();
+
+      if (!reviewSnap.exists) {
+        await sendOrUpdate(senderChatId, '⚠️ Ese hallazgo ya no existe. Puede que lo hayas resuelto desde la plataforma.', callback);
+      } else if (reviewSnap.data()?.status !== 'PENDING_TEACHER') {
+        await sendOrUpdate(senderChatId, 'ℹ️ Ese hallazgo ya fue resuelto antes. No se cambió nada.', callback);
+      } else if (action === 'dismiss') {
+        await reviewRef.update({ status: 'DISMISSED', reviewedAt: new Date().toISOString(), reviewedVia: 'telegram' });
+        await sendOrUpdate(senderChatId, '🗑 *Hallazgo descartado.* No quedó nada pendiente ni se avisó a la estudiante.', callback);
+      } else {
+        const review = reviewSnap.data() || {};
+        await adminDb.collection('student_message_drafts').doc(reviewId).set({
+          studentId: review.studentId,
+          reviewId,
+          year: review.year,
+          messageBody: review.draftFeedback || review.observation || '',
+          priority: review.priority,
+          status: 'APPROVED_BY_TEACHER',
+          approvedVia: 'telegram',
+          approvedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        }, { merge: true });
+        await reviewRef.update({ status: 'ACCEPTED_PRIVATE', reviewedAt: new Date().toISOString(), reviewedVia: 'telegram' });
+        await sendOrUpdate(
+          senderChatId,
+          '✅ *Feedback aprobado y guardado.*\n\nQueda disponible en la ficha de la estudiante para cuando quieras enviárselo. No se envió nada automáticamente.',
+          callback,
+        );
+      }
+    } else if (!callback && message?.text) {
+      // Cualquier cosa escrita que no sea un comando pasa al asistente, que
+      // consulta la base antes de responder. Antes se devolvía "no reconocí esa
+      // opción", lo que obligaba a usar el menú para todo.
+      const year = new Date().getFullYear().toString();
+      const answer = await answerTeacherQuestion(message.text, year);
+      await sendOrUpdate(
+        senderChatId,
+        `${answer.text}${answer.toolUsed ? `\n\n_Consulté: ${answer.toolUsed}_` : ''}`,
+      );
     } else {
       await sendOrUpdate(senderChatId, 'ℹ️ No reconocí esa opción. Usa los botones de abajo o escribe /hoy para volver al inicio.', callback);
     }

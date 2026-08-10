@@ -47,7 +47,7 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
         cacheBucket = 'p1_ai_cache';
         orderedModels = [
             { modelId: 'gemini-3.1-flash-lite-preview' },
-            { modelId: 'gemini-2.5-flash-lite' },
+            { modelId: 'gemini-3.5-flash-lite' },
             { modelId: 'gemini-2.5-flash' }
         ];
     } 
@@ -56,7 +56,7 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
         // gemini-3.1-flash-lite-preview SIN thinkingConfig (lite no lo soporta)
         orderedModels = [
             { modelId: 'gemini-3.1-flash-lite-preview' },
-            { modelId: 'gemini-2.5-flash-lite' },
+            { modelId: 'gemini-3.5-flash-lite' },
             { modelId: 'gemini-2.5-flash' }
         ];
     } 
@@ -65,7 +65,8 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
         orderedModels = [
             { modelId: 'gemini-3-flash-preview', thinkingLevel: 'low' },
             { modelId: 'gemini-2.5-flash' },
-            { modelId: 'gemini-3.1-flash-lite-preview' }
+            { modelId: 'gemini-3.1-flash-lite-preview' },
+            { modelId: 'gemini-3.5-flash-lite' }
         ];
     }
     else if (screen === 'EXPRESS_V2' && aiAction === 'EXPRESS_PLAN') {
@@ -74,7 +75,8 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
         orderedModels = [
             { modelId: 'gemini-3-flash-preview', thinkingLevel: 'medium' },
             { modelId: 'gemini-2.5-flash' },
-            { modelId: 'gemini-3.1-flash-lite-preview' }
+            { modelId: 'gemini-3.1-flash-lite-preview' },
+            { modelId: 'gemini-3.5-flash-lite' }
         ];
     }
     else if (screen === 'P4' && aiAction === 'P4_PREMIUM') {
@@ -82,14 +84,17 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
         orderedModels = [
             { modelId: 'gemini-3-flash-preview', thinkingLevel: 'medium' },
             { modelId: 'gemini-2.5-flash' },
-            { modelId: 'gemini-3.1-flash-lite-preview' }
+            { modelId: 'gemini-3.1-flash-lite-preview' },
+            { modelId: 'gemini-3.5-flash-lite' }
         ];
     }
     else if (screen === 'SIMULADOR') {
         cacheBucket = 'sim_ai_cache';
+        // Es la pantalla de mayor volumen: necesita el respaldo más ancho.
         orderedModels = [
+            { modelId: 'gemini-3.5-flash-lite' },
             { modelId: 'gemini-3.1-flash-lite-preview' },
-            { modelId: 'gemini-2.5-flash-lite' },
+            { modelId: 'gemini-2.5-flash' },
         ];
     }
     else {
@@ -97,7 +102,7 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
         cacheBucket = 'general_ai_cache';
         orderedModels = [
             { modelId: 'gemini-3.1-flash-lite-preview' },
-            { modelId: 'gemini-2.5-flash-lite', thinkingBudget: 1024 },
+            { modelId: 'gemini-3.5-flash-lite' },
             { modelId: 'gemini-2.5-flash', thinkingBudget: 2048 }
         ];
     }

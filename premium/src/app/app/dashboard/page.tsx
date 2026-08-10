@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, where, getDocs, doc, getDoc, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, limit, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth, AppUser } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
@@ -9,6 +9,7 @@ import { Cita, Evolucion } from "@/types/clinica";
 import { AgendaProView } from "@/components/AgendaProView";
 import { AgendaGridView } from "@/components/AgendaGridView";
 import { UsersService } from "@/services/users";
+import { RecordCommentsService, type RecordComment } from "@/services/recordComments";
 import { addDays, format, startOfWeek, subDays } from "date-fns";
 import Link from "next/link";
 import { 
@@ -25,6 +26,27 @@ import {
     CalendarPlus
 } from "lucide-react";
 
+/**
+ * Enlace profundo hacia un borrador concreto.
+ *
+ * Antes el aviso solo llevaba `openFicha` + `action=EVOLUCIONAR`, y esa acción
+ * abre SIEMPRE un formulario vacío: el borrador pendiente quedaba atrapado y
+ * cada clic generaba un documento nuevo. Enviando `recordId` y `procesoId` el
+ * timeline abre exactamente el registro que se está reclamando.
+ */
+function buildDraftHref(item: { usuariaId?: string; id?: string; procesoId?: string }) {
+    if (!item?.usuariaId) return '/app/usuarios';
+    const params = new URLSearchParams({ openFicha: item.usuariaId });
+    if (item.procesoId) params.set('procesoId', item.procesoId);
+    if (item.id) {
+        params.set('recordId', item.id);
+        params.set('recordType', 'evolucion');
+    } else {
+        params.set('action', 'EVOLUCIONAR');
+    }
+    return `/app/usuarios?${params.toString()}`;
+}
+
 export default function DashboardPage() {
     const [layoutMode, setLayoutMode] = useState<'LISTA' | 'GRILLA'>('LISTA');
     const { globalActiveYear } = useYear();
@@ -40,6 +62,59 @@ export default function DashboardPage() {
     // Alertas y Notificaciones Específicas del Interno
     const [docenteFeedbackList, setDocenteFeedbackList] = useState<any[]>([]);
     const [yesterdayDrafts, setYesterdayDrafts] = useState<any[]>([]);
+    const [discardingId, setDiscardingId] = useState<string | null>(null);
+
+    /**
+     * Descarta un borrador propio directamente desde el aviso.
+     *
+     * La consulta que alimenta esta lista ya filtra por `audit.createdBy` igual
+     * al usuario en sesión, así que aquí solo aparecen borradores propios.
+     */
+    const discardDraft = async (item: { id: string; usuariaName?: string }) => {
+        if (!globalActiveYear || !item?.id) return;
+        if (!window.confirm(
+            `¿Descartar el borrador de ${item.usuariaName || 'esta persona'}?\n\n`
+            + "Desaparecerá de tus evoluciones pendientes y no podrás recuperarlo.\n"
+            + "Úsalo solo si lo abriste por error."
+        )) return;
+
+        setDiscardingId(item.id);
+        try {
+            await deleteDoc(doc(db, "programs", globalActiveYear, "evoluciones", item.id));
+            setYesterdayDrafts(prev => prev.filter(draft => draft.id !== item.id));
+        } catch (error) {
+            console.error("No se pudo descartar el borrador", error);
+            alert("No se pudo descartar el borrador. Revisa tu conexión y reintenta.");
+        } finally {
+            setDiscardingId(null);
+        }
+    };
+    const [openComments, setOpenComments] = useState<RecordComment[]>([]);
+    const [resolvingComment, setResolvingComment] = useState<string | null>(null);
+
+    // Comentarios del docente sobre secciones concretas de sus registros. El
+    // texto se muestra aquí mismo: el punto es que le lleguen a la pantalla, no
+    // que los encuentre por casualidad al abrir una ficha.
+    useEffect(() => {
+        if (!globalActiveYear || !user || user.role !== 'INTERNO') return;
+        RecordCommentsService.listOpenForStudent(user.uid, globalActiveYear)
+            .then(setOpenComments)
+            .catch(error => console.error("No se pudieron cargar los comentarios docentes:", error));
+    }, [globalActiveYear, user]);
+
+    const resolveComment = async (comment: RecordComment) => {
+        setResolvingComment(comment.id);
+        try {
+            await RecordCommentsService.resolve(comment.id);
+            setOpenComments(prev => prev.filter(item => item.id !== comment.id));
+        } catch (error) {
+            console.error("No se pudo marcar el comentario como corregido", error);
+            alert("No se pudo marcar como corregido. Reintenta.");
+        } finally {
+            setResolvingComment(null);
+        }
+    };
+
     const [unevolvedTodayCitas, setUnevolvedTodayCitas] = useState<Cita[]>([]);
     const [todayCompletedCount, setTodayCompletedCount] = useState<number>(0);
     const [todayTotalCount, setTodayTotalCount] = useState<number>(0);
@@ -114,16 +189,26 @@ export default function DashboardPage() {
                             });
                         }
 
-                        // Borrador de días anteriores sin cerrar (perteneciente a este interno)
-                        if (data.status === 'DRAFT' && data.sessionAt && data.sessionAt.split('T')[0] < todayStr) {
-                            let formattedDate = data.sessionAt;
+                        // Borrador de días anteriores sin cerrar (perteneciente a este interno).
+                        // Las fichas antiguas guardaban el estado en `estado`, no en
+                        // `status`; si solo miramos `status` esos borradores quedan
+                        // invisibles y nunca se firman.
+                        const isDraft = data.status === 'DRAFT'
+                            || (data as any).estado === 'BORRADOR';
+                        const rawSessionAt = data.sessionAt || (data as any).fechaHoraAtencion || '';
+                        if (isDraft && rawSessionAt && String(rawSessionAt).split('T')[0] < todayStr) {
+                            let formattedDate = rawSessionAt;
                             try {
-                                formattedDate = format(new Date(data.sessionAt), 'dd/MM/yyyy');
+                                formattedDate = format(new Date(rawSessionAt), 'dd/MM/yyyy');
                             } catch (e) {}
 
                             yesterdayItems.push({
                                 id: d.id,
                                 usuariaId: pid,
+                                // El proceso es imprescindible: sin él el enlace abre
+                                // el primer proceso activo, que puede no ser el del borrador.
+                                procesoId: (data as any).procesoId || '',
+                                sessionAt: String(rawSessionAt),
                                 usuariaName: (data as any).usuariaName || 'Persona usuaria',
                                 date: formattedDate
                             });
@@ -133,8 +218,15 @@ export default function DashboardPage() {
 
                 // Resolver nombres solo para los avisos que realmente se van a
                 // mostrar (máximo 10), en vez de cargar toda la colección.
-                const visibleFeedback = feedbackItems.slice(0, 5);
-                const visibleDrafts = yesterdayItems.slice(0, 5);
+                // La consulta no puede ordenar en servidor sin un índice compuesto
+                // nuevo, así que ordenamos aquí antes de recortar: de lo contrario
+                // se mostraban los primeros cinco que llegaron, no los más recientes.
+                const visibleFeedback = feedbackItems
+                    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+                    .slice(0, 5);
+                const visibleDrafts = yesterdayItems
+                    .sort((a, b) => String(b.sessionAt || '').localeCompare(String(a.sessionAt || '')))
+                    .slice(0, 5);
                 const visiblePatientIds = Array.from(new Set([
                     ...visibleFeedback.map(item => item.usuariaId),
                     ...visibleDrafts.map(item => item.usuariaId),
@@ -333,12 +425,54 @@ export default function DashboardPage() {
                                     <p className="text-xs text-slate-600 italic mt-0.5">&ldquo;{item.feedback}&rdquo;</p>
                                 </div>
                                 <Link
-                                    href={item.usuariaId ? `/app/usuarios?openFicha=${item.usuariaId}&action=EVOLUCIONAR` : '/app/usuarios'}
+                                    href={buildDraftHref(item)}
                                     className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition shrink-0 inline-flex items-center gap-1"
                                 >
                                     <span>Ver y Corregir</span>
                                     <ChevronRight className="w-3.5 h-3.5" />
                                 </Link>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* COMENTARIOS DEL DOCENTE ANCLADOS A UNA SECCIÓN */}
+            {openComments.length > 0 && (
+                <div className="bg-indigo-50 border border-indigo-200/80 rounded-2xl p-4 space-y-3 shadow-xs">
+                    <div className="flex items-center gap-2 text-indigo-800 font-bold text-xs uppercase tracking-wider">
+                        <MessageSquare className="w-4 h-4 text-indigo-600" />
+                        <span>Comentarios de tu docente ({openComments.length})</span>
+                    </div>
+
+                    <div className="space-y-2">
+                        {openComments.map(comment => (
+                            <div key={comment.id} className="bg-white p-3 rounded-xl border border-indigo-200">
+                                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                    <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-black">
+                                        {comment.section}
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 font-semibold">
+                                        {comment.patientName || 'Persona usuaria'}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-800 leading-relaxed whitespace-pre-line">{comment.comment}</p>
+                                <div className="flex flex-wrap items-center justify-end gap-2 mt-2.5">
+                                    <Link
+                                        href={comment.patientId ? `/app/usuarios?openFicha=${comment.patientId}&recordId=${comment.recordId}&recordType=${comment.recordKind === 'EVOLUCION' ? 'evolucion' : 'evaluacion'}` : '/app/usuarios'}
+                                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition"
+                                    >
+                                        Abrir registro
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        onClick={() => resolveComment(comment)}
+                                        disabled={resolvingComment === comment.id}
+                                        className="px-3 py-1.5 text-emerald-700 hover:bg-emerald-50 text-xs font-bold rounded-lg transition disabled:opacity-40"
+                                    >
+                                        {resolvingComment === comment.id ? '…' : 'Ya lo corregí'}
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -359,13 +493,27 @@ export default function DashboardPage() {
                                 <div>
                                     <span className="text-xs font-bold text-slate-900 block">{item.usuariaName}</span>
                                     <span className="text-[10px] text-rose-600 font-semibold block">Borrador no cerrado del {item.date}</span>
+                                    <span className="text-[10px] text-slate-400 font-medium block">Registro {String(item.id).slice(0, 8)}</span>
                                 </div>
-                                <Link
-                                    href={item.usuariaId ? `/app/usuarios?openFicha=${item.usuariaId}&action=EVOLUCIONAR` : '/app/usuarios'}
-                                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition shrink-0"
-                                >
-                                    Firmar Evolución
-                                </Link>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <Link
+                                        href={buildDraftHref(item)}
+                                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition"
+                                    >
+                                        Firmar Evolución
+                                    </Link>
+                                    {/* Un borrador abierto por error quedaba pendiente para
+                                        siempre: la interna no tenía forma de sacarlo sola. */}
+                                    <button
+                                        type="button"
+                                        onClick={() => discardDraft(item)}
+                                        disabled={discardingId === item.id}
+                                        className="px-2.5 py-1.5 text-slate-500 hover:text-rose-700 hover:bg-rose-50 text-xs font-bold rounded-lg transition disabled:opacity-40"
+                                        title="Eliminar este borrador si lo abriste por error"
+                                    >
+                                        {discardingId === item.id ? '…' : 'Descartar'}
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>

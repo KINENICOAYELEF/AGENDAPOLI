@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { OutcomesService } from "@/services/outcomes";
 import { AgendaService } from "@/services/agenda";
+import { PersonasUsuariasService } from "@/services/personasUsuarias";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { sanitizeForFirestoreDeep, resolveSafeAudit } from "@/lib/firebase-utils";
@@ -188,6 +189,60 @@ const AccordionSection = ({
     );
 };
 
+/** Traduce el fallo real de Firestore a una instrucción accionable. */
+function explainSaveError(error: unknown): string {
+    const code = String((error as any)?.code || '');
+    const message = String((error as any)?.message || error || '');
+
+    if (code.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
+        return "No tienes permiso para escribir en este año de programa.\n\nEsto ocurre si el docente cerró el año activo o si tu cuenta aún está pendiente de aprobación. Tu texto sigue guardado en este navegador: no cierres la pestaña y avisa al docente.";
+    }
+    if (code.includes('resource-exhausted') || message.includes('RESOURCE_EXHAUSTED') || message.includes('Quota')) {
+        return "La base de datos alcanzó su cuota diaria.\n\nTu texto sigue guardado en este navegador. Vuelve a intentar el guardado más tarde y avisa al docente.";
+    }
+    if (code.includes('unauthenticated')) {
+        return "Tu sesión expiró.\n\nAbre otra pestaña, inicia sesión de nuevo y vuelve aquí a presionar Guardar. No cierres esta pestaña: el texto sigue en el navegador.";
+    }
+    if (code.includes('unavailable') || code.includes('deadline-exceeded') || message.includes('network')) {
+        return "No hay conexión estable con la base de datos.\n\nTu texto sigue guardado en este navegador. Reintenta el guardado cuando recuperes señal.";
+    }
+    if (code.includes('invalid-argument')) {
+        return `Firestore rechazó los datos del formulario (${message}).\n\nTu texto sigue en el navegador. Avisa al docente con este mensaje.`;
+    }
+    return `No se pudo guardar la evolución (${code || 'error desconocido'}).\n\nTu texto sigue guardado en este navegador; no cierres la pestaña y reintenta.`;
+}
+
+/**
+ * ¿La interna escribió algo clínicamente real, o solo abrió el formulario?
+ *
+ * La fecha, el número de sesión y el estado por defecto se rellenan solos al
+ * montar; no cuentan como contenido. Sin este filtro, cada apertura creaba un
+ * documento en Firestore que después aparecía como "pendiente de firmar".
+ */
+function hasClinicalContent(data: Partial<Evolucion>): boolean {
+    const d = data as any;
+    const filled = (value: unknown) => typeof value === 'string' && value.trim() !== '';
+
+    if (filled(d.sessionGoal) || filled(d.nextPlan) || filled(d.educationNotes) || filled(d.handoffText)) return true;
+    if (Array.isArray(d.exercises) && d.exercises.length > 0) return true;
+    if (Array.isArray(d.interventions) && d.interventions.length > 0) return true;
+    if (Array.isArray(d.selectedObjectiveIds) && d.selectedObjectiveIds.length > 0) return true;
+    if (d.interventions && !Array.isArray(d.interventions)) {
+        const bucket = d.interventions;
+        if (filled(bucket.notes)) return true;
+        if (Array.isArray(bucket.techniques) && bucket.techniques.length > 0) return true;
+        if (Array.isArray(bucket.categories) && bucket.categories.length > 0) return true;
+    }
+    if (d.pain && (filled(String(d.pain.evaStart ?? '')) || filled(String(d.pain.evaEnd ?? '')) || filled(d.pain.notes))) return true;
+    if (d.outcomesSnapshot && (Number(d.outcomesSnapshot.sane) > 0 || Number(d.outcomesSnapshot.groc) !== 0)) return true;
+    if (d.readiness && Object.values(d.readiness).some(value => filled(String(value ?? '')))) return true;
+    if (filled(d.notesLegacy)) return true;
+    // Una sesión marcada como no realizada sí es información clínica.
+    if (d.sessionStatus && d.sessionStatus !== 'Realizada') return true;
+
+    return false;
+}
+
 export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, initialData, evolucionesAnteriores, onClose, onSaveSuccess }: EvolucionFormProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
@@ -246,6 +301,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
     // FASE 2.1.21: Continuidad
     const [lastClosedEvol, setLastClosedEvol] = useState<Evolucion | null>(null);
+    const [repeatedFromLast, setRepeatedFromLast] = useState(false);
     const [isLoadingContinuity, setIsLoadingContinuity] = useState(false);
 
     // FASE 2.2.6: Últimos Outcomes
@@ -362,6 +418,16 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         fetchContinuityAndNumber();
     }, [globalActiveYear, procesoId, usuariaId, isClosedDynamic, initialData?.id, evolucionesAnteriores]);
 
+    // El snapshot arranca con el contenido montado. Antes arrancaba vacío, así
+    // que el primer ciclo del debounce siempre detectaba "cambio" y escribía en
+    // Firestore un borrador que la interna nunca había tocado: ese es el origen
+    // de los borradores fantasma que quedaban pendientes de firma.
+    useEffect(() => {
+        const { audit, id, _migratedFromLegacy, ...mounted } = formData as any;
+        lastSavedDataRef.current = JSON.stringify(mounted);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialData?.id]);
+
     // FASE 2.1.15: DEBOUNCED AUTOSAVE (1200ms) Anti-Loop
     useEffect(() => {
         if (isClosedDynamic || loading || isAttemptingClose || !formData.usuariaId) return;
@@ -373,10 +439,18 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         // Si el contenido vital no ha mutado respecto a lo que se guardó, abortar debounce
         if (currentDataStr === lastSavedDataRef.current) return;
 
+        // Un registro que todavía no existe en Firestore solo se crea cuando hay
+        // contenido clínico real. Abrir y cerrar el formulario no debe dejar
+        // rastro; el borrador local en el navegador conserva igual lo escrito.
+        const isNewRecord = !formData.id && !initialData?.id;
+        if (isNewRecord && !hasClinicalContent(formData)) return;
+
         const timer = setTimeout(() => {
             // Ignoramos auto-save si ya hay un guardado en curso para prevenir cuellos de botella
             if (saveStatus !== 'saving') {
-                lastSavedDataRef.current = currentDataStr; // Actualizar snapshot
+                // El snapshot se actualiza dentro de executeSave y SOLO si Firestore
+                // confirmó la escritura. Marcarlo aquí hacía que un autoguardado
+                // fallido se diera por persistido y jamás se reintentara.
                 executeSave(false, undefined, true);
             }
         }, 1200);
@@ -922,12 +996,122 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
     };
 
 
+    /**
+     * Repite la última sesión firmada en un clic.
+     *
+     * En rehabilitación la mayoría de las sesiones son variaciones pequeñas de
+     * la anterior, y hasta ahora había que reescribirlo todo o acordarse de
+     * abrir el modal de duplicar. Esto usa la evolución previa que el
+     * formulario ya tiene cargada, así que no cuesta ninguna lectura extra.
+     *
+     * Lo que NO se copia es deliberado: el dolor y la respuesta se miden hoy,
+     * no se heredan. Copiarlos sería inventar datos clínicos.
+     */
+    const repeatLastSession = () => {
+        const previous = lastClosedEvol as any;
+        if (!previous) return;
+
+        const previousExercises = previous.exerciseRx?.rows || previous.exercises || [];
+        const previousInterventions = Array.isArray(previous.interventions) ? previous.interventions : [];
+
+        if (previousExercises.length === 0 && previousInterventions.length === 0) {
+            alert("La sesión anterior no tiene ejercicios ni intervenciones registradas para repetir.");
+            return;
+        }
+
+        setFormData((prev: any) => ({
+            ...prev,
+            exercises: [
+                ...(prev.exercises || []),
+                ...previousExercises.map((exercise: any) => ({ ...exercise, id: generateId(), _tempId: undefined })),
+            ],
+            interventions: [
+                ...(Array.isArray(prev.interventions) ? prev.interventions : []),
+                ...previousInterventions.map((intervention: any) => ({
+                    ...intervention,
+                    id: generateId(),
+                    _tempId: undefined,
+                    copiedFromEvolutionId: previous.id,
+                })),
+            ],
+            perceptionMode: previous.exerciseRx?.effortMode || previous.perceptionMode || prev.perceptionMode,
+            // Los objetivos trabajados suelen ser los mismos; se pueden desmarcar.
+            selectedObjectiveIds: prev.selectedObjectiveIds?.length
+                ? prev.selectedObjectiveIds
+                : (previous.selectedObjectiveIds || []),
+            selectedObjectivesSnapshot: prev.selectedObjectivesSnapshot?.length
+                ? prev.selectedObjectivesSnapshot
+                : (previous.selectedObjectivesSnapshot || []),
+            // El plan que dejó pautado la sesión pasada es la meta natural de hoy.
+            sessionGoal: prev.sessionGoal?.trim() ? prev.sessionGoal : (previous.nextPlan || ''),
+            audit: { ...(prev.audit || {}), copiedFromEvolutionId: previous.id },
+        }));
+
+        setRepeatedFromLast(true);
+    };
+
+    /**
+     * Elimina definitivamente un borrador propio.
+     *
+     * "Limpiar Borrador" solo vacía los campos en pantalla: el documento sigue
+     * en Firestore y reaparece cada día como evolución pendiente de firmar. Sin
+     * esta acción, un borrador abierto por error quedaba atrapado hasta que un
+     * docente lo borraba a mano.
+     *
+     * Solo alcanza a borradores propios: una evolución firmada, o de otra
+     * persona, nunca se puede eliminar desde aquí.
+     */
+    const handleDiscardDraft = async () => {
+        const draftId = formData.id || initialData?.id;
+        const author = (initialData?.audit as any)?.createdBy || initialData?.clinicianResponsible;
+        const isOwnDraft = !author || author === user?.uid || author === user?.email;
+
+        if (isClosedDynamic) {
+            alert("Esta evolución ya está firmada y no puede descartarse.");
+            return;
+        }
+        if (!isOwnDraft) {
+            alert("Este borrador fue creado por otra persona. Pídele a tu docente que lo revise.");
+            return;
+        }
+        if (!window.confirm(
+            "¿Descartar definitivamente este borrador?\n\n"
+            + "Se eliminará de tu lista de evoluciones pendientes y no podrás recuperarlo.\n"
+            + "Úsalo solo si abriste esta evolución por error."
+        )) return;
+
+        try {
+            setLoading(true);
+            if (draftId && globalActiveYear) {
+                await deleteDoc(doc(db, "programs", globalActiveYear, "evoluciones", draftId));
+            }
+            try {
+                localStorage.removeItem(draftKey);
+                localStorage.removeItem(`evoDraft_new_${usuariaId}`);
+                if (procesoId) localStorage.removeItem(`evoDraft_new_${procesoId}_${usuariaId}`);
+            } catch (e) { }
+            onClose();
+        } catch (error) {
+            console.error("No se pudo descartar el borrador", error);
+            alert(explainSaveError(error));
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Método universal de Guardado para Borrador o Cierre
     const executeSave = async (willClose: boolean, overrideReason?: string, isAutoSave = false, extraProps?: Partial<Evolucion>) => {
         if (!globalActiveYear || !user) {
             if (!isAutoSave) alert("No hay un Año de Programa activo seleccionado o sesión inválida.");
             return;
         }
+
+        // Snapshot exacto del contenido que se está intentando persistir, en el
+        // mismo formato que compara el debounce de autoguardado.
+        const attemptedSnapshot = (() => {
+            const { audit: _a, id: _i, _migratedFromLegacy: _m, ...rest } = formData as any;
+            return JSON.stringify(rest);
+        })();
 
         try {
             if (!isAutoSave) setLoading(true);
@@ -948,6 +1132,9 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 id: targetId,
                 usuariaId,
                 procesoId: procesoId || formData.procesoId || null,
+                // Persistimos el vínculo con la agenda: si la interna guarda como
+                // borrador hoy y firma mañana, la cita se cierra igualmente.
+                citaId: citaId || (formData as any).citaId || null,
                 casoId: formData.casoId || null,
                 sesionId: formData.sesionId || null,
 
@@ -1023,6 +1210,11 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
             await setDocCounted(docRef, payload, { merge: true });
 
+            // Confirmado por Firestore: recién ahora el snapshot refleja lo
+            // persistido. Si la escritura falla, el debounce vuelve a intentarlo
+            // en lugar de dar el contenido por guardado y perderlo en silencio.
+            lastSavedDataRef.current = attemptedSnapshot;
+
             // Vincular al interno con la Persona Usuaria si aún no tiene un interno asignado y confirma que es su paciente regular
             if (usuariaId && user?.uid && !isAutoSave) {
                 try {
@@ -1046,6 +1238,14 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                     "meta.assignmentStartedAt": assignedAt,
                                     "meta.updatedAt": assignedAt,
                                 }));
+                                // El directorio guarda la asignación denormalizada.
+                                await PersonasUsuariasService.patchDirectoryAssignment(
+                                    globalActiveYear,
+                                    usuariaId,
+                                    user.uid,
+                                    user.displayName || user.email || '',
+                                );
+                                PersonasUsuariasService.invalidateCache(globalActiveYear);
                             }
                         }
                     }
@@ -1057,6 +1257,10 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             setFormData(prev => ({
                 ...prev,
                 id: targetId,
+                // Sin esto el componente seguía creyéndose borrador tras firmar y
+                // el autoguardado podía volver a escribir status: 'DRAFT' encima
+                // de la firma recién hecha.
+                ...(willClose ? { status: 'CLOSED' as const } : {}),
                 audit: finalAudit
             }));
 
@@ -1098,11 +1302,41 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 }
 
                 // FASE 2.3.2: Auto Asistencia (Completar cita ligada automáticamente cuando la evolución se FIRMA)
-                if (citaId) {
+                // Denormaliza la última sesión en el proceso. La campana usaba
+                // esto para calcular "días sin evolucionar" leyendo TODAS las
+                // evoluciones del año; ahora le basta con leer los procesos.
+                if (procesoId) {
                     try {
-                        await AgendaService.markCitaAsCompleted(globalActiveYear, citaId, targetId, user.uid);
+                        await updateDoc(
+                            doc(db, "programs", globalActiveYear, "procesos", procesoId),
+                            sanitizeForFirestoreDeep({
+                                lastClosedEvolution: {
+                                    sessionAt: formData.sessionAt || new Date().toISOString(),
+                                    authorUid: user.uid,
+                                    authorName: user.displayName || user.email || '',
+                                    evolucionId: targetId,
+                                    sessionNumber: formData.sessionNumber || null,
+                                    updatedAt: new Date().toISOString(),
+                                },
+                            }),
+                        );
+                    } catch (e) {
+                        console.warn("No se pudo actualizar el resumen de continuidad del proceso", e);
+                    }
+                }
+
+                const linkedCitaId = citaId || (formData as any).citaId || null;
+                if (linkedCitaId) {
+                    try {
+                        await AgendaService.markCitaAsCompleted(globalActiveYear, linkedCitaId, targetId, user.uid);
                     } catch (e) {
                         console.error("Error auto-completando cita ligada transaccional", e);
+                        // La evolución quedó firmada, pero la agenda no. Callar esto
+                        // producía el síntoma de "evolución cerrada y cita todavía
+                        // pendiente" sin que nadie supiera por qué.
+                        if (!isAutoSave) {
+                            alert("La evolución quedó firmada, pero no se pudo marcar la cita como atendida en la agenda. Márcala manualmente desde el Dashboard.");
+                        }
                     }
                 }
             }
@@ -1118,7 +1352,10 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             console.error("Error al guardar Evolución", error);
             setSaveStatus('error');
             setTimeout(() => setSaveStatus('idle'), 5000);
-            if (!isAutoSave) alert("Ha ocurrido un error al conectar con la base de datos.");
+            // "Error al conectar con la base de datos" era el mismo mensaje para
+            // permisos, cuota, sesión caducada y red: imposible saber si valía la
+            // pena reintentar o si había que avisar al docente.
+            if (!isAutoSave) alert(explainSaveError(error));
         } finally {
             if (!isAutoSave) {
                 setLoading(false);
@@ -1349,9 +1586,17 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             const evaOut = Number(formData.pain?.evaEnd);
             if (evaOut > evaIn) {
                 const txt = (formData.nextPlan || "").toLowerCase();
-                const progWords = ["mejor", "alivio", "disminuy", "baj", "positivo", "excelent", "exito", "buen", "favorable", "progreso", "progres", "aument", "subir carga"];
+                // "aument" a secas es ambiguo: "aumentó el dolor" es exactamente
+                // lo contrario a progresar carga, y bloqueaba a quien describía
+                // bien la agudización. Solo cuenta cuando lo que aumenta es la
+                // carga, no el síntoma.
+                const loadProgression = /(aument|subir|progres|increment)\w*\s+(la\s+|el\s+)?(carga|intensidad|volumen|dosis|peso|repeticiones|series)/.test(txt);
+                const positiveWords = ["mejor", "alivio", "disminuy", "positivo", "excelent", "exito", "favorable", "progreso"];
+                // "baj" y "buen" salen de la lista: "bajar carga" es la conducta
+                // correcta ante una agudización, no una contradicción.
+                const suggestsProgress = loadProgression || positiveWords.some(w => txt.includes(w));
 
-                if (progWords.some(w => txt.includes(w))) {
+                if (suggestsProgress) {
                     const justification = formData.pain?.contradictionReason || "";
                     if (justification.trim().length < 5) {
                         missingFields.push("Justificación de Agudización (El Dolor aumentó pero el Plan sugiere progreso)");
@@ -1386,13 +1631,26 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         if (formData.sessionAt) {
             const hoursPassed = getDifferenceInHours(formData.sessionAt, new Date().toISOString());
             if (hoursPassed > 36) {
+                // La justificación de cierre tardío es un requisito real de
+                // cierre, así que tiene que contar como campo faltante. Antes el
+                // botón se veía habilitado, la interna lo apretaba y recién ahí
+                // aparecía una alerta pidiéndole algo en otra sección.
+                const lateJustificationReady = Boolean(lateCategory) && lateText.trim().length >= 20;
+                if (!lateJustificationReady) {
+                    missingFields.push("Justificación de cierre tardío (en Datos Administrativos)");
+                }
+
                 assistantCards.push({
                     id: 'late_closure',
-                    type: 'alert',
+                    type: lateJustificationReady ? 'alert' : 'error',
                     title: 'Excedido Plazo Bioético (>36h)',
-                    message: `Han pasado ${hoursPassed.toFixed(1)} horas. Se exigirá causal de auditoría al cerrar.`,
+                    message: lateJustificationReady
+                        ? `Han pasado ${hoursPassed.toFixed(1)} horas. Tu justificación de auditoría ya está registrada.`
+                        : `Han pasado ${hoursPassed.toFixed(1)} horas. Para poder cerrar, elige una causal y escribe al menos 20 caracteres de justificación en "Datos Administrativos".`,
                     icon: <ClockIcon className="w-5 h-5 text-orange-500" />,
-                    style: "bg-orange-50 border-orange-200 text-orange-800"
+                    style: lateJustificationReady
+                        ? "bg-orange-50 border-orange-200 text-orange-800"
+                        : "bg-rose-50 border-rose-200 text-rose-800",
                 });
             }
         }
@@ -1774,7 +2032,21 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                 className="flex text-xs font-bold text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 md:py-2 rounded-xl transition-colors items-center gap-1.5 border border-rose-200"
                             >
                                 <svg className="w-4 h-4 md:w-3.5 md:h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                <span className="hidden md:inline">Limpiar Borrador</span>
+                                <span className="hidden md:inline">Vaciar campos</span>
+                            </button>
+                        )}
+                        {/* Distinto de "vaciar campos": esto elimina el registro y lo
+                            saca de las evoluciones pendientes de firmar. */}
+                        {!isClosedDynamic && (
+                            <button
+                                type="button"
+                                onClick={handleDiscardDraft}
+                                disabled={loading}
+                                title="Elimina este borrador y lo quita de tus pendientes"
+                                className="flex text-xs font-bold text-slate-600 hover:text-rose-700 bg-slate-100 hover:bg-rose-50 px-3 py-1.5 md:py-2 rounded-xl transition-colors items-center gap-1.5 border border-slate-200 disabled:opacity-50"
+                            >
+                                <span className="hidden md:inline">Descartar borrador</span>
+                                <span className="md:hidden">Descartar</span>
                             </button>
                         )}
                         {/* Botón Volver Mobile/Desktop */}
@@ -1900,10 +2172,31 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                             <p className="text-xs font-semibold text-indigo-500 mt-0.5">Continuidad Clínica del Paciente</p>
                                         </div>
                                     </div>
-                                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
-                                        Hace {Math.floor(getDifferenceInHours(lastClosedEvol.sessionAt, new Date().toISOString()) / 24)} días
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
+                                            Hace {Math.floor(getDifferenceInHours(lastClosedEvol.sessionAt, new Date().toISOString()) / 24)} días
+                                        </span>
+                                        {/* Atajo de un clic: la mayoría de las sesiones son
+                                            variaciones pequeñas de la anterior. */}
+                                        {!isClosedDynamic && (
+                                            <button
+                                                type="button"
+                                                onClick={repeatLastSession}
+                                                disabled={repeatedFromLast}
+                                                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-indigo-700 disabled:bg-emerald-600"
+                                            >
+                                                {repeatedFromLast ? "✓ Sesión copiada" : "↻ Repetir esta sesión"}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
+
+                                {repeatedFromLast && (
+                                    <div className="relative z-10 mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-900">
+                                        Copiamos ejercicios, intervenciones y objetivos de la sesión anterior. Ajusta lo que cambió y
+                                        registra el dolor y la respuesta de hoy: esos no se copian nunca.
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 relative z-10">
                                     <div className="lg:col-span-2 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100/50 hover:bg-indigo-50 transition-colors flex flex-col">

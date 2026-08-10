@@ -197,6 +197,40 @@ service cloud.firestore {
     match /proposed_simulations/{proposalId} {
       allow read, write: if isDocente();
     }
+    // --------------------------------------------------------------------
+    // 9.B Avisos y comentarios que SÍ ve la estudiante
+    // --------------------------------------------------------------------
+
+    // Tareas clínicas publicadas por el docente o por el censo.
+    // No estaba declarada y la regla maestra es deny-by-default: el botón
+    // "Avisar en su página" fallaba en silencio.
+    match /student_clinical_tasks/{taskId} {
+      allow read, write: if isDocente();
+      // La estudiante solo ve las suyas.
+      allow read: if isAuthenticated() && resource.data.studentId == request.auth.uid;
+    }
+
+    // Comentarios anclados a una sección de la ficha.
+    match /record_comments/{commentId} {
+      // El docente comenta, lee y corrige todo.
+      allow read, write: if isDocente();
+
+      // La estudiante lee únicamente los comentarios dirigidos a ella.
+      allow read: if isAuthenticated() && resource.data.studentId == request.auth.uid;
+
+      // Y lo único que puede hacer es marcarlos como corregidos: no puede
+      // editar el texto del docente, reasignarlo ni borrarlo.
+      allow update: if isAuthenticated()
+                    && resource.data.studentId == request.auth.uid
+                    && request.resource.data.studentId == resource.data.studentId
+                    && request.resource.data.comment == resource.data.comment
+                    && request.resource.data.status == "RESOLVED"
+                    && request.resource.data.diff(resource.data)
+                         .affectedKeys().hasOnly(["status", "resolvedAt"]);
+
+      allow delete: if isDocente();
+    }
+
     match /intern_expedientes/{studentId} {
       // Solo lectura para el estudiante propietario si el estado es APROBADO_ENVIADO. Docente lee/escribe todo.
       allow read: if isDocente() || (isAuthenticated() && request.auth.uid == studentId && resource.data.status == "APROBADO_ENVIADO");

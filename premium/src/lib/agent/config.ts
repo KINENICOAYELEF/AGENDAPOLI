@@ -24,12 +24,14 @@ export const featureFlags = {
   // debe activarse solo por existir código desplegado.
   agentWriteEnabled: process.env.FF_AGENT_WRITE_ENABLED === 'true',
   // El análisis generativo se habilita aparte del censo estructural para que
-  // el docente controle cuándo comienza a consumir la cuota de Antigravity.
-  // Nunca ejecutar análisis largos dentro de una función de Vercel: además de
-  // solicitar habilitación explícita, exige el ejecutor dedicado de Actions.
-  agentLlmAnalysisEnabled:
-    process.env.FF_AGENT_LLM_ANALYSIS === 'true' &&
-    process.env.AGENT_EXECUTOR === 'github-actions',
+  // el docente controle cuándo comienza a consumir la cuota del motor.
+  //
+  // Antes exigía además AGENT_EXECUTOR === 'github-actions', pensando que así
+  // el análisis correría fuera de Vercel. No era cierto: GitHub Actions llama a
+  // /api/agent/run y el trabajo ocurre igual dentro de Vercel. Lo único que
+  // conseguía esa segunda condición era dejar la IA apagada sin decirlo. El
+  // tiempo de ejecución se controla ahora con AGENT_LLM_CALLS_PER_RUN.
+  agentLlmAnalysisEnabled: process.env.FF_AGENT_LLM_ANALYSIS === 'true',
   studentFeedbackPublishing: process.env.FF_STUDENT_FEEDBACK_PUBLISHING === 'true' || false,
   telegramTeacherEnabled: process.env.FF_TELEGRAM_TEACHER !== 'false',
   nativeTriggersEnabled: process.env.FF_AGENT_NATIVE_TRIGGERS !== 'false',

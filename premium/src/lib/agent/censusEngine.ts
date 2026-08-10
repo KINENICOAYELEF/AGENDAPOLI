@@ -14,6 +14,16 @@ import { analyzeStudentLongitudinal } from './longitudinalAnalysis';
 
 const CLINICAL_ACTIVITY_WINDOW_DAYS = 14;
 
+/**
+ * Cuántas estudiantes analiza la IA por corrida.
+ *
+ * El análisis longitudinal es la parte lenta y la que consume cuota. Intentarlo
+ * con las 24 cuentas de una vez agotaba el tiempo de la función y dejaba el
+ * censo cortado sin avisar. Con cuatro corridas diarias, este presupuesto cubre
+ * a toda la rotación en menos de un día.
+ */
+const LLM_CALLS_PER_RUN = Number(process.env.AGENT_LLM_CALLS_PER_RUN || 6);
+
 function recordDate(record: any) {
   const value = record.sessionAt || record.fechaHoraAtencion || record.audit?.createdAt || record.createdAt;
   const time = new Date(typeof value?.toDate === 'function' ? value.toDate() : value || '').getTime();
@@ -119,10 +129,69 @@ async function createInitialEvaluationContinuityReview(
   });
   try {
     await db.collection('teacher_agent_reviews').doc(reviewId).create(payload);
+    await publishCompletenessReminder(db, {
+      year, studentId: student.id, patientId, processId, reviewId, isMissing, gaps,
+    });
     return { missing: isMissing ? 1 : 0, insufficient: isMissing ? 0 : 1 };
   } catch (error: any) {
     if (error?.code === 6 || error?.code === 'already-exists') return { missing: 0, insufficient: 0 };
     throw error;
+  }
+}
+
+/**
+ * Aviso automático a la estudiante sobre un registro incompleto.
+ *
+ * Distinción deliberada: esto NO es retroalimentación pedagógica, que sigue
+ * requiriendo la aprobación del docente antes de llegar a nadie. Es un hecho
+ * objetivo y verificable —"a esta evaluación le falta el plan"— del mismo tipo
+ * que el aviso de un borrador sin firmar. Esperar a que el docente publique
+ * cada uno a mano convertía lo rutinario en trabajo suyo.
+ *
+ * El aviso se resuelve solo cuando la estudiante cierra el registro completo
+ * (lo hace `reconcilePublishedStudentTasks` en la siguiente corrida).
+ */
+async function publishCompletenessReminder(
+  db: ReturnType<typeof getAdminDb>,
+  input: {
+    year: string;
+    studentId: string;
+    patientId: string;
+    processId: string;
+    reviewId: string;
+    isMissing: boolean;
+    gaps: string[];
+  },
+) {
+  const { year, studentId, patientId, processId, reviewId, isMissing, gaps } = input;
+  const actionParams = new URLSearchParams({ openFicha: patientId, action: 'EVALUACION_INICIAL' });
+  if (processId) actionParams.set('procesoId', processId);
+
+  const message = isMissing
+    ? 'Esta persona ya tiene sesiones registradas pero todavía no cuenta con una evaluación inicial cerrada. Complétala para poder comparar avances más adelante.'
+    : `A la evaluación inicial le falta: ${gaps.join(', ')}. Complétala y ciérrala para dejar una línea basal utilizable.`;
+
+  try {
+    await db.collection('student_clinical_tasks').doc(`census_${reviewId}`).create({
+      year,
+      studentId,
+      patientId,
+      processId: processId || null,
+      reviewId,
+      kind: isMissing ? 'INITIAL_EVALUATION_MISSING' : 'INITIAL_EVALUATION_INSUFFICIENT',
+      status: 'ACTIVE',
+      title: isMissing ? 'Evaluación inicial pendiente' : 'Completa la evaluación inicial',
+      message,
+      actionLabel: 'Abrir evaluación',
+      actionHref: `/app/usuarios?${actionParams.toString()}`,
+      createdAt: new Date().toISOString(),
+      createdBy: 'census_automatic',
+    });
+  } catch (error: any) {
+    // Ya existía el aviso: no se duplica ni se reinicia su antigüedad.
+    if (error?.code !== 6 && error?.code !== 'already-exists') {
+      console.warn('No se pudo publicar el aviso de completitud', reviewId, error);
+    }
   }
 }
 
@@ -297,6 +366,20 @@ export async function runCensusEngine() {
     const priorityCounts: Record<'P0' | 'P1' | 'P2' | 'P3', number> = { P0: 0, P1: 0, P2: 0, P3: 0 };
     const recentCutoff = Date.now() - CLINICAL_ACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
+    // Diagnóstico explícito del análisis generativo. Sin esto era imposible
+    // distinguir "la IA corrió y no encontró nada" de "la IA nunca corrió",
+    // que es exactamente lo que venía pasando en producción.
+    const llmDiagnostics = {
+      enabled: featureFlags.agentLlmAnalysisEnabled,
+      attempted: 0,
+      succeeded: 0,
+      failed: 0,
+      deferred: 0,
+      enginesUsed: new Set<string>(),
+      skippedReason: '',
+      lastError: '',
+    };
+
     for (const student of students) {
       // 2. Consulta incremental de evaluaciones reales creadas por el estudiante
       const evalsSnap = await db
@@ -329,6 +412,12 @@ export async function runCensusEngine() {
       recordsProcessed += recentRecords.length;
 
       for (const record of recentRecords) {
+        // Un borrador es trabajo en curso, no un registro incompleto. Auditarlo
+        // como si estuviera terminado llenaba la bandeja de falsos hallazgos y
+        // enterraba los reales. El borrador antiguo ya se avisa por otra vía.
+        const isDraftRecord = record.status === 'DRAFT' || record.estado === 'BORRADOR';
+        if (isDraftRecord) continue;
+
         const missingFields: string[] = [];
         let priority: 'P0' | 'P1' | 'P2' | 'P3' = 'P3';
 
@@ -338,8 +427,11 @@ export async function runCensusEngine() {
             const interviewComplete = hasValue(reassessment.interview?.change)
               && hasValue(reassessment.interview?.functionParticipation)
               && hasValue(reassessment.interview?.patientPriority);
-            const examComplete = hasValue(reassessment.exam?.selectedDomains)
-              && hasValue(reassessment.exam?.comparableResult || reassessment.exam?.objectiveFindings)
+            // `selectedDomains` no existe como control en ReevaluacionExpressForm:
+            // el formulario siempre lo deja vacío. Exigirlo marcaba como
+            // incompleta cualquier reevaluación bien hecha, por un campo que la
+            // estudiante no tenía manera de llenar.
+            const examComplete = hasValue(reassessment.exam?.comparableResult || reassessment.exam?.objectiveFindings)
               && hasValue(reassessment.exam?.testInterpretation);
             const reasoningComplete = hasValue(reassessment.reasoning?.hypothesis)
               && hasValue(reassessment.reasoning?.direction)
@@ -389,7 +481,10 @@ export async function runCensusEngine() {
                 collection: record.collection as 'evaluaciones' | 'evoluciones',
                 recordId: record.id,
                 fieldPath: missingFields[0] || 'completitud',
-                contentHash: `hash_${record.id}_${Date.now()}`,
+                // Hash estable por contenido: con Date.now() cambiaba en cada
+                // ejecución sin significar nada, así que era imposible saber si
+                // el registro realmente había cambiado desde la última revisión.
+                contentHash: `hash_${record.id}_${priority}_${missingFields.slice().sort().join('|') || 'ok'}`,
                 redactedExcerpt: cleanExcerpt.slice(0, 200),
               },
             ],
@@ -408,13 +503,27 @@ export async function runCensusEngine() {
           // el mismo registro. `create` conserva cualquier decisión docente ya
           // tomada y evita una lectura previa solo para deduplicar.
           const reviewId = `census_${year}_${student.id}_${record.collection}_${record.id}`;
+          const reviewRef = db.collection('teacher_agent_reviews').doc(reviewId);
           try {
-            await db.collection('teacher_agent_reviews').doc(reviewId).create(validatedReview);
+            await reviewRef.create(validatedReview);
             reviewsCreated++;
             priorityCounts[priority]++;
           } catch (writeError: any) {
             if (writeError?.code !== 6 && writeError?.code !== 'already-exists') {
               throw writeError;
+            }
+            // Ya existía. Si el docente todavía no lo ha resuelto, refrescamos el
+            // análisis: antes el hallazgo quedaba congelado con el diagnóstico de
+            // la primera ejecución aunque la ficha hubiera cambiado. Una decisión
+            // docente ya tomada (aceptada o descartada) nunca se reabre aquí.
+            try {
+              const existing = await reviewRef.get();
+              if (existing.exists && existing.data()?.status === 'PENDING_TEACHER') {
+                const { createdAt, ...refreshable } = validatedReview as any;
+                await reviewRef.update({ ...refreshable, updatedAt: new Date().toISOString() });
+              }
+            } catch (refreshError) {
+              console.warn('No se pudo refrescar el hallazgo existente', reviewId, refreshError);
             }
           }
         }
@@ -456,19 +565,32 @@ export async function runCensusEngine() {
         reevaluationRemindersCreated += reevaluationReminders;
         priorityCounts.P2 += reevaluationReminders;
 
-        const result = await createInitialEvaluationContinuityReview(
-          db,
-          year,
-          student,
-          process.personaUsuariaId,
-          processId,
-          evolutions,
-          processInitials,
-        );
-        initialEvaluationMissingCreated += result.missing;
-        initialEvaluationInsufficientCreated += result.insufficient;
-        reviewsCreated += result.missing + result.insufficient;
-        priorityCounts.P1 += result.missing + result.insufficient;
+        // Solo se reclama la evaluación de personas realmente en tratamiento.
+        // Un proceso en pausa, o uno activo pero sin sesiones hace más de un
+        // mes, no es una evaluación pendiente: es un caso abandonado, y eso ya
+        // se avisa por separado. Presionar por completarla solo generaba ruido.
+        const lastSessionAt = evolutions
+          .map((evolution: any) => recordDate(evolution) || 0)
+          .reduce((latest: number, current: number) => Math.max(latest, current), 0);
+        const isUnderActiveCare = process.estado === 'ACTIVO'
+          && lastSessionAt > 0
+          && Date.now() - lastSessionAt <= 30 * 24 * 60 * 60 * 1000;
+
+        if (isUnderActiveCare) {
+          const result = await createInitialEvaluationContinuityReview(
+            db,
+            year,
+            student,
+            process.personaUsuariaId,
+            processId,
+            evolutions,
+            processInitials,
+          );
+          initialEvaluationMissingCreated += result.missing;
+          initialEvaluationInsufficientCreated += result.insufficient;
+          reviewsCreated += result.missing + result.insufficient;
+          priorityCounts.P1 += result.missing + result.insufficient;
+        }
       }
 
       // Actualizar perfil longitudinal real del estudiante en student_learning_profiles
@@ -490,8 +612,29 @@ export async function runCensusEngine() {
       // anterior sigue siendo válido y queda registrado de forma privada.
       // Solo se activa cuando existe actividad reciente, pero conserva los
       // registros previos como contexto longitudinal del estudiante.
-      if (featureFlags.agentLlmAnalysisEnabled && recentRecords.length > 0) {
-        const analysis = await analyzeStudentLongitudinal(student.id, allRecords);
+      // Presupuesto por corrida: analizar a todas las internas en una sola
+      // ejecución agota tiempo y cuota, y el censo terminaba a medias sin
+      // decirlo. Se analiza un grupo por corrida y el resto entra en la
+      // siguiente, priorizando a quien lleva más tiempo sin análisis.
+      const withinLlmBudget = llmDiagnostics.attempted < LLM_CALLS_PER_RUN;
+
+      if (!featureFlags.agentLlmAnalysisEnabled) {
+        llmDiagnostics.skippedReason = 'FF_AGENT_LLM_ANALYSIS no está en true';
+      } else if (recentRecords.length === 0) {
+        // Sin actividad reciente no hay nada nuevo que analizar.
+      } else if (!withinLlmBudget) {
+        llmDiagnostics.deferred++;
+      } else {
+        llmDiagnostics.attempted++;
+        const { analysis, engine, note } = await analyzeStudentLongitudinal(student.id, allRecords);
+        if (!analysis) {
+          llmDiagnostics.failed++;
+          if (note) llmDiagnostics.lastError = note;
+        } else {
+          llmDiagnostics.succeeded++;
+          if (engine) llmDiagnostics.enginesUsed.add(engine);
+          if (note) llmDiagnostics.lastError = note;
+        }
         if (analysis) {
           const sourceReferences = analysis.evidence.flatMap((evidence) => {
             const source = allRecords.find((record: any) =>
@@ -508,6 +651,16 @@ export async function runCensusEngine() {
             }];
           });
 
+          // Red de seguridad: un riesgo clínico detectado no puede quedar
+          // enterrado como P2 porque el modelo lo etiquetó bajo. La prioridad
+          // solo puede subir, nunca bajar respecto de lo que dijo el análisis.
+          const hasSafetyRisk = analysis.coherenceFindings?.some(
+            finding => finding.type === 'RIESGO_SEGURIDAD' || finding.severity === 'ALTA',
+          );
+          const effectivePriority = hasSafetyRisk && analysis.priority !== 'P0'
+            ? (analysis.coherenceFindings.some(f => f.type === 'RIESGO_SEGURIDAD') ? 'P0' : 'P1')
+            : analysis.priority;
+
           if (sourceReferences.length > 0) {
             const reviewPayload = TeacherAgentReviewSchema.parse({
               year,
@@ -516,8 +669,12 @@ export async function runCensusEngine() {
               sourceReferences,
               observation: analysis.observation,
               pedagogicalInference: `${analysis.pedagogicalInference}\n\nPregunta socrática: ${analysis.socraticQuestion}\nRecomendación: ${analysis.recommendation}`,
+              // El texto ya redactado viaja con el hallazgo: el docente aprueba
+              // en vez de escribir, que es el punto de todo esto.
+              draftFeedback: analysis.draftFeedback,
+              coherenceFindings: analysis.coherenceFindings,
               confidence: analysis.confidence,
-              priority: analysis.priority,
+              priority: effectivePriority,
               status: 'PENDING_TEACHER',
               createdAt: new Date().toISOString(),
             });
@@ -529,7 +686,7 @@ export async function runCensusEngine() {
                 .doc(`longitudinal_${year}_${student.id}_${evidenceVersion}`)
               .create(reviewPayload);
             reviewsCreated++;
-            priorityCounts[analysis.priority]++;
+            priorityCounts[effectivePriority]++;
             } catch (writeError: any) {
               if (writeError?.code !== 6 && writeError?.code !== 'already-exists') throw writeError;
             }
@@ -560,6 +717,17 @@ export async function runCensusEngine() {
 
     return {
       status: 'completed',
+      // El resumen dice ahora si la IA corrió, con qué motor y por qué no.
+      llm: {
+        enabled: llmDiagnostics.enabled,
+        attempted: llmDiagnostics.attempted,
+        succeeded: llmDiagnostics.succeeded,
+        failed: llmDiagnostics.failed,
+        deferred: llmDiagnostics.deferred,
+        engines: Array.from(llmDiagnostics.enginesUsed),
+        skippedReason: llmDiagnostics.skippedReason || undefined,
+        lastError: llmDiagnostics.lastError || undefined,
+      },
       studentsProcessed: students.length,
       recordsProcessed,
       reviewsCreated,

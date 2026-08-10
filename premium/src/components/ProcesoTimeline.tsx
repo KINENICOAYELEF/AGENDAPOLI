@@ -29,6 +29,8 @@ interface ProcesoTimelineProps {
     initialRecordType?: string;
     initialAction?: string;
     initialStep?: string;
+    /** Cita de agenda que originó la evolución; permite cerrarla al firmar. */
+    initialCitaId?: string;
     onNavigationChange?: (state: Record<string, string | undefined>) => void;
     onBack: () => void;
 }
@@ -37,7 +39,7 @@ type TimelineItem =
     | { type: 'evaluacion'; data: Evaluacion; date: Date }
     | { type: 'evolucion'; data: Evolucion; date: Date };
 
-export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso, initialRecordId, initialRecordType, initialAction, initialStep, onNavigationChange, onBack }: ProcesoTimelineProps) {
+export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso, initialRecordId, initialRecordType, initialAction, initialStep, initialCitaId, onNavigationChange, onBack }: ProcesoTimelineProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
     const isAdmin = (user?.role as string) === 'ADMIN' || (user?.role as string) === 'DOCENTE';
@@ -120,8 +122,22 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                 setSelectedEval(initial?.type === 'evaluacion' ? initial.data : null);
                 setView('formExpressEval');
             } else if (initialAction?.toUpperCase() === 'EVOLUCIONAR') {
-                setSelectedEvol(null);
-                setView('formEvol');
+                // Un aviso de "evolución pendiente" debe continuar el borrador que
+                // lo generó, no abrir uno nuevo. Abrir en blanco era la causa de
+                // los borradores duplicados que quedaban atrapados en el dashboard.
+                // Solo se reutiliza un borrador propio y del mismo proceso.
+                const ownDraft = loadedItems
+                    .filter(item => {
+                        if (item.type !== 'evolucion') return false;
+                        const evol = item.data as any;
+                        const isDraft = evol.status === 'DRAFT' || evol.estado === 'BORRADOR';
+                        if (!isDraft) return false;
+                        const author = evol.audit?.createdBy || evol.clinicianResponsible;
+                        return author === user?.uid || author === user?.email;
+                    })
+                    .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+                setSelectedEvol(ownDraft ? (ownDraft.data as Evolucion) : null);
+                setView(ownDraft ? 'editEvol' : 'formEvol');
             }
         } catch (e) {
             console.error("Error cargando timeline:", e);
@@ -233,6 +249,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                         <EvolucionForm
                             usuariaId={personaUsuariaId}
                             procesoId={proceso.id}
+                            citaId={(selectedEvol as any)?.citaId || initialCitaId}
                             initialData={selectedEvol}
                             evolucionesAnteriores={items.filter(i => i.type === 'evolucion').map(i => i.data as Evolucion)}
                             onClose={() => { setView('timeline'); onNavigationChange?.({ action: 'PROCESOS', procesoId: proceso.id }); }}

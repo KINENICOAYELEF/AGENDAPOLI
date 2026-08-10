@@ -19,6 +19,20 @@ export const TeacherAgentReviewSchema = z.object({
   sourceReferences: z.array(SourceReferenceSchema),
   observation: z.string(),
   pedagogicalInference: z.string().optional(),
+  /**
+   * Feedback redactado por el modelo, pendiente de aprobación docente.
+   *
+   * Guardarlo aquí permite que el docente lo apruebe desde la bandeja o desde
+   * Telegram sin reconstruir nada. Nunca se muestra al estudiante hasta que el
+   * docente lo aprueba explícitamente.
+   */
+  draftFeedback: z.string().optional(),
+  /** Incoherencias detectadas entre la evaluación del estudiante y lo ejecutado. */
+  coherenceFindings: z.array(z.object({
+    type: z.string(),
+    explanation: z.string(),
+    severity: z.enum(['ALTA', 'MEDIA', 'BAJA']),
+  })).optional(),
   confidence: z.number().min(0).max(1),
   priority: z.enum(['P0', 'P1', 'P2', 'P3']),
   status: z.enum([

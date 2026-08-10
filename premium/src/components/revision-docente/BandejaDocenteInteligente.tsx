@@ -17,7 +17,7 @@ import type { TeacherAgentReview } from "@/lib/agent/contracts/review";
 import type { StudentLearningProfile } from "@/types/agentDataFoundation";
 import type { StudentClinicalTaskKind } from "@/types/studentClinicalTask";
 
-type ReviewWithId = TeacherAgentReview & { id: string };
+type ReviewWithId = TeacherAgentReview & { id: string; isStale?: boolean };
 type ProfileDisplay = StudentLearningProfile & { displayName?: string };
 const RECENT_REVIEW_WINDOW_MS = 48 * 60 * 60 * 1000;
 const PERSISTENT_ACTION_CATEGORIES = new Set([
@@ -25,6 +25,16 @@ const PERSISTENT_ACTION_CATEGORIES = new Set([
   'INITIAL_EVALUATION_MISSING',
   'INITIAL_EVALUATION_INSUFFICIENT',
 ]);
+
+/** Nombres legibles de las incoherencias que detecta el agente. */
+const COHERENCE_LABELS: Record<string, string> = {
+  INTERVENCION_NO_CORRESPONDE: 'Intervención sin relación con el diagnóstico',
+  OBJETIVO_ABANDONADO: 'Objetivo declarado y no trabajado',
+  DOSIFICACION_INADECUADA: 'Dosificación sin fundamento',
+  PLAN_ESTANCADO: 'Plan sin cambios pese a falta de progreso',
+  RIESGO_SEGURIDAD: 'Se avanza pese a señales de alarma',
+  SIN_REEVALUACION: 'Sesiones acumuladas sin volver a medir',
+};
 
 function chunks<T>(items: T[], size: number): T[][] {
   return Array.from({ length: Math.ceil(items.length / size) }, (_, index) => items.slice(index * size, index * size + size));
@@ -68,6 +78,8 @@ export function BandejaDocenteInteligente() {
   const [running, setRunning] = useState(false);
   const [workingId, setWorkingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Correcciones del docente sobre el texto propuesto, por hallazgo.
+  const [editedFeedback, setEditedFeedback] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -79,19 +91,25 @@ export function BandejaDocenteInteligente() {
         limit(100),
       ));
 
+      // Un hallazgo pendiente NO se oculta por antigüedad. La ventana de 48h
+      // descartaba en el navegador todo lo que el censo había creado en días
+      // anteriores, y por eso la bandeja mostraba 0 aunque Firestore tuviera
+      // hallazgos sin revisar. Ahora solo se marcan visualmente como antiguos.
       const cutoff = Date.now() - RECENT_REVIEW_WINDOW_MS;
       const visibleReviews = reviewSnap.docs
-        .map((snapshot) => ({
-          id: snapshot.id,
-          ...(snapshot.data() as TeacherAgentReview),
-        }))
-        .filter((review) => {
+        .map((snapshot) => {
+          const review = {
+            id: snapshot.id,
+            ...(snapshot.data() as TeacherAgentReview),
+          };
           const created = new Date(review.createdAt).getTime();
-          // Las auditorías rutinarias caducan de la vista diaria; el hito de
-          // reevaluación permanece hasta que una reevaluación nueva lo cierre.
-          return PERSISTENT_ACTION_CATEGORIES.has(review.category || '') || (Number.isFinite(created) && created >= cutoff);
+          const isRecent = Number.isFinite(created) && created >= cutoff;
+          return {
+            ...review,
+            isStale: !isRecent && !PERSISTENT_ACTION_CATEGORIES.has(review.category || ''),
+          };
         })
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
       setReviews(visibleReviews);
 
       // Antes se leían 100 perfiles aunque solo hubiera pocos hallazgos
@@ -146,7 +164,18 @@ export function BandejaDocenteInteligente() {
       });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error || "No se pudo iniciar el censo.");
-      setNotice("Censo iniciado. Los hallazgos aparecerán aquí al finalizar; no se envía nada a estudiantes.");
+
+      // El censo corre sincrónico en el servidor: recargar aquí evita que la
+      // bandeja se quede diciendo "iniciado" con la lista vieja en pantalla.
+      const summary = result.result || result.data || {};
+      const created = summary.reviewsCreated ?? summary.created;
+      const processed = summary.recordsProcessed ?? summary.processed;
+      await load();
+      setNotice(
+        typeof created === 'number'
+          ? `Censo terminado: ${created} hallazgo(s) nuevo(s) sobre ${processed ?? '?'} registro(s) revisado(s). Nada se envía a estudiantes.`
+          : "Censo ejecutado. La bandeja se actualizó; no se envía nada a estudiantes.",
+      );
     } catch (error) {
       setNotice(explainAgentError(error));
     } finally {
@@ -183,11 +212,17 @@ export function BandejaDocenteInteligente() {
       const title = isReevaluation
         ? 'Reevaluación clínica pendiente'
         : isMissing ? 'Evaluación inicial pendiente' : 'Completa la evaluación inicial';
-      const message = isReevaluation
-        ? 'Tu docente revisó la continuidad de este proceso y solicita una reevaluación focalizada. Registra entrevista, examen físico comparable, interpretación, objetivos y ajuste del plan.'
-        : isMissing
-          ? 'Este proceso ya tiene evoluciones, pero no cuenta con una evaluación inicial cerrada. Completa la línea basal antes de continuar registrando sesiones.'
-          : 'La evaluación inicial existente no entrega una línea basal suficiente. Completa entrevista, examen físico, integración clínica, objetivos y plan; luego ciérrala.';
+      // Si el docente ya revisó y ajustó un feedback para este hallazgo, ese es
+      // el texto que corresponde mostrarle a la estudiante: es el que él aprobó.
+      // El texto genérico queda solo cuando no hay nada redactado.
+      const approvedFeedback = editedFeedback[review.id] ?? review.draftFeedback;
+      const message = approvedFeedback?.trim()
+        ? approvedFeedback.trim()
+        : isReevaluation
+          ? 'Tu docente revisó la continuidad de este proceso y solicita una reevaluación focalizada. Registra entrevista, examen físico comparable, interpretación, objetivos y ajuste del plan.'
+          : isMissing
+            ? 'Este proceso ya tiene evoluciones, pero no cuenta con una evaluación inicial cerrada. Completa la línea basal antes de continuar registrando sesiones.'
+            : 'La evaluación inicial existente no entrega una línea basal suficiente. Completa entrevista, examen físico, integración clínica, objetivos y plan; luego ciérrala.';
       const actionParams = new URLSearchParams({
         openFicha: review.patientId,
         action: isReevaluation ? 'REEVALUAR' : 'EVALUACION_INICIAL',
@@ -219,33 +254,58 @@ export function BandejaDocenteInteligente() {
     }
   };
 
+  /**
+   * Texto del feedback listo para revisar.
+   *
+   * Se prefiere el redactado por la IA. El armado por concatenación queda solo
+   * como respaldo para hallazgos antiguos: se leía como un formulario, no como
+   * un docente hablándole a su estudiante.
+   */
+  const feedbackText = (review: ReviewWithId) => {
+    if (review.draftFeedback?.trim()) return review.draftFeedback.trim();
+    const source = review.sourceReferences[0];
+    const student = profiles[review.studentId]?.displayName || "Estudiante";
+    return [
+      `Hola ${student},`,
+      "",
+      review.observation,
+      review.pedagogicalInference ? `Para tu razonamiento clínico: ${review.pedagogicalInference}` : "",
+      source?.redactedExcerpt ? `Revisa específicamente este fragmento de tu registro: “${source.redactedExcerpt}”.` : "",
+    ].filter(Boolean).join("\n");
+  };
+
   const createFeedbackDraft = async (review: ReviewWithId) => {
     setWorkingId(review.id);
     try {
-      const source = review.sourceReferences[0];
-      const student = profiles[review.studentId]?.displayName || "Estudiante";
-      const messageBody = [
-        `Hola ${student},`,
-        "",
-        review.observation,
-        review.pedagogicalInference ? `Para tu razonamiento clínico: ${review.pedagogicalInference}` : "",
-        source?.redactedExcerpt ? `Revisa específicamente este fragmento de tu registro: “${source.redactedExcerpt}”.` : "",
-        "",
-        "Este es un borrador docente: revísalo y decide si corresponde enviarlo por tu canal habitual.",
-      ].filter(Boolean).join("\n");
+      const messageBody = editedFeedback[review.id] ?? feedbackText(review);
 
-      await setDoc(doc(collection(db, "student_message_drafts")), {
+      // El borrador se guardaba con un ID automático en una colección que
+      // ninguna pantalla leía: el docente apretaba el botón, veía "creado" y el
+      // texto desaparecía. Ahora se guarda con el ID del hallazgo, queda
+      // aprobado explícitamente y se puede recuperar y copiar.
+      await setDoc(doc(db, "student_message_drafts", review.id), {
         studentId: review.studentId,
         reviewId: review.id,
+        year: review.year,
         messageBody,
-        status: "DRAFT_PENDING_APPROVAL",
+        priority: review.priority,
+        status: "APPROVED_BY_TEACHER",
+        approvedBy: auth.currentUser?.uid || 'teacher',
+        approvedAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
-      });
+      }, { merge: true });
+
+      try {
+        await navigator.clipboard.writeText(messageBody);
+        setNotice("Feedback aprobado y copiado al portapapeles. Ya puedes pegarlo donde prefieras; no se envió nada automáticamente.");
+      } catch {
+        setNotice("Feedback aprobado y guardado. No se envió nada al estudiante.");
+      }
+
       await updateStatus(review, "ACCEPTED_PRIVATE");
-      setNotice("Borrador privado creado. No se envió ningún mensaje al estudiante.");
     } catch (error) {
-      console.error("No se pudo crear el borrador:", error);
-      setNotice("No se pudo crear el borrador. Reintenta.");
+      console.error("No se pudo aprobar el feedback:", error);
+      setNotice("No se pudo guardar el feedback. Reintenta.");
     } finally {
       setWorkingId(null);
     }
@@ -298,6 +358,7 @@ export function BandejaDocenteInteligente() {
                 {review.category === 'REEVALUATION_DUE' && <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-black text-violet-800">REEVALUACIÓN PENDIENTE</span>}
                 {review.category === 'INITIAL_EVALUATION_MISSING' && <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[10px] font-black text-rose-800">SIN EVALUACIÓN INICIAL</span>}
                 {review.category === 'INITIAL_EVALUATION_INSUFFICIENT' && <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-black text-amber-800">LÍNEA BASAL INSUFICIENTE</span>}
+                {review.isStale && <span className="rounded-full border border-slate-300 bg-slate-100 px-2.5 py-1 text-[10px] font-black text-slate-600">ARRASTRADO</span>}
                 <strong className="text-sm text-slate-900">{student}</strong>
                 <span className="text-xs text-slate-500">{formatDate(review.createdAt)}</span>
               </div>
@@ -310,10 +371,49 @@ export function BandejaDocenteInteligente() {
                 <p className="mt-1 text-sm text-slate-800">{review.observation}</p>
                 {review.pedagogicalInference && <p className="mt-2 text-sm text-slate-600"><strong>Sentido pedagógico:</strong> {review.pedagogicalInference}</p>}
               </div>
+
+              {/* Incoherencias entre lo que la estudiante concluyó y lo que ejecutó. */}
+              {review.coherenceFindings && review.coherenceFindings.length > 0 && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-3">
+                  <h3 className="text-xs font-black uppercase tracking-wide text-rose-800">Coherencia clínica</h3>
+                  <ul className="mt-2 space-y-2">
+                    {review.coherenceFindings.map((finding, index) => (
+                      <li key={index} className="text-sm text-rose-950">
+                        <span className={`mr-2 rounded-full px-2 py-0.5 text-[10px] font-black ${
+                          finding.severity === 'ALTA' ? 'bg-rose-200 text-rose-900'
+                            : finding.severity === 'MEDIA' ? 'bg-amber-200 text-amber-900'
+                            : 'bg-slate-200 text-slate-700'
+                        }`}>
+                          {COHERENCE_LABELS[finding.type] || finding.type}
+                        </span>
+                        {finding.explanation}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Feedback redactado por la IA, editable antes de aprobar. */}
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wide text-emerald-700">
+                  Feedback propuesto {review.draftFeedback ? '(redactado por la IA)' : '(armado automáticamente)'}
+                </h3>
+                <textarea
+                  value={editedFeedback[review.id] ?? feedbackText(review)}
+                  onChange={(event) => setEditedFeedback(current => ({ ...current, [review.id]: event.target.value }))}
+                  rows={6}
+                  className="mt-2 w-full rounded-xl border border-emerald-200 bg-emerald-50/40 p-3 text-sm text-slate-800 outline-none focus:border-emerald-400"
+                />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Puedes corregirlo antes de aprobar. Nada llega a la estudiante hasta que tú lo decidas.
+                </p>
+              </div>
+
               <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
                 {viewerHref && <button onClick={() => router.push(viewerHref)} className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-800 hover:bg-indigo-100"><FileText className="h-3.5 w-3.5" /> Ver registro exacto</button>}
+                <button onClick={() => router.push(`/app/revision-docente/alumno/${review.studentId}`)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"><Sparkles className="h-3.5 w-3.5" /> Ver ficha del alumno</button>
                 <button onClick={() => updateStatus(review, "DISMISSED")} disabled={workingId === review.id} className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100"><XCircle className="h-3.5 w-3.5" /> Descartar</button>
-                <button onClick={() => createFeedbackDraft(review)} disabled={workingId === review.id} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:bg-slate-400"><AlertTriangle className="h-3.5 w-3.5" /> Crear borrador privado</button>
+                <button onClick={() => createFeedbackDraft(review)} disabled={workingId === review.id} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:bg-slate-400"><CheckCircle2 className="h-3.5 w-3.5" /> Aprobar y copiar</button>
                 {PERSISTENT_ACTION_CATEGORIES.has(review.category || '') && <button onClick={() => publishStudentTask(review)} disabled={workingId === review.id} className="inline-flex items-center gap-1.5 rounded-xl bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-600 disabled:bg-slate-400"><AlertTriangle className="h-3.5 w-3.5" /> Avisar en su página</button>}
               </div>
             </div>

@@ -66,6 +66,22 @@ export interface Proceso {
         rules?: string[];
     };
 
+    /**
+     * Resumen de la última evolución CERRADA del proceso.
+     *
+     * Existe para que la campana y los avisos de continuidad no tengan que leer
+     * todas las evoluciones del año solo para saber cuántos días lleva la
+     * persona sin atención. Se actualiza al firmar una evolución.
+     */
+    lastClosedEvolution?: {
+        sessionAt: string;
+        authorUid: string;
+        authorName?: string;
+        evolucionId: string;
+        sessionNumber?: number | null;
+        updatedAt: string;
+    };
+
     // FASE 2.3.3: Continuidad Clínica (Agenda Pro)
     continuityInternIds?: string[]; // 1-3 internos habituales
     primaryInternId?: string; // referente del caso
@@ -1166,6 +1182,7 @@ export interface Evolucion {
     usuariaId: string;
     casoId?: string | null;     // Legacy, equivalente a procesoId
     procesoId?: string | null;         // FASE 2.2.4: Conexión explícita al Proceso
+    citaId?: string | null;            // Cita de agenda que originó la sesión
     sesionId?: string | null;
     evaluationIndexId?: string; // FASE 2.2.4: Eval inicial vigente del proceso
     loadTrafficLightAtSession?: 'Verde' | 'Amarillo' | 'Rojo'; // FASE 2.2.4

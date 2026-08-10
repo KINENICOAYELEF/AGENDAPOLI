@@ -9,6 +9,7 @@ import { useYear } from "@/context/YearContext";
 import { Cita, Turno, Feriado } from "@/types/clinica";
 import { TurnosService } from "@/services/turnos";
 import { AgendaService } from "@/services/agenda";
+import { PersonasUsuariasService } from "@/services/personasUsuarias";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
@@ -239,11 +240,23 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
 
             // 2. Vincular en la Persona Usuaria (Asignación Permanente)
             const usuariaRef = doc(db, "programs", globalActiveYear, "usuarias", targetCita.usuariaId);
+            const assignedAt = new Date().toISOString();
+            // Escribía en la raíz del documento, pero el directorio y el resto de
+            // la app leen `meta.assignedInternId`: la interna vinculaba a la
+            // persona y el listado seguía mostrándola como no asignada.
             await updateDoc(usuariaRef, sanitizeForFirestoreDeep({
-                assignedInternId: user.uid,
-                assignedInternName: user.displayName || user.email,
-                updatedAt: new Date().toISOString()
+                "meta.assignedInternId": user.uid,
+                "meta.assignedInternName": user.displayName || user.email,
+                "meta.assignmentStartedAt": assignedAt,
+                "meta.updatedAt": assignedAt,
             }));
+            await PersonasUsuariasService.patchDirectoryAssignment(
+                globalActiveYear,
+                targetCita.usuariaId,
+                user.uid,
+                user.displayName || user.email || '',
+            );
+            PersonasUsuariasService.invalidateCache(globalActiveYear);
 
             fetchAgenda();
         } catch (error) {
@@ -423,7 +436,11 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                                                         Cancelar
                                                     </button>
                                                     <Link
-                                                        href={`/app/usuarios?openFicha=${cita.usuariaId}&action=evolucionar`}
+                                                        // El citaId viaja en la URL para que al firmar la
+                                                        // evolución la cita quede marcada como atendida.
+                                                        // Sin él, la agenda seguía mostrando la sesión
+                                                        // pendiente aunque la ficha ya estuviera cerrada.
+                                                        href={`/app/usuarios?openFicha=${cita.usuariaId}&action=evolucionar&citaId=${cita.id}`}
                                                         className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-xs hover:bg-indigo-700 transition"
                                                     >
                                                         + Evolucionar Cita
