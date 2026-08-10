@@ -75,10 +75,24 @@ async function getTopPendingCases(limit = 5) {
     const href = source?.recordId
       ? `${APP_BASE_URL}/app/revision-docente/registros/${source.collection === 'evoluciones' ? 'EVOLUCION' : 'EVALUACION'}/${source.recordId}`
       : `${APP_BASE_URL}/app/revision-docente`;
+
+    // Las incoherencias son lo que el docente necesita ver de inmediato: son el
+    // control real sobre lo que las internas están haciendo con sus pacientes.
+    const coherence = Array.isArray(review.coherenceFindings)
+      ? review.coherenceFindings
+          .slice(0, 3)
+          .map((finding: any) => `   ${finding.severity === 'ALTA' ? '🚩' : '•'} ${finding.explanation}`)
+          .join('\n')
+      : '';
+
     return {
       priority: review.priority as Priority,
       studentName: names.get(review.studentId) || review.studentId || 'Estudiante sin identificar',
       observation: String(review.observation || 'Sin observación registrada').slice(0, 220),
+      coherence,
+      // El feedback ya redactado viaja en el mensaje: puedes leerlo, y si te
+      // sirve tal cual, reenviarlo sin abrir la plataforma.
+      draftFeedback: String(review.draftFeedback || '').slice(0, 700),
       href,
     };
   });
@@ -159,9 +173,12 @@ export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
   // Los casos concretos son lo que convierte el aviso en algo accionable.
   const cases = await getTopPendingCases(5).catch(() => []);
   const caseLines = cases.length
-    ? `\n\n${cases.map((item: { priority: Priority; studentName: string; observation: string; href: string }) =>
-        `${item.priority === 'P0' ? '🔴' : item.priority === 'P1' ? '🟠' : '🔵'} *${item.studentName}* — ${item.observation}\n[Abrir registro](${item.href})`,
-      ).join('\n\n')}`
+    ? `\n\n${cases.map((item: { priority: Priority; studentName: string; observation: string; coherence: string; draftFeedback: string; href: string }) => [
+        `${item.priority === 'P0' ? '🔴' : item.priority === 'P1' ? '🟠' : '🔵'} *${item.studentName}* — ${item.observation}`,
+        item.coherence ? `\n${item.coherence}` : '',
+        item.draftFeedback ? `\n\n_Feedback propuesto:_\n${item.draftFeedback}` : '',
+        `\n[Abrir y aprobar](${item.href})`,
+      ].filter(Boolean).join('')).join('\n\n———\n\n')}`
     : '';
 
   // Estado real del motor de análisis: "sin hallazgos" y "la IA nunca corrió"

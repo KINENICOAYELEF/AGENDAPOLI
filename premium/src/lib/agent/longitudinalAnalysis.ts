@@ -14,14 +14,37 @@ const EvidenceSchema = z.object({
   excerpt: z.string().min(1).max(400),
 });
 
+/** Una incoherencia concreta entre lo planificado y lo ejecutado. */
+const CoherenceFindingSchema = z.object({
+  type: z.enum([
+    'INTERVENCION_NO_CORRESPONDE',   // el ejercicio o técnica no se explica por el diagnóstico
+    'OBJETIVO_ABANDONADO',           // objetivos declarados que nunca se trabajan
+    'DOSIFICACION_INADECUADA',       // carga o progresión sin sustento
+    'PLAN_ESTANCADO',                // sin progreso y sin cambio de conducta
+    'RIESGO_SEGURIDAD',              // se avanza pese a señales de alarma
+    'SIN_REEVALUACION',              // muchas sesiones sin volver a medir
+  ]),
+  explanation: z.string().min(1).max(600),
+  severity: z.enum(['ALTA', 'MEDIA', 'BAJA']),
+});
+
 const LongitudinalAnalysisSchema = z.object({
   strengths: z.array(z.string().min(1).max(300)).max(4).default([]),
   improvementGaps: z.array(z.string().min(1).max(300)).max(4).default([]),
   recurringPattern: z.string().min(1).max(500).optional(),
+  /** Incoherencias entre la evaluación propia de la interna y lo que ejecuta. */
+  coherenceFindings: z.array(CoherenceFindingSchema).max(5).default([]),
   observation: z.string().min(1).max(800),
   pedagogicalInference: z.string().min(1).max(800),
   socraticQuestion: z.string().min(1).max(500),
   recommendation: z.string().min(1).max(500),
+  /**
+   * Feedback redactado, listo para que el docente apruebe y reenvíe.
+   *
+   * Antes se armaba pegando trozos de texto fijo en el navegador; el resultado
+   * no se leía como algo escrito por un docente. Ahora lo redacta el modelo.
+   */
+  draftFeedback: z.string().min(1).max(1800),
   priority: z.enum(['P0', 'P1', 'P2', 'P3']),
   confidence: z.number().min(0).max(1),
   evidence: z.array(EvidenceSchema).min(1).max(4),
@@ -36,6 +59,72 @@ function text(value: unknown, maximum = 1200) {
       ? JSON.stringify(value)
       : '';
   return normalized.trim().slice(0, maximum);
+}
+
+/**
+ * Evidencia agrupada por proceso clínico.
+ *
+ * Una lista plana de registros no permite juzgar coherencia: para saber si lo
+ * que la interna hace en las sesiones corresponde a su propio diagnóstico y
+ * objetivos, el agente necesita ver la evaluación y las evoluciones de ESE
+ * mismo proceso una al lado de la otra. Sin esta agrupación solo se puede
+ * revisar completitud de campos, que es lo que venía haciendo.
+ */
+export function buildProcessGroupedEvidence(records: ClinicalRecord[]) {
+  const flat = buildDeidentifiedEvidence(records);
+  const byRecordId = new Map(flat.map(item => [item.recordId, item]));
+
+  const groups = new Map<string, {
+    processId: string;
+    evaluation: any | null;
+    reassessments: any[];
+    sessions: any[];
+  }>();
+
+  records.forEach((record) => {
+    const evidence = byRecordId.get(record.id);
+    if (!evidence) return;
+    const processId = String(record.procesoId || record.casoId || 'sin_proceso');
+    if (!groups.has(processId)) {
+      groups.set(processId, { processId, evaluation: null, reassessments: [], sessions: [] });
+    }
+    const group = groups.get(processId)!;
+
+    if (record.collection === 'evaluaciones') {
+      if (record.type === 'REEVALUATION') group.reassessments.push(evidence);
+      // La evaluación inicial es la línea basal contra la que se juzga todo lo
+      // demás: si hay varias, se conserva la más reciente.
+      else if (!group.evaluation || String(evidence.sessionAt) > String(group.evaluation.sessionAt)) {
+        group.evaluation = {
+          ...evidence,
+          declaredObjectives: text(record.p4_plan_structured?.objetivos_especificos
+            || record.expressDraft?.p4_plan?.objetivos_especificos
+            || record.objectives, 900),
+          diagnosis: text(record.p4_plan_structured?.diagnostico_kinesiologico_narrativo
+            || record.expressDraft?.p4_plan?.diagnostico
+            || record.clinicalSynthesis, 700),
+        };
+      }
+    } else {
+      group.sessions.push({
+        ...evidence,
+        // Lo que efectivamente se hizo, que es lo que hay que contrastar.
+        exercisesPrescribed: text(record.exerciseRx?.rows || record.exercises, 900),
+        objectivesWorked: text(record.selectedObjectivesSnapshot || record.objectiveWork, 500),
+        painStart: text(String(record.pain?.evaStart ?? ''), 10),
+        painEnd: text(String(record.pain?.evaEnd ?? ''), 10),
+        toleranceResponse: text(record.responseTolerance || record.pain?.contradictionReason, 400),
+      });
+    }
+  });
+
+  return Array.from(groups.values())
+    .map(group => ({
+      ...group,
+      sessions: group.sessions.sort((a, b) => String(a.sessionAt).localeCompare(String(b.sessionAt))),
+      reassessments: group.reassessments.sort((a, b) => String(a.sessionAt).localeCompare(String(b.sessionAt))),
+    }))
+    .filter(group => group.evaluation || group.sessions.length > 0);
 }
 
 /** Contexto clínico mínimo, sin nombres, RUT, contactos ni campos de identidad. */
@@ -94,16 +183,38 @@ export async function analyzeStudentLongitudinal(
   if (evidence.length === 0) {
     return { analysis: null, engine: null, note: 'Sin evidencia utilizable para analizar.' };
   }
+  const processGroups = buildProcessGroupedEvidence(records);
 
-  const prompt = `Analiza exclusivamente el razonamiento clínico longitudinal de un estudiante identificado como ${studentId}.
-Usa únicamente la evidencia entregada. No infieras acciones no documentadas. La historia de la persona atendida es contexto: no penalices cronicidad ni atribuyas al estudiante registros de otra autoría.
-En las reevaluaciones juzga la concordancia completa: cambio referido y prioridad de la persona → selección e interpretación de medidas comparables → hipótesis actual → decisión, dosificación, objetivos y próxima medición. No exijas repetir una evaluación inicial completa ni penalices que se omitan pruebas irrelevantes.
-Cada conclusión debe citar recordId, collection, section y un extracto literalmente presente en la evidencia. Si no hay evidencia suficiente, responde prioridad P3 y explica la limitación.
-El feedback es privado para el docente; nunca contactes al estudiante.
+  const prompt = `Eres el asistente de un kinesiólogo docente a cargo de un internado clínico. Analizas a un estudiante identificado como ${studentId}.
+
+TU TAREA PRINCIPAL ES JUZGAR COHERENCIA CLÍNICA.
+No basta con revisar si los campos están llenos. Debes contrastar, dentro de cada proceso, lo que el propio estudiante concluyó contra lo que efectivamente ejecutó:
+- ¿Las intervenciones y ejercicios prescritos se explican por SU diagnóstico kinesiológico? Un ejercicio que no tiene relación con el problema declarado es un hallazgo.
+- ¿Los objetivos que él mismo declaró se están trabajando en las sesiones, o quedaron abandonados?
+- ¿La dosificación y la progresión tienen fundamento, o cambian sin justificación? ¿Progresa carga cuando la respuesta no lo permite?
+- ¿El plan sigue igual sesión tras sesión pese a que no hay mejoría? Eso es estancamiento, no constancia.
+- ¿Se avanza pese a señales de alarma o mala tolerancia? Eso es prioridad P0.
+- ¿Acumula sesiones sin volver a medir nada comparable?
+
+REGLAS QUE NO PUEDES ROMPER:
+- Usa únicamente la evidencia entregada. No inventes hallazgos, ejercicios ni mediciones.
+- "No documentado" no es lo mismo que "no realizado". Si falta el dato, dilo como falta de registro, no como error clínico.
+- No penalices la cronicidad de la persona atendida ni le atribuyas al estudiante registros de otra autoría.
+- Si la evidencia es insuficiente para concluir, responde prioridad P3 y explica la limitación. Es preferible no afirmar nada a afirmar de más.
+- Cada conclusión debe citar recordId, collection, section y un extracto literalmente presente en la evidencia.
+
+ADEMÁS, REDACTA EL FEEDBACK (campo draftFeedback).
+Escríbelo como lo escribiría un docente clínico dirigiéndose a su estudiante: en español de Chile, tono ${preferredTone}, tuteando, entre 80 y 200 palabras. Parte reconociendo algo concreto que hizo bien, luego plantea la observación principal apoyada en su propio registro, y cierra con una pregunta que la haga razonar en vez de darle la respuesta. No uses viñetas ni encabezados: es un mensaje, no un informe. No firmes.
+Este texto es un BORRADOR para que el docente lo apruebe. Nunca contactas tú al estudiante.
+
 Responde SOLO JSON válido con esta forma exacta:
-{"strengths":["..."],"improvementGaps":["..."],"recurringPattern":"... opcional","observation":"...","pedagogicalInference":"...","socraticQuestion":"...","recommendation":"...","priority":"P0|P1|P2|P3","confidence":0.0,"evidence":[{"recordId":"...","collection":"evaluaciones|evoluciones","section":"...","excerpt":"..."}]}
-Tono recomendado para un posterior borrador docente: ${preferredTone}.
-EVIDENCIA DESIDENTIFICADA:\n${JSON.stringify(evidence)}`;
+{"strengths":["..."],"improvementGaps":["..."],"recurringPattern":"... opcional","coherenceFindings":[{"type":"INTERVENCION_NO_CORRESPONDE|OBJETIVO_ABANDONADO|DOSIFICACION_INADECUADA|PLAN_ESTANCADO|RIESGO_SEGURIDAD|SIN_REEVALUACION","explanation":"...","severity":"ALTA|MEDIA|BAJA"}],"observation":"...","pedagogicalInference":"...","socraticQuestion":"...","recommendation":"...","draftFeedback":"...","priority":"P0|P1|P2|P3","confidence":0.0,"evidence":[{"recordId":"...","collection":"evaluaciones|evoluciones","section":"...","excerpt":"..."}]}
+
+EVIDENCIA AGRUPADA POR PROCESO (evaluación y objetivos declarados junto a las sesiones ejecutadas):
+${JSON.stringify(processGroups)}
+
+REGISTROS COMPLETOS DESIDENTIFICADOS:
+${JSON.stringify(evidence)}`;
 
   const response = await runAgentInteraction(prompt, undefined, { preferredTone });
   if (response.status !== 'success') {

@@ -579,6 +579,16 @@ export async function runCensusEngine() {
             }];
           });
 
+          // Red de seguridad: un riesgo clínico detectado no puede quedar
+          // enterrado como P2 porque el modelo lo etiquetó bajo. La prioridad
+          // solo puede subir, nunca bajar respecto de lo que dijo el análisis.
+          const hasSafetyRisk = analysis.coherenceFindings?.some(
+            finding => finding.type === 'RIESGO_SEGURIDAD' || finding.severity === 'ALTA',
+          );
+          const effectivePriority = hasSafetyRisk && analysis.priority !== 'P0'
+            ? (analysis.coherenceFindings.some(f => f.type === 'RIESGO_SEGURIDAD') ? 'P0' : 'P1')
+            : analysis.priority;
+
           if (sourceReferences.length > 0) {
             const reviewPayload = TeacherAgentReviewSchema.parse({
               year,
@@ -587,8 +597,12 @@ export async function runCensusEngine() {
               sourceReferences,
               observation: analysis.observation,
               pedagogicalInference: `${analysis.pedagogicalInference}\n\nPregunta socrática: ${analysis.socraticQuestion}\nRecomendación: ${analysis.recommendation}`,
+              // El texto ya redactado viaja con el hallazgo: el docente aprueba
+              // en vez de escribir, que es el punto de todo esto.
+              draftFeedback: analysis.draftFeedback,
+              coherenceFindings: analysis.coherenceFindings,
               confidence: analysis.confidence,
-              priority: analysis.priority,
+              priority: effectivePriority,
               status: 'PENDING_TEACHER',
               createdAt: new Date().toISOString(),
             });
@@ -600,7 +614,7 @@ export async function runCensusEngine() {
                 .doc(`longitudinal_${year}_${student.id}_${evidenceVersion}`)
               .create(reviewPayload);
             reviewsCreated++;
-            priorityCounts[analysis.priority]++;
+            priorityCounts[effectivePriority]++;
             } catch (writeError: any) {
               if (writeError?.code !== 6 && writeError?.code !== 'already-exists') throw writeError;
             }
