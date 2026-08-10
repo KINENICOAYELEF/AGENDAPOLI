@@ -662,10 +662,12 @@ export async function runCensusEngine() {
             : analysis.priority;
 
           if (sourceReferences.length > 0) {
+            // El hallazgo longitudinal abarca varios registros, así que no tiene
+            // una única persona asociada. Se omite la clave en vez de enviarla
+            // como `undefined`, que Firestore rechaza.
             const reviewPayload = TeacherAgentReviewSchema.parse({
               year,
               studentId: student.id,
-              patientId: undefined,
               sourceReferences,
               observation: analysis.observation,
               pedagogicalInference: `${analysis.pedagogicalInference}\n\nPregunta socrática: ${analysis.socraticQuestion}\nRecomendación: ${analysis.recommendation}`,

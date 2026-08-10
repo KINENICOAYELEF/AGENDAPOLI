@@ -42,6 +42,11 @@ export function getAdminDb() {
   if (_adminDb) return _adminDb;
   const app = initAdminApp();
   _adminDb = getFirestore(app);
+  // Un solo campo opcional sin valor —por ejemplo un hallazgo sin persona
+  // asociada— hacía fallar la escritura completa y con ella todo el censo.
+  // Firestore ya trata "ausente" y "undefined" como lo mismo al leer; aquí se
+  // le pide que lo haga también al escribir, en vez de lanzar una excepción.
+  _adminDb.settings({ ignoreUndefinedProperties: true });
   return _adminDb;
 }
 
