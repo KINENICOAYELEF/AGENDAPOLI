@@ -190,6 +190,21 @@ export function BandejaDocenteInteligente() {
         status,
         reviewedAt: new Date().toISOString(),
       });
+
+      // El agente aprende de esto: si un tipo de hallazgo se descarta siempre,
+      // deja de proponerlo. Su fallo nunca debe bloquear la decisión docente.
+      void fetch("/api/teacher/decision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await auth.currentUser?.getIdToken()}` },
+        body: JSON.stringify({
+          reviewId: review.id,
+          kind: status === "DISMISSED" ? "DISMISSED" : status === "SHARED" ? "SHARED" : "APPROVED",
+          category: review.category,
+          coherenceTypes: (review.coherenceFindings || []).map(finding => finding.type),
+          priority: review.priority,
+          via: "web",
+        }),
+      }).catch(() => { /* la decisión ya quedó guardada */ });
       setReviews((current) => current.filter((item) => item.id !== review.id));
     } catch (error) {
       console.error("No se pudo actualizar el hallazgo:", error);
@@ -277,7 +292,24 @@ export function BandejaDocenteInteligente() {
   const createFeedbackDraft = async (review: ReviewWithId) => {
     setWorkingId(review.id);
     try {
-      const messageBody = editedFeedback[review.id] ?? feedbackText(review);
+      const proposed = feedbackText(review);
+      const messageBody = editedFeedback[review.id] ?? proposed;
+      const wasEdited = messageBody.trim() !== proposed.trim();
+
+      void fetch("/api/teacher/decision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await auth.currentUser?.getIdToken()}` },
+        body: JSON.stringify({
+          reviewId: review.id,
+          kind: wasEdited ? "EDITED" : "APPROVED",
+          category: review.category,
+          coherenceTypes: (review.coherenceFindings || []).map(finding => finding.type),
+          priority: review.priority,
+          originalLength: proposed.length,
+          finalLength: messageBody.length,
+          via: "web",
+        }),
+      }).catch(() => { /* la aprobación ya quedó guardada */ });
 
       // El borrador se guardaba con un ID automático en una colección que
       // ninguna pantalla leía: el docente apretaba el botón, veía "creado" y el

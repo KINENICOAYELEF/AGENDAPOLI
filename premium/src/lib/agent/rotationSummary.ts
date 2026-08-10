@@ -259,6 +259,62 @@ export async function buildWatchAlerts(year: string): Promise<WatchAlert[]> {
   return alerts;
 }
 
+/**
+ * Errores que comparten varias estudiantes.
+ *
+ * El agente analiza a cada una por separado y nunca notaba que media rotación
+ * comete el mismo error. Es información distinta: si una no dosifica, es
+ * feedback individual; si lo hacen cuatro, es una clase que hay que dar.
+ */
+export type CoursePattern = {
+  type: string;
+  studentCount: number;
+  studentNames: string[];
+  example: string;
+};
+
+const COURSE_PATTERN_MIN_STUDENTS = 3;
+
+export async function buildCoursePatterns(year: string): Promise<CoursePattern[]> {
+  const db = getAdminDb();
+
+  const [findingsSnap, studentsSnap] = await Promise.all([
+    db.collection('teacher_agent_reviews').where('year', '==', year).get(),
+    db.collection('users').where('role', '==', 'INTERNO').get(),
+  ]);
+
+  const names = new Map<string, string>();
+  studentsSnap.docs.forEach((doc: any) => {
+    const data = doc.data();
+    names.set(doc.id, data.displayName || data.email || doc.id);
+  });
+
+  // Se cuentan ESTUDIANTES distintas, no hallazgos: una sola persona con el
+  // mismo error diez veces no constituye un patrón de curso.
+  const byType = new Map<string, { students: Set<string>; example: string }>();
+  findingsSnap.docs.forEach((doc: any) => {
+    const data = doc.data();
+    if (!Array.isArray(data.coherenceFindings) || !data.studentId) return;
+    data.coherenceFindings.forEach((finding: any) => {
+      if (!finding?.type) return;
+      const current = byType.get(finding.type) || { students: new Set<string>(), example: '' };
+      current.students.add(data.studentId);
+      if (!current.example && finding.explanation) current.example = String(finding.explanation).slice(0, 200);
+      byType.set(finding.type, current);
+    });
+  });
+
+  return [...byType.entries()]
+    .filter(([, value]) => value.students.size >= COURSE_PATTERN_MIN_STUDENTS)
+    .map(([type, value]) => ({
+      type,
+      studentCount: value.students.size,
+      studentNames: [...value.students].map(id => names.get(id) || id),
+      example: value.example,
+    }))
+    .sort((a, b) => b.studentCount - a.studentCount);
+}
+
 /** Formato listo para Telegram, con lo urgente arriba. */
 export function formatRotationSummary(summary: RotationSummary, appBaseUrl: string): string {
   const working = summary.lines.filter(line => line.evolutions + line.evaluations > 0);

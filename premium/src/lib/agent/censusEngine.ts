@@ -11,6 +11,7 @@ import { featureFlags } from './config';
 import { deidentifyText } from './deidentify';
 import { TeacherAgentReviewSchema } from './contracts/review';
 import { analyzeStudentLongitudinal } from './longitudinalAnalysis';
+import { calibrationInstruction, getTeacherCalibration } from './teacherCalibration';
 
 const CLINICAL_ACTIVITY_WINDOW_DAYS = 14;
 
@@ -366,6 +367,37 @@ export async function runCensusEngine() {
     const priorityCounts: Record<'P0' | 'P1' | 'P2' | 'P3', number> = { P0: 0, P1: 0, P2: 0, P3: 0 };
     const recentCutoff = Date.now() - CLINICAL_ACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
+    // Registros recientes de TODA la rotación, en dos consultas acotadas por
+    // fecha, y luego repartidos por autoría en memoria.
+    //
+    // Sustituye a dos consultas por estudiante limitadas a 20 documentos sin
+    // ordenar. Aquello no garantizaba estar mirando lo más reciente —el punto
+    // ciego más grave del agente— y además costaba 2×N lecturas.
+    const recentCutoffIso = new Date(recentCutoff).toISOString();
+    const [recentEvalsSnap, recentEvolsSnap] = await Promise.all([
+      db.collection(`programs/${year}/evaluaciones`).where('sessionAt', '>=', recentCutoffIso).get(),
+      db.collection(`programs/${year}/evoluciones`).where('sessionAt', '>=', recentCutoffIso).get(),
+    ]);
+
+    const recentRecordsByAuthor = new Map<string, any[]>();
+    const indexByAuthor = (doc: any, collectionName: 'evaluaciones' | 'evoluciones') => {
+      const data = doc.data();
+      // La autoría normalizada es audit.createdBy; los campos legados se
+      // aceptan para no perder registros antiguos que sí son del estudiante.
+      const author = data.audit?.createdBy || data.autorUid || data.clinicianResponsible;
+      if (!author) return;
+      const current = recentRecordsByAuthor.get(author) || [];
+      current.push({ id: doc.id, collection: collectionName, ...data });
+      recentRecordsByAuthor.set(author, current);
+    };
+    recentEvalsSnap.docs.forEach((doc: any) => indexByAuthor(doc, 'evaluaciones'));
+    recentEvolsSnap.docs.forEach((doc: any) => indexByAuthor(doc, 'evoluciones'));
+
+    // Criterio aprendido de lo que el docente aprueba y descarta. Evita
+    // insistir con hallazgos que él ya rechazó una y otra vez.
+    const calibration = await getTeacherCalibration();
+    const calibrationNote = calibrationInstruction(calibration);
+
     // Diagnóstico explícito del análisis generativo. Sin esto era imposible
     // distinguir "la IA corrió y no encontró nada" de "la IA nunca corrió",
     // que es exactamente lo que venía pasando en producción.
@@ -381,24 +413,14 @@ export async function runCensusEngine() {
     };
 
     for (const student of students) {
-      // 2. Consulta incremental de evaluaciones reales creadas por el estudiante
-      const evalsSnap = await db
-        .collection(`programs/${year}/evaluaciones`)
-        .where('audit.createdBy', '==', student.id)
-        .limit(20)
-        .get();
-
-      // 3. Consulta incremental de evoluciones reales creadas por el estudiante
-      const evolsSnap = await db
-        .collection(`programs/${year}/evoluciones`)
-        .where('audit.createdBy', '==', student.id)
-        .limit(20)
-        .get();
-
-      const allRecords = [
-        ...evalsSnap.docs.map((d: any) => ({ id: d.id, collection: 'evaluaciones', ...d.data() })),
-        ...evolsSnap.docs.map((d: any) => ({ id: d.id, collection: 'evoluciones', ...d.data() })),
-      ].sort((a: any, b: any) => String(a.sessionAt || a.fechaHoraAtencion || a.audit?.createdAt || '')
+      // Los registros recientes se cargan UNA vez para toda la rotación, por
+      // rango de fecha, y aquí solo se reparten por autoría.
+      //
+      // Antes se pedían 20 evaluaciones y 20 evoluciones por estudiante SIN
+      // ordenar: Firestore devuelve los primeros que encuentra, no los más
+      // recientes. Con 60 evoluciones en el año, el agente podía estar
+      // auditando las de marzo creyendo que había revisado esta semana.
+      const allRecords = (recentRecordsByAuthor.get(student.id) || []).slice().sort((a: any, b: any) => String(a.sessionAt || a.fechaHoraAtencion || a.audit?.createdAt || '')
         .localeCompare(String(b.sessionAt || b.fechaHoraAtencion || b.audit?.createdAt || '')));
 
       // No reabre fichas de meses anteriores por el solo hecho de correr hoy.
@@ -612,6 +634,33 @@ export async function runCensusEngine() {
       // anterior sigue siendo válido y queda registrado de forma privada.
       // Solo se activa cuando existe actividad reciente, pero conserva los
       // registros previos como contexto longitudinal del estudiante.
+      // Rendimiento oral: OSCE y defensas quedaban guardadas y nadie las leía.
+      // Ahí se ve la diferencia entre quien redacta bien y quien razona bien.
+      let oralEvidence: any[] = [];
+      if (featureFlags.agentLlmAnalysisEnabled && llmDiagnostics.attempted < LLM_CALLS_PER_RUN) {
+        try {
+          const [osceSnap, defenseSnap] = await Promise.all([
+            db.collection('simulador_intentos').where('userId', '==', student.id).limit(10).get(),
+            db.collection('defensas_voz_intentos').where('userId', '==', student.id).limit(10).get(),
+          ]);
+          oralEvidence = [...osceSnap.docs, ...defenseSnap.docs]
+            .map((doc: any) => {
+              const data = doc.data();
+              return {
+                kind: data.notaDefensa !== undefined || data.scoreOral !== undefined ? 'DEFENSA_ORAL' : 'OSCE',
+                at: data.fechaInicio || data.createdAt || data.sessionAt || '',
+                score: data.porcentajeGlobal ?? data.scorePuntaje ?? data.notaDefensa ?? data.scoreOral ?? null,
+                feedback: String(data.feedbackGlobal || data.retroalimentacion || data.evaluacion || '').slice(0, 600),
+              };
+            })
+            .filter((item: any) => item.score !== null || item.feedback)
+            .sort((a: any, b: any) => String(b.at).localeCompare(String(a.at)))
+            .slice(0, 6);
+        } catch (oralError) {
+          console.warn('No se pudo leer el desempeño oral de', student.id, oralError);
+        }
+      }
+
       // Presupuesto por corrida: analizar a todas las internas en una sola
       // ejecución agota tiempo y cuota, y el censo terminaba a medias sin
       // decirlo. Se analiza un grupo por corrida y el resto entra en la
@@ -626,7 +675,7 @@ export async function runCensusEngine() {
         llmDiagnostics.deferred++;
       } else {
         llmDiagnostics.attempted++;
-        const { analysis, engine, note } = await analyzeStudentLongitudinal(student.id, allRecords);
+        const { analysis, engine, note } = await analyzeStudentLongitudinal(student.id, allRecords, 'constructive', calibrationNote, oralEvidence);
         if (!analysis) {
           llmDiagnostics.failed++;
           if (note) llmDiagnostics.lastError = note;

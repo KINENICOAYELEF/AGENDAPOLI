@@ -16,6 +16,7 @@ import { getRecentPendingReviewSummary } from '@/lib/agent/notificationTriage';
 import { buildRotationSummary, formatRotationSummary } from '@/lib/agent/rotationSummary';
 import { answerTeacherQuestion } from '@/lib/agent/assistant';
 import { censoAsignaciones } from '@/lib/agent/clinicalQueries';
+import { recordTeacherDecision } from '@/lib/agent/teacherCalibration';
 
 const APP_BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://agendapoli.vercel.app').replace(/\/$/, '');
 import { callGemini } from '@/lib/ai/geminiClient';
@@ -305,6 +306,12 @@ export async function POST(req: Request) {
         await sendOrUpdate(senderChatId, 'ℹ️ Ese hallazgo ya fue resuelto antes. No se cambió nada.', callback);
       } else if (action === 'dismiss') {
         await reviewRef.update({ status: 'DISMISSED', reviewedAt: new Date().toISOString(), reviewedVia: 'telegram' });
+        const dismissed = reviewSnap.data() || {};
+        await recordTeacherDecision({
+          reviewId, kind: 'DISMISSED', category: dismissed.category, priority: dismissed.priority,
+          coherenceTypes: (dismissed.coherenceFindings || []).map((finding: any) => finding.type),
+          via: 'telegram',
+        });
         await sendOrUpdate(senderChatId, '🗑 *Hallazgo descartado.* No quedó nada pendiente ni se avisó a la estudiante.', callback);
       } else {
         const review = reviewSnap.data() || {};
@@ -320,6 +327,11 @@ export async function POST(req: Request) {
           createdAt: new Date().toISOString(),
         }, { merge: true });
         await reviewRef.update({ status: 'ACCEPTED_PRIVATE', reviewedAt: new Date().toISOString(), reviewedVia: 'telegram' });
+        await recordTeacherDecision({
+          reviewId, kind: 'APPROVED', category: review.category, priority: review.priority,
+          coherenceTypes: (review.coherenceFindings || []).map((finding: any) => finding.type),
+          via: 'telegram',
+        });
         await sendOrUpdate(
           senderChatId,
           '✅ *Feedback aprobado y guardado.*\n\nQueda disponible en la ficha de la estudiante para cuando quieras enviárselo. No se envió nada automáticamente.',

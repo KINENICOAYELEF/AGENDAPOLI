@@ -178,6 +178,10 @@ export async function analyzeStudentLongitudinal(
   studentId: string,
   records: ClinicalRecord[],
   preferredTone: 'direct' | 'constructive' | 'detailed' = 'constructive',
+  /** Lo que el agente ya aprendió del criterio docente; evita repetir lo que él descarta. */
+  calibrationNote = '',
+  /** Resultados de OSCE y defensas: el razonamiento oral, que las fichas no muestran. */
+  oralEvidence: any[] = [],
 ): Promise<LongitudinalAnalysisOutcome> {
   const evidence = buildDeidentifiedEvidence(records);
   if (evidence.length === 0) {
@@ -214,7 +218,12 @@ EVIDENCIA AGRUPADA POR PROCESO (evaluación y objetivos declarados junto a las s
 ${JSON.stringify(processGroups)}
 
 REGISTROS COMPLETOS DESIDENTIFICADOS:
-${JSON.stringify(evidence)}`;
+${JSON.stringify(evidence)}
+${oralEvidence.length ? `
+DESEMPEÑO ORAL (simulaciones OSCE y defensas de comisión):
+${JSON.stringify(oralEvidence)}
+
+Contrasta lo escrito con lo oral. Una estudiante puede redactar fichas impecables y no sostener su razonamiento al ser preguntada, o al revés. Si ves esa disociación, señálala: es información que las fichas por sí solas no muestran.` : ''}${calibrationNote}`;
 
   const response = await runAgentInteraction(prompt, undefined, { preferredTone });
   if (response.status !== 'success') {

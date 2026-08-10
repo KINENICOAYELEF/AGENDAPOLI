@@ -1,11 +1,21 @@
 import { featureFlags } from '@/lib/agent/config';
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { getAllowedTelegramChatId, sendTelegramMessage } from '@/lib/server/telegram';
-import { buildRotationSummary, buildWatchAlerts, formatRotationSummary } from '@/lib/agent/rotationSummary';
+import { buildCoursePatterns, buildRotationSummary, buildWatchAlerts, formatRotationSummary } from '@/lib/agent/rotationSummary';
 
 export const RECENT_REVIEW_WINDOW_HOURS = 48;
 
 const APP_BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://agendapoli.vercel.app').replace(/\/$/, '');
+
+/** Los mismos nombres legibles que usa la bandeja, para no hablar dos idiomas. */
+const COURSE_PATTERN_LABELS: Record<string, string> = {
+  INTERVENCION_NO_CORRESPONDE: 'intervenciones sin relación con su diagnóstico',
+  OBJETIVO_ABANDONADO: 'objetivos declarados que no trabajan',
+  DOSIFICACION_INADECUADA: 'dosificación sin fundamento',
+  PLAN_ESTANCADO: 'planes que no cambian pese a falta de progreso',
+  RIESGO_SEGURIDAD: 'avanzan pese a señales de alarma',
+  SIN_REEVALUACION: 'acumulan sesiones sin volver a medir',
+};
 
 type Priority = 'P0' | 'P1' | 'P2' | 'P3';
 
@@ -227,16 +237,26 @@ export async function sendDailyRotationDigest(year: string) {
   }
 
   try {
-    const [summary, watchAlerts] = await Promise.all([
+    const [summary, watchAlerts, coursePatterns] = await Promise.all([
       buildRotationSummary(year, 7),
       buildWatchAlerts(year).catch(() => []),
+      buildCoursePatterns(year).catch(() => []),
     ]);
     // Agenda, simulaciones, exámenes y personas abandonadas: datos que ya
     // existían y que nadie auditaba.
     const watchBlock = watchAlerts.length
       ? `\n\n👀 *Vigilancia*\n${watchAlerts.map(alert => `${alert.severity === 'ALTA' ? '🔴' : '🟡'} ${alert.message}`).join('\n')}`
       : '';
-    await sendTelegramMessage(chatId, `${formatRotationSummary(summary, APP_BASE_URL)}${watchBlock}`, {
+    // Cuando varias cometen el mismo error, la conducta docente no es dar N
+    // feedbacks individuales sino hacer una clase.
+    const patternBlock = coursePatterns.length
+      ? `\n\n🎓 *Patrón del curso — esto es materia de clase*\n`
+        + coursePatterns.slice(0, 4).map(pattern =>
+            `• *${pattern.studentCount} estudiantes*: ${COURSE_PATTERN_LABELS[pattern.type] || pattern.type}\n`
+            + `   _${pattern.studentNames.slice(0, 5).join(', ')}_`,
+          ).join('\n')
+      : '';
+    await sendTelegramMessage(chatId, `${formatRotationSummary(summary, APP_BASE_URL)}${watchBlock}${patternBlock}`, {
       inline_keyboard: [[{ text: '🔎 Abrir Bandeja Docente', url: `${APP_BASE_URL}/app/revision-docente` }]],
     });
     await digestRef.update({ status: 'DELIVERED', deliveredAt: new Date().toISOString() });
