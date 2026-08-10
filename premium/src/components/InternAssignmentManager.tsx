@@ -87,6 +87,24 @@ export function InternAssignmentManager() {
             });
 
             await batch.commit();
+
+            // El índice del directorio guarda la asignación denormalizada. Como
+            // el número de personas no cambia, el chequeo de frescura no puede
+            // detectar este desfase: hay que sincronizarlo explícitamente o el
+            // listado seguiría mostrando a la interna anterior.
+            await Promise.all(Array.from(selectedPatientIds).map(id => {
+                const patient = patients.find(item => item.id === id);
+                if (!patient) return Promise.resolve();
+                return PersonasUsuariasService.syncDirectoryEntry(globalActiveYear, {
+                    ...patient,
+                    meta: {
+                        ...patient.meta,
+                        assignedInternId: intern.uid,
+                        assignedInternName: intern.displayName || intern.email || undefined,
+                    },
+                });
+            }));
+
             PersonasUsuariasService.invalidateCache(globalActiveYear);
             alert(`Éxito: ${selectedPatientIds.size} pacientes asignados a ${intern.displayName || intern.email}.`);
             setSelectedPatientIds(new Set());

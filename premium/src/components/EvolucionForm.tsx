@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { OutcomesService } from "@/services/outcomes";
 import { AgendaService } from "@/services/agenda";
+import { PersonasUsuariasService } from "@/services/personasUsuarias";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { sanitizeForFirestoreDeep, resolveSafeAudit } from "@/lib/firebase-utils";
@@ -1133,6 +1134,14 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                     "meta.assignmentStartedAt": assignedAt,
                                     "meta.updatedAt": assignedAt,
                                 }));
+                                // El directorio guarda la asignación denormalizada.
+                                await PersonasUsuariasService.patchDirectoryAssignment(
+                                    globalActiveYear,
+                                    usuariaId,
+                                    user.uid,
+                                    user.displayName || user.email || '',
+                                );
+                                PersonasUsuariasService.invalidateCache(globalActiveYear);
                             }
                         }
                     }
@@ -1189,6 +1198,29 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 }
 
                 // FASE 2.3.2: Auto Asistencia (Completar cita ligada automáticamente cuando la evolución se FIRMA)
+                // Denormaliza la última sesión en el proceso. La campana usaba
+                // esto para calcular "días sin evolucionar" leyendo TODAS las
+                // evoluciones del año; ahora le basta con leer los procesos.
+                if (procesoId) {
+                    try {
+                        await updateDoc(
+                            doc(db, "programs", globalActiveYear, "procesos", procesoId),
+                            sanitizeForFirestoreDeep({
+                                lastClosedEvolution: {
+                                    sessionAt: formData.sessionAt || new Date().toISOString(),
+                                    authorUid: user.uid,
+                                    authorName: user.displayName || user.email || '',
+                                    evolucionId: targetId,
+                                    sessionNumber: formData.sessionNumber || null,
+                                    updatedAt: new Date().toISOString(),
+                                },
+                            }),
+                        );
+                    } catch (e) {
+                        console.warn("No se pudo actualizar el resumen de continuidad del proceso", e);
+                    }
+                }
+
                 const linkedCitaId = citaId || (formData as any).citaId || null;
                 if (linkedCitaId) {
                     try {

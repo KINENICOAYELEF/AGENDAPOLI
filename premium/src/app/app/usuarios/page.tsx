@@ -6,7 +6,7 @@ import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { PersonaUsuariaForm } from "@/components/PersonaUsuariaForm";
 import { PersonaUsuaria } from "@/types/personaUsuaria";
-import { PersonasUsuariasService } from "@/services/personasUsuarias";
+import { PersonasUsuariasService, isLightPatient } from "@/services/personasUsuarias";
 
 function SearchParamsHandler({ onOpenFicha }: { onOpenFicha: (id: string, params?: Record<string, string>) => void }) {
     const searchParams = useSearchParams();
@@ -82,13 +82,35 @@ export default function UsuariosPage() {
         router.replace(nextUrl, { scroll: false });
     }, [router]);
 
-    const openClinicalRecord = useCallback((patient: PersonaUsuaria, action?: string) => {
-        setSelectedUser(patient);
+    const openClinicalRecord = useCallback(async (patient: PersonaUsuaria, action?: string) => {
+        // El listado se arma con entradas ligeras del índice (nombre, RUT,
+        // teléfono, asignación). Abrir la ficha con ese objeto mostraría el
+        // expediente vacío y, al guardar, borraría lo que no venía cargado.
+        let full = patient;
+        if (isLightPatient(patient) && patient.id && globalActiveYear) {
+            setLoadingData(true);
+            try {
+                const fetched = await PersonasUsuariasService.getById(globalActiveYear, patient.id);
+                if (!fetched) {
+                    setFichaOpenError("No se encontró esta persona usuaria en el periodo activo.");
+                    return;
+                }
+                full = fetched;
+            } catch (e) {
+                console.error("No se pudo cargar el expediente completo", e);
+                setFichaOpenError("No se pudo abrir el expediente por un problema temporal de conexión. Puedes reintentarlo.");
+                return;
+            } finally {
+                setLoadingData(false);
+            }
+        }
+
+        setSelectedUser(full);
         setInitialAction(action);
         setInitialRecordParams(action ? { action } : undefined);
         setIsFormOpen(true);
-        updateClinicalUrl(patient.id || null, action ? { action } : {});
-    }, [updateClinicalUrl]);
+        updateClinicalUrl(full.id || null, action ? { action } : {});
+    }, [updateClinicalUrl, globalActiveYear]);
 
     const closeClinicalRecord = useCallback(() => {
         setIsFormOpen(false);
@@ -191,7 +213,7 @@ export default function UsuariosPage() {
         // Primero usar la copia estable en memoria. No vaciar ni remontar el
         // directorio completo si la persona ya estaba cargada.
         const userInMem = personasUsuariasRef.current.find(u => u.id === id);
-        if (userInMem) {
+        if (userInMem && !isLightPatient(userInMem)) {
             setSelectedUser(userInMem);
             setInitialAction(action);
             setIsFormOpen(true);
@@ -232,7 +254,9 @@ export default function UsuariosPage() {
     useEffect(() => {
         if (!pendingFicha || !personasUsuarias.length || isFormOpen) return;
         const cachedPatient = personasUsuarias.find(item => item.id === pendingFicha.id);
-        if (!cachedPatient) return;
+        // Igual que arriba: una entrada ligera no sirve para abrir el expediente.
+        // Se deja pendiente y `handleOpenFichaFromUrl` traerá el documento real.
+        if (!cachedPatient || isLightPatient(cachedPatient)) return;
         setSelectedUser(cachedPatient);
         setInitialAction(pendingFicha.params?.action);
         setInitialRecordParams(pendingFicha.params);

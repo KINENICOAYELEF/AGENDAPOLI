@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
@@ -107,17 +107,58 @@ export function NotificationCenter() {
             const procesosRef = collection(db, "programs", globalActiveYear, "procesos");
             const procesosSnap = await getDocs(procesosRef);
             const procesos = procesosSnap.docs.map(d => ({ id: d.id, ...d.data() } as Proceso));
+            const activeProcesosRaw = procesos.filter(p => p.estado === "ACTIVO");
 
-            // 4. Obtener todas las Evoluciones
-            const evosRef = collection(db, "programs", globalActiveYear, "evoluciones");
-            const evosSnap = await getDocs(evosRef);
-            const evoluciones = evosSnap.docs.map(d => ({ id: d.id, ...d.data() } as Evolucion));
+            // 4. La continuidad se lee del resumen denormalizado en cada proceso.
+            // Antes se descargaban TODAS las evoluciones del año en cada apertura
+            // de la campana solo para calcular "días sin evolucionar": era la
+            // consulta más cara de la plataforma y crecía sin techo.
+            // Los procesos que aún no tienen el resumen (registros previos a este
+            // cambio) se resuelven consultando solo esos, no la colección entera.
+            const procesosSinResumen = activeProcesosRaw.filter(p => !p.lastClosedEvolution && p.id);
+            const evolucionesLegacy = new Map<string, Evolucion>();
+            await Promise.all(procesosSinResumen.slice(0, 25).map(async (proc) => {
+                try {
+                    const snap = await getDocs(query(
+                        collection(db, "programs", globalActiveYear, "evoluciones"),
+                        where("procesoId", "==", proc.id),
+                        limit(50),
+                    ));
+                    const closed = snap.docs
+                        .map(d => ({ id: d.id, ...d.data() } as Evolucion))
+                        .filter(e => e.status === "CLOSED" || (e as any).estado === "CERRADA")
+                        .sort((a, b) => String(b.sessionAt || '').localeCompare(String(a.sessionAt || '')));
+                    if (closed[0]) evolucionesLegacy.set(proc.id!, closed[0]);
+                } catch (e) {
+                    console.warn("No se pudo resolver continuidad legacy del proceso", proc.id, e);
+                }
+            }));
 
             const list: NotificationItem[] = [];
             const today = new Date();
+            const activeProcesos = activeProcesosRaw;
 
-            // Filtrar procesos activos
-            const activeProcesos = procesos.filter(p => p.estado === "ACTIVO");
+            // Última sesión firmada por cada interna, deducida de los resúmenes de
+            // proceso. Sustituye el barrido completo de evoluciones que hacía la
+            // alerta de inactividad docente.
+            const lastSessionByIntern = new Map<string, string>();
+            const lastPatientByIntern = new Map<string, string>();
+            procesos.forEach(proc => {
+                const summary = proc.lastClosedEvolution
+                    || (proc.id && evolucionesLegacy.has(proc.id)
+                        ? {
+                            sessionAt: evolucionesLegacy.get(proc.id)!.sessionAt || '',
+                            authorUid: evolucionesLegacy.get(proc.id)!.audit?.createdBy
+                                || evolucionesLegacy.get(proc.id)!.clinicianResponsible || '',
+                        }
+                        : null);
+                if (!summary?.authorUid || !summary.sessionAt) return;
+                const previous = lastSessionByIntern.get(summary.authorUid);
+                if (!previous || summary.sessionAt > previous) {
+                    lastSessionByIntern.set(summary.authorUid, summary.sessionAt);
+                    if (proc.personaUsuariaId) lastPatientByIntern.set(summary.authorUid, proc.personaUsuariaId);
+                }
+            });
 
             // --- ALERTA 1: EVOLUCIONES PENDIENTES (> 7 días) ---
             // Iteramos sobre los procesos clínicos de los pacientes
@@ -128,21 +169,23 @@ export function NotificationCenter() {
                 const assignedInternId = patient.meta?.assignedInternId || proc.primaryInternId || proc.attendancePlan?.primaryInternId;
                 const assignedInternName = patient.meta?.assignedInternName || proc.createdByName;
 
-                const procEvos = evoluciones.filter(e => e.procesoId === proc.id && e.status === "CLOSED");
-                
-                // Calcular última evolución del paciente
+                // Resumen denormalizado del proceso, o el rescate legacy para los
+                // procesos que todavía no lo tienen escrito.
+                const legacyEvo = evolucionesLegacy.get(proc.id!);
+                const lastClosed = proc.lastClosedEvolution
+                    || (legacyEvo ? {
+                        sessionAt: legacyEvo.sessionAt || (legacyEvo as any).fechaHoraAtencion || proc.fechaInicio,
+                        authorUid: legacyEvo.clinicianResponsible || legacyEvo.audit?.closedBy || legacyEvo.audit?.createdBy || '',
+                        authorName: '',
+                    } : null);
+
                 let lastEvoDate: Date;
                 let lastEvoText = "";
-                
-                if (procEvos.length > 0) {
-                    const sortedEvos = [...procEvos].sort((a, b) => {
-                        const dateA = new Date(a.sessionAt || (a as any).fechaHoraAtencion || proc.fechaInicio);
-                        const dateB = new Date(b.sessionAt || (b as any).fechaHoraAtencion || proc.fechaInicio);
-                        return dateB.getTime() - dateA.getTime();
-                    });
-                    const lastEvo = sortedEvos[0];
-                    lastEvoDate = new Date(lastEvo.sessionAt || (lastEvo as any).fechaHoraAtencion || proc.fechaInicio);
-                    const authorName = getAuthorName(lastEvo);
+
+                if (lastClosed?.sessionAt) {
+                    lastEvoDate = new Date(lastClosed.sessionAt);
+                    const resolved = combinedUsers.find(u => u.uid === lastClosed.authorUid || u.email === lastClosed.authorUid);
+                    const authorName = lastClosed.authorName || resolved?.displayName || resolved?.email || lastClosed.authorUid || 'autor no identificado';
                     const daysSinceLastEvo = Math.floor(Math.abs(today.getTime() - lastEvoDate.getTime()) / (1000 * 60 * 60 * 24));
                     lastEvoText = `Última evolución hace ${daysSinceLastEvo} días por ${authorName}`;
                 } else {
@@ -193,34 +236,33 @@ export function NotificationCenter() {
                         lastActiveText = `Creado hace ${daysSinceLastActive} días (sin ingresos)`;
                     }
 
-                    // 2. Días desde su última evolución clínica cerrada
-                    const internEvos = evoluciones.filter(e => 
-                        e.status === "CLOSED" && 
-                        (e.clinicianResponsible === intern.uid || 
-                         e.audit?.closedBy === intern.uid || 
-                         e.audit?.createdBy === intern.uid)
-                    );
+                    // 2. Días desde su última evolución clínica cerrada.
+                    // Sale del resumen que cada proceso guarda al firmarse, sin
+                    // releer la colección de evoluciones.
+                    const lastSessionIso = lastSessionByIntern.get(intern.uid);
 
                     let daysSinceLastEvo = 999;
                     let lastEvoText = "Sin evoluciones registradas";
 
-                    if (internEvos.length > 0) {
-                        const sortedEvos = [...internEvos].sort((a, b) => {
-                            const dateA = new Date(a.sessionAt || (a as any).fechaHoraAtencion);
-                            const dateB = new Date(b.sessionAt || (b as any).fechaHoraAtencion);
-                            return dateB.getTime() - dateA.getTime();
-                        });
-                        const lastEvo = sortedEvos[0];
-                        const lastEvoDate = new Date(lastEvo.sessionAt || (lastEvo as any).fechaHoraAtencion);
+                    if (lastSessionIso) {
+                        const lastEvoDate = new Date(lastSessionIso);
                         daysSinceLastEvo = Math.floor(Math.abs(today.getTime() - lastEvoDate.getTime()) / (1000 * 60 * 60 * 24));
                         
-                        const pat = patients.find(p => p.id === lastEvo.usuariaId);
-                        lastEvoText = `Última evolución: hace ${daysSinceLastEvo} días (${pat?.identity.fullName || "Paciente eliminado"})`;
+                        const patientId = lastPatientByIntern.get(intern.uid);
+                        const pat = patients.find(p => p.id === patientId);
+                        lastEvoText = `Última evolución: hace ${daysSinceLastEvo} días (${pat?.identity?.fullName || "persona no identificada"})`;
                     }
 
                     // 3. Determinar inactividad: > 14 días sin ingresar O > 14 días sin evolucionar
                     const isInactiveActiveAt = daysSinceLastActive > 14;
-                    const isInactiveEvolutions = daysSinceLastEvo > 14;
+                    // Si no hay ningún resumen para esta interna, puede ser que sus
+                    // procesos aún no lo tengan escrito (registros anteriores a la
+                    // denormalización), no que esté inactiva. No la acusamos por
+                    // falta de dato: si además entró hace poco, se omite la alerta.
+                    const hasSessionEvidence = Boolean(lastSessionIso);
+                    const isInactiveEvolutions = hasSessionEvidence
+                        ? daysSinceLastEvo > 14
+                        : daysSinceLastActive > 14;
 
                     if (isInactiveActiveAt || isInactiveEvolutions) {
                         // Obtener pacientes activos que este interno tiene asignados
