@@ -289,6 +289,48 @@ export function BandejaDocenteInteligente() {
     ].filter(Boolean).join("\n");
   };
 
+  /**
+   * Envía el feedback aprobado a la página de la estudiante.
+   *
+   * Faltaba esta vía: se podía aprobar el texto y copiarlo al portapapeles,
+   * pero no había forma de que le llegara dentro de la plataforma salvo
+   * pegarlo en otro canal.
+   */
+  const sendFeedbackToStudent = async (review: ReviewWithId) => {
+    setWorkingId(review.id);
+    try {
+      const messageBody = editedFeedback[review.id] ?? feedbackText(review);
+      if (!messageBody.trim()) {
+        setNotice("No hay texto que enviar.");
+        return;
+      }
+
+      await setDoc(doc(db, 'student_clinical_tasks', `feedback_${review.id}`), {
+        year: review.year,
+        studentId: review.studentId,
+        patientId: review.patientId || null,
+        processId: review.processId || null,
+        reviewId: review.id,
+        kind: 'TEACHER_FEEDBACK',
+        status: 'ACTIVE',
+        title: 'Retroalimentación de tu docente',
+        message: messageBody,
+        actionLabel: 'Entendido',
+        actionHref: '/app/dashboard',
+        createdAt: new Date().toISOString(),
+        createdBy: auth.currentUser?.uid || 'teacher',
+      }, { merge: true });
+
+      await updateStatus(review, 'SHARED');
+      setNotice("Enviado. Le aparecerá en su página al entrar.");
+    } catch (error) {
+      console.error("No se pudo enviar el feedback:", error);
+      setNotice("No se pudo enviar. Reintenta.");
+    } finally {
+      setWorkingId(null);
+    }
+  };
+
   const createFeedbackDraft = async (review: ReviewWithId) => {
     setWorkingId(review.id);
     try {
@@ -445,7 +487,8 @@ export function BandejaDocenteInteligente() {
                 {viewerHref && <button onClick={() => router.push(viewerHref)} className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-800 hover:bg-indigo-100"><FileText className="h-3.5 w-3.5" /> Ver registro exacto</button>}
                 <button onClick={() => router.push(`/app/revision-docente/alumno/${review.studentId}`)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"><Sparkles className="h-3.5 w-3.5" /> Ver ficha del alumno</button>
                 <button onClick={() => updateStatus(review, "DISMISSED")} disabled={workingId === review.id} className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100"><XCircle className="h-3.5 w-3.5" /> Descartar</button>
-                <button onClick={() => createFeedbackDraft(review)} disabled={workingId === review.id} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:bg-slate-400"><CheckCircle2 className="h-3.5 w-3.5" /> Aprobar y copiar</button>
+                <button onClick={() => createFeedbackDraft(review)} disabled={workingId === review.id} title="Guarda el texto y lo copia; no se lo envía" className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"><CheckCircle2 className="h-3.5 w-3.5" /> Aprobar y copiar</button>
+                <button onClick={() => sendFeedbackToStudent(review)} disabled={workingId === review.id} title="Le aparece en su página al entrar" className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:bg-slate-400"><CheckCircle2 className="h-3.5 w-3.5" /> Enviarle este feedback</button>
                 {PERSISTENT_ACTION_CATEGORIES.has(review.category || '') && <button onClick={() => publishStudentTask(review)} disabled={workingId === review.id} className="inline-flex items-center gap-1.5 rounded-xl bg-violet-700 px-3 py-2 text-xs font-bold text-white hover:bg-violet-600 disabled:bg-slate-400"><AlertTriangle className="h-3.5 w-3.5" /> Avisar en su página</button>}
               </div>
             </div>
