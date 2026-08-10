@@ -11,6 +11,7 @@
 
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { buildActiveRoster, rosterInRotation } from './activeRoster';
+import { computeCompliance, getPracticeRequirements } from './practiceRequirements';
 
 export type StudentRotationLine = {
   studentId: string;
@@ -195,21 +196,33 @@ export async function buildWatchAlerts(year: string): Promise<WatchAlert[]> {
       db.collection('simulador_intentos').get(),
       db.collection('defensas_voz_intentos').get(),
     ]);
-    const counts = new Map<string, number>();
-    [...osceSnap.docs, ...defenseSnap.docs].forEach((doc: any) => {
-      const userId = doc.data().userId;
-      if (userId) counts.set(userId, (counts.get(userId) || 0) + 1);
-    });
+    // Las exigencias son configurables por tipo: el simulador escrito y el OSCE
+    // por voz no son intercambiables, y un total único los mezclaba.
+    const requirements = await getPracticeRequirements();
+    const attemptsByStudent = new Map<string, Array<{ modalidad?: string; kind: 'SIMULADOR' | 'DEFENSA' | 'ENTRENAMIENTO' }>>();
+    const push = (userId: string, attempt: { modalidad?: string; kind: 'SIMULADOR' | 'DEFENSA' | 'ENTRENAMIENTO' }) => {
+      if (!userId) return;
+      const current = attemptsByStudent.get(userId) || [];
+      current.push(attempt);
+      attemptsByStudent.set(userId, current);
+    };
+    osceSnap.docs.forEach((doc: any) => push(doc.data().userId, { modalidad: doc.data().modalidad, kind: 'SIMULADOR' }));
+    defenseSnap.docs.forEach((doc: any) => push(doc.data().userId, { kind: 'DEFENSA' }));
+
     // No tiene sentido reclamar prácticas a quien ya terminó su rotación.
     const behind = rosterInRotation(roster)
-      .map((entry) => ({ name: entry.name, done: counts.get(entry.id) || 0 }))
-      .filter((item) => item.done < 15);
+      .map((entry) => ({
+        name: entry.name,
+        compliance: computeCompliance(entry.id, attemptsByStudent.get(entry.id) || [], requirements),
+      }))
+      .filter((item) => !item.compliance.meetsAll);
+
     if (behind.length > 0) {
       alerts.push({
         kind: 'SIMULACIONES_INSUFICIENTES',
         severity: 'MEDIA',
-        message: `${behind.length} estudiante(s) bajo el mínimo de 15 prácticas: `
-          + behind.slice(0, 6).map((item: any) => `${item.name} (${item.done})`).join(', ') + '.',
+        message: `${behind.length} estudiante(s) bajo las exigencias de práctica:\n`
+          + behind.slice(0, 6).map((item) => `   · ${item.name}: ${item.compliance.summary}`).join('\n'),
       });
     }
   } catch (error) {

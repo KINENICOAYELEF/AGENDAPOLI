@@ -11,6 +11,7 @@
  */
 
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
+import { computeCompliance, getPracticeRequirements } from '@/lib/agent/practiceRequirements';
 
 export type DossierRecord = {
   id: string;
@@ -52,10 +53,14 @@ export type StudentDossier = {
     recent: DossierRecord[];
   };
   simulations: {
-    osceAttempts: number;
+    escrito: number;
+    voz: number;
+    sinClasificar: number;
     defenseAttempts: number;
     total: number;
-    meets15: boolean;
+    meetsAll: boolean;
+    /** Qué le falta según las exigencias vigentes, ya redactado. */
+    summary: string;
     lastAttemptAt?: string;
   };
   findings: {
@@ -115,6 +120,14 @@ export async function buildStudentDossier(studentId: string, year: string): Prom
 
   const user = userSnap.data() || {};
   const profile = profileSnap.data() || {};
+
+  // Cumplimiento medido contra las exigencias configuradas, no contra un total
+  // fijo: el simulador escrito y el OSCE por voz no son intercambiables.
+  const requirements = await getPracticeRequirements();
+  const compliance = computeCompliance(studentId, [
+    ...osceSnap.docs.map((doc: any) => ({ modalidad: doc.data().modalidad, kind: 'SIMULADOR' as const })),
+    ...defenseSnap.docs.map(() => ({ kind: 'DEFENSA' as const })),
+  ], requirements);
 
   // ── Actividad clínica ──────────────────────────────────────────────────────
   const allRecords: Array<{ id: string; data: any; collection: 'evaluaciones' | 'evoluciones' }> = [
@@ -206,10 +219,13 @@ export async function buildStudentDossier(studentId: string, year: string): Prom
       recent,
     },
     simulations: {
-      osceAttempts: osceSnap.size,
-      defenseAttempts: defenseSnap.size,
+      escrito: compliance.done.escrito,
+      voz: compliance.done.voz,
+      sinClasificar: compliance.done.sinClasificar,
+      defenseAttempts: compliance.done.defensa,
       total: osceSnap.size + defenseSnap.size,
-      meets15: osceSnap.size + defenseSnap.size >= 15,
+      meetsAll: compliance.meetsAll,
+      summary: compliance.summary,
       lastAttemptAt: iso(profile.simulationStats?.lastAttemptAt),
     },
     findings: {

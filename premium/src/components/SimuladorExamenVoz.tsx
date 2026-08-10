@@ -197,6 +197,7 @@ export function SimuladorExamenVoz() {
                 area: setupForm.area || 'aleatoria',
                 dificultad: setupForm.dificultad || 'intermedio',
                 practiceMode,
+                modalidad: 'VOZ' as const,
                 pacienteNombre: caseData?.ficha_visible?.nombre || '',
                 motivoConsulta: caseData?.ficha_visible?.motivo_consulta || '',
                 puntajeGlobal: evalData?.puntaje_global ?? 0,

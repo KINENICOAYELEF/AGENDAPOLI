@@ -191,15 +191,21 @@ export default function FichaAlumnoPage() {
           <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-violet-700">
             <GraduationCap className="h-4 w-4" /> Simulaciones y defensas
           </h2>
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            <Metric label="OSCE" value={dossier.simulations.osceAttempts} />
+          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Metric label="Escritas" value={dossier.simulations.escrito} />
+            <Metric label="Por voz" value={dossier.simulations.voz} />
             <Metric label="Defensas" value={dossier.simulations.defenseAttempts} />
-            <Metric label="Total" value={dossier.simulations.total} tone={dossier.simulations.meets15 ? "emerald" : "amber"} />
+            <Metric label="Total" value={dossier.simulations.total} tone={dossier.simulations.meetsAll ? "emerald" : "amber"} />
           </div>
-          <p className={`mt-4 rounded-xl px-4 py-3 text-sm font-semibold ${dossier.simulations.meets15 ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"}`}>
-            {dossier.simulations.meets15
-              ? "Cumple el mínimo de 15 prácticas exigidas."
-              : `Le faltan ${Math.max(0, 15 - dossier.simulations.total)} práctica(s) para el mínimo de 15.`}
+          {dossier.simulations.sinClasificar > 0 && (
+            // Los intentos previos a distinguir escrito de voz no se pueden
+            // clasificar hacia atrás; se declara en vez de adivinar.
+            <p className="mt-2 text-[11px] text-slate-500">
+              {dossier.simulations.sinClasificar} práctica(s) antigua(s) sin modalidad registrada, contadas al total.
+            </p>
+          )}
+          <p className={`mt-4 rounded-xl px-4 py-3 text-sm font-semibold ${dossier.simulations.meetsAll ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"}`}>
+            {dossier.simulations.summary}
           </p>
           <p className="mt-2 text-xs text-slate-500">Última práctica: {formatDate(dossier.simulations.lastAttemptAt)}</p>
         </section>

@@ -11,6 +11,15 @@ export interface SimuladorIntento {
     area: string;
     dificultad: string;
     practiceMode: string;
+    /**
+     * Simulador escrito u OSCE por voz.
+     *
+     * Ambos guardaban registros idénticos en la misma colección, así que era
+     * imposible contarlos por separado y exigir un mínimo de cada uno. Los
+     * intentos anteriores a este campo no se pueden clasificar: se cuentan al
+     * total pero no a una modalidad concreta.
+     */
+    modalidad?: 'ESCRITO' | 'VOZ';
     pacienteNombre: string;
     motivoConsulta: string;
     // Scores

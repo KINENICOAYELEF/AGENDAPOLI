@@ -119,6 +119,7 @@ export function SimuladorExamen() {
                 area: setupForm.area || 'aleatoria',
                 dificultad: setupForm.dificultad || 'intermedio',
                 practiceMode,
+                modalidad: 'ESCRITO' as const,
                 pacienteNombre: caseData?.ficha_visible?.nombre || '',
                 motivoConsulta: caseData?.ficha_visible?.motivo_consulta || '',
                 puntajeGlobal: evalData?.puntaje_global ?? 0,
