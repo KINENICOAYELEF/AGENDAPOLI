@@ -25,6 +25,27 @@ import {
     CalendarPlus
 } from "lucide-react";
 
+/**
+ * Enlace profundo hacia un borrador concreto.
+ *
+ * Antes el aviso solo llevaba `openFicha` + `action=EVOLUCIONAR`, y esa acción
+ * abre SIEMPRE un formulario vacío: el borrador pendiente quedaba atrapado y
+ * cada clic generaba un documento nuevo. Enviando `recordId` y `procesoId` el
+ * timeline abre exactamente el registro que se está reclamando.
+ */
+function buildDraftHref(item: { usuariaId?: string; id?: string; procesoId?: string }) {
+    if (!item?.usuariaId) return '/app/usuarios';
+    const params = new URLSearchParams({ openFicha: item.usuariaId });
+    if (item.procesoId) params.set('procesoId', item.procesoId);
+    if (item.id) {
+        params.set('recordId', item.id);
+        params.set('recordType', 'evolucion');
+    } else {
+        params.set('action', 'EVOLUCIONAR');
+    }
+    return `/app/usuarios?${params.toString()}`;
+}
+
 export default function DashboardPage() {
     const [layoutMode, setLayoutMode] = useState<'LISTA' | 'GRILLA'>('LISTA');
     const { globalActiveYear } = useYear();
@@ -114,16 +135,26 @@ export default function DashboardPage() {
                             });
                         }
 
-                        // Borrador de días anteriores sin cerrar (perteneciente a este interno)
-                        if (data.status === 'DRAFT' && data.sessionAt && data.sessionAt.split('T')[0] < todayStr) {
-                            let formattedDate = data.sessionAt;
+                        // Borrador de días anteriores sin cerrar (perteneciente a este interno).
+                        // Las fichas antiguas guardaban el estado en `estado`, no en
+                        // `status`; si solo miramos `status` esos borradores quedan
+                        // invisibles y nunca se firman.
+                        const isDraft = data.status === 'DRAFT'
+                            || (data as any).estado === 'BORRADOR';
+                        const rawSessionAt = data.sessionAt || (data as any).fechaHoraAtencion || '';
+                        if (isDraft && rawSessionAt && String(rawSessionAt).split('T')[0] < todayStr) {
+                            let formattedDate = rawSessionAt;
                             try {
-                                formattedDate = format(new Date(data.sessionAt), 'dd/MM/yyyy');
+                                formattedDate = format(new Date(rawSessionAt), 'dd/MM/yyyy');
                             } catch (e) {}
 
                             yesterdayItems.push({
                                 id: d.id,
                                 usuariaId: pid,
+                                // El proceso es imprescindible: sin él el enlace abre
+                                // el primer proceso activo, que puede no ser el del borrador.
+                                procesoId: (data as any).procesoId || '',
+                                sessionAt: String(rawSessionAt),
                                 usuariaName: (data as any).usuariaName || 'Persona usuaria',
                                 date: formattedDate
                             });
@@ -133,8 +164,15 @@ export default function DashboardPage() {
 
                 // Resolver nombres solo para los avisos que realmente se van a
                 // mostrar (máximo 10), en vez de cargar toda la colección.
-                const visibleFeedback = feedbackItems.slice(0, 5);
-                const visibleDrafts = yesterdayItems.slice(0, 5);
+                // La consulta no puede ordenar en servidor sin un índice compuesto
+                // nuevo, así que ordenamos aquí antes de recortar: de lo contrario
+                // se mostraban los primeros cinco que llegaron, no los más recientes.
+                const visibleFeedback = feedbackItems
+                    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+                    .slice(0, 5);
+                const visibleDrafts = yesterdayItems
+                    .sort((a, b) => String(b.sessionAt || '').localeCompare(String(a.sessionAt || '')))
+                    .slice(0, 5);
                 const visiblePatientIds = Array.from(new Set([
                     ...visibleFeedback.map(item => item.usuariaId),
                     ...visibleDrafts.map(item => item.usuariaId),
@@ -333,7 +371,7 @@ export default function DashboardPage() {
                                     <p className="text-xs text-slate-600 italic mt-0.5">&ldquo;{item.feedback}&rdquo;</p>
                                 </div>
                                 <Link
-                                    href={item.usuariaId ? `/app/usuarios?openFicha=${item.usuariaId}&action=EVOLUCIONAR` : '/app/usuarios'}
+                                    href={buildDraftHref(item)}
                                     className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition shrink-0 inline-flex items-center gap-1"
                                 >
                                     <span>Ver y Corregir</span>
@@ -359,9 +397,10 @@ export default function DashboardPage() {
                                 <div>
                                     <span className="text-xs font-bold text-slate-900 block">{item.usuariaName}</span>
                                     <span className="text-[10px] text-rose-600 font-semibold block">Borrador no cerrado del {item.date}</span>
+                                    <span className="text-[10px] text-slate-400 font-medium block">Registro {String(item.id).slice(0, 8)}</span>
                                 </div>
                                 <Link
-                                    href={item.usuariaId ? `/app/usuarios?openFicha=${item.usuariaId}&action=EVOLUCIONAR` : '/app/usuarios'}
+                                    href={buildDraftHref(item)}
                                     className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition shrink-0"
                                 >
                                     Firmar Evolución

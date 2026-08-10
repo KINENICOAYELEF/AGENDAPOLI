@@ -188,6 +188,60 @@ const AccordionSection = ({
     );
 };
 
+/** Traduce el fallo real de Firestore a una instrucción accionable. */
+function explainSaveError(error: unknown): string {
+    const code = String((error as any)?.code || '');
+    const message = String((error as any)?.message || error || '');
+
+    if (code.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
+        return "No tienes permiso para escribir en este año de programa.\n\nEsto ocurre si el docente cerró el año activo o si tu cuenta aún está pendiente de aprobación. Tu texto sigue guardado en este navegador: no cierres la pestaña y avisa al docente.";
+    }
+    if (code.includes('resource-exhausted') || message.includes('RESOURCE_EXHAUSTED') || message.includes('Quota')) {
+        return "La base de datos alcanzó su cuota diaria.\n\nTu texto sigue guardado en este navegador. Vuelve a intentar el guardado más tarde y avisa al docente.";
+    }
+    if (code.includes('unauthenticated')) {
+        return "Tu sesión expiró.\n\nAbre otra pestaña, inicia sesión de nuevo y vuelve aquí a presionar Guardar. No cierres esta pestaña: el texto sigue en el navegador.";
+    }
+    if (code.includes('unavailable') || code.includes('deadline-exceeded') || message.includes('network')) {
+        return "No hay conexión estable con la base de datos.\n\nTu texto sigue guardado en este navegador. Reintenta el guardado cuando recuperes señal.";
+    }
+    if (code.includes('invalid-argument')) {
+        return `Firestore rechazó los datos del formulario (${message}).\n\nTu texto sigue en el navegador. Avisa al docente con este mensaje.`;
+    }
+    return `No se pudo guardar la evolución (${code || 'error desconocido'}).\n\nTu texto sigue guardado en este navegador; no cierres la pestaña y reintenta.`;
+}
+
+/**
+ * ¿La interna escribió algo clínicamente real, o solo abrió el formulario?
+ *
+ * La fecha, el número de sesión y el estado por defecto se rellenan solos al
+ * montar; no cuentan como contenido. Sin este filtro, cada apertura creaba un
+ * documento en Firestore que después aparecía como "pendiente de firmar".
+ */
+function hasClinicalContent(data: Partial<Evolucion>): boolean {
+    const d = data as any;
+    const filled = (value: unknown) => typeof value === 'string' && value.trim() !== '';
+
+    if (filled(d.sessionGoal) || filled(d.nextPlan) || filled(d.educationNotes) || filled(d.handoffText)) return true;
+    if (Array.isArray(d.exercises) && d.exercises.length > 0) return true;
+    if (Array.isArray(d.interventions) && d.interventions.length > 0) return true;
+    if (Array.isArray(d.selectedObjectiveIds) && d.selectedObjectiveIds.length > 0) return true;
+    if (d.interventions && !Array.isArray(d.interventions)) {
+        const bucket = d.interventions;
+        if (filled(bucket.notes)) return true;
+        if (Array.isArray(bucket.techniques) && bucket.techniques.length > 0) return true;
+        if (Array.isArray(bucket.categories) && bucket.categories.length > 0) return true;
+    }
+    if (d.pain && (filled(String(d.pain.evaStart ?? '')) || filled(String(d.pain.evaEnd ?? '')) || filled(d.pain.notes))) return true;
+    if (d.outcomesSnapshot && (Number(d.outcomesSnapshot.sane) > 0 || Number(d.outcomesSnapshot.groc) !== 0)) return true;
+    if (d.readiness && Object.values(d.readiness).some(value => filled(String(value ?? '')))) return true;
+    if (filled(d.notesLegacy)) return true;
+    // Una sesión marcada como no realizada sí es información clínica.
+    if (d.sessionStatus && d.sessionStatus !== 'Realizada') return true;
+
+    return false;
+}
+
 export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, initialData, evolucionesAnteriores, onClose, onSaveSuccess }: EvolucionFormProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
@@ -362,6 +416,16 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         fetchContinuityAndNumber();
     }, [globalActiveYear, procesoId, usuariaId, isClosedDynamic, initialData?.id, evolucionesAnteriores]);
 
+    // El snapshot arranca con el contenido montado. Antes arrancaba vacío, así
+    // que el primer ciclo del debounce siempre detectaba "cambio" y escribía en
+    // Firestore un borrador que la interna nunca había tocado: ese es el origen
+    // de los borradores fantasma que quedaban pendientes de firma.
+    useEffect(() => {
+        const { audit, id, _migratedFromLegacy, ...mounted } = formData as any;
+        lastSavedDataRef.current = JSON.stringify(mounted);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialData?.id]);
+
     // FASE 2.1.15: DEBOUNCED AUTOSAVE (1200ms) Anti-Loop
     useEffect(() => {
         if (isClosedDynamic || loading || isAttemptingClose || !formData.usuariaId) return;
@@ -373,10 +437,18 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         // Si el contenido vital no ha mutado respecto a lo que se guardó, abortar debounce
         if (currentDataStr === lastSavedDataRef.current) return;
 
+        // Un registro que todavía no existe en Firestore solo se crea cuando hay
+        // contenido clínico real. Abrir y cerrar el formulario no debe dejar
+        // rastro; el borrador local en el navegador conserva igual lo escrito.
+        const isNewRecord = !formData.id && !initialData?.id;
+        if (isNewRecord && !hasClinicalContent(formData)) return;
+
         const timer = setTimeout(() => {
             // Ignoramos auto-save si ya hay un guardado en curso para prevenir cuellos de botella
             if (saveStatus !== 'saving') {
-                lastSavedDataRef.current = currentDataStr; // Actualizar snapshot
+                // El snapshot se actualiza dentro de executeSave y SOLO si Firestore
+                // confirmó la escritura. Marcarlo aquí hacía que un autoguardado
+                // fallido se diera por persistido y jamás se reintentara.
                 executeSave(false, undefined, true);
             }
         }, 1200);
@@ -929,6 +1001,13 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             return;
         }
 
+        // Snapshot exacto del contenido que se está intentando persistir, en el
+        // mismo formato que compara el debounce de autoguardado.
+        const attemptedSnapshot = (() => {
+            const { audit: _a, id: _i, _migratedFromLegacy: _m, ...rest } = formData as any;
+            return JSON.stringify(rest);
+        })();
+
         try {
             if (!isAutoSave) setLoading(true);
             setSaveStatus('saving');
@@ -948,6 +1027,9 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 id: targetId,
                 usuariaId,
                 procesoId: procesoId || formData.procesoId || null,
+                // Persistimos el vínculo con la agenda: si la interna guarda como
+                // borrador hoy y firma mañana, la cita se cierra igualmente.
+                citaId: citaId || (formData as any).citaId || null,
                 casoId: formData.casoId || null,
                 sesionId: formData.sesionId || null,
 
@@ -1023,6 +1105,11 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
             await setDocCounted(docRef, payload, { merge: true });
 
+            // Confirmado por Firestore: recién ahora el snapshot refleja lo
+            // persistido. Si la escritura falla, el debounce vuelve a intentarlo
+            // en lugar de dar el contenido por guardado y perderlo en silencio.
+            lastSavedDataRef.current = attemptedSnapshot;
+
             // Vincular al interno con la Persona Usuaria si aún no tiene un interno asignado y confirma que es su paciente regular
             if (usuariaId && user?.uid && !isAutoSave) {
                 try {
@@ -1057,6 +1144,10 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             setFormData(prev => ({
                 ...prev,
                 id: targetId,
+                // Sin esto el componente seguía creyéndose borrador tras firmar y
+                // el autoguardado podía volver a escribir status: 'DRAFT' encima
+                // de la firma recién hecha.
+                ...(willClose ? { status: 'CLOSED' as const } : {}),
                 audit: finalAudit
             }));
 
@@ -1098,11 +1189,18 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 }
 
                 // FASE 2.3.2: Auto Asistencia (Completar cita ligada automáticamente cuando la evolución se FIRMA)
-                if (citaId) {
+                const linkedCitaId = citaId || (formData as any).citaId || null;
+                if (linkedCitaId) {
                     try {
-                        await AgendaService.markCitaAsCompleted(globalActiveYear, citaId, targetId, user.uid);
+                        await AgendaService.markCitaAsCompleted(globalActiveYear, linkedCitaId, targetId, user.uid);
                     } catch (e) {
                         console.error("Error auto-completando cita ligada transaccional", e);
+                        // La evolución quedó firmada, pero la agenda no. Callar esto
+                        // producía el síntoma de "evolución cerrada y cita todavía
+                        // pendiente" sin que nadie supiera por qué.
+                        if (!isAutoSave) {
+                            alert("La evolución quedó firmada, pero no se pudo marcar la cita como atendida en la agenda. Márcala manualmente desde el Dashboard.");
+                        }
                     }
                 }
             }
@@ -1118,7 +1216,10 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             console.error("Error al guardar Evolución", error);
             setSaveStatus('error');
             setTimeout(() => setSaveStatus('idle'), 5000);
-            if (!isAutoSave) alert("Ha ocurrido un error al conectar con la base de datos.");
+            // "Error al conectar con la base de datos" era el mismo mensaje para
+            // permisos, cuota, sesión caducada y red: imposible saber si valía la
+            // pena reintentar o si había que avisar al docente.
+            if (!isAutoSave) alert(explainSaveError(error));
         } finally {
             if (!isAutoSave) {
                 setLoading(false);

@@ -48,7 +48,18 @@ export async function getRecentPendingReviewSummary(hours = RECENT_REVIEW_WINDOW
  * No incluye datos identificatorios ni contacta estudiantes.
  */
 export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
-  if (!featureFlags.telegramTeacherEnabled || input.status !== 'completed' || input.reviewsCreated === 0) {
+  if (!featureFlags.telegramTeacherEnabled || input.status !== 'completed') {
+    return { delivered: false, reason: 'telegram_disabled_or_run_failed' };
+  }
+
+  // Antes bastaba con `reviewsCreated === 0` para no avisar nada. Como el ID de
+  // hallazgo es determinista, una segunda corrida sobre los mismos registros
+  // crea cero hallazgos nuevos: el docente dejaba de recibir aviso aunque
+  // hubiera pendientes P0 sin revisar. Ahora el silencio exige que tampoco
+  // queden pendientes acumulados.
+  const pending = await getRecentPendingReviewSummary().catch(() => null);
+  const hasPending = (pending?.total || 0) > 0;
+  if (input.reviewsCreated === 0 && !hasPending) {
     return { delivered: false, reason: 'no_relevant_new_reviews' };
   }
 
@@ -82,9 +93,16 @@ export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
   const initialLine = input.initialEvaluationMissingCreated || input.initialEvaluationInsufficientCreated
     ? `\n📋 Sin evaluación inicial: *${input.initialEvaluationMissingCreated || 0}* · línea basal insuficiente: *${input.initialEvaluationInsufficientCreated || 0}*.`
     : '';
+  // Distinguir "nuevo" de "acumulado" evita que un aviso de cero hallazgos
+  // nuevos se lea como si no hubiera nada pendiente en la bandeja.
+  const pendingLine = pending
+    ? `\n📥 Pendientes sin revisar en bandeja: *${pending.total}* (P0 ${pending.p0} · P1 ${pending.p1}).`
+    : '';
   const message = urgent
-    ? `🔴 *Atención docente*\n\nEl censo detectó *${input.priorityCounts.P0}* hallazgo(s) P0 de seguridad y *${input.priorityCounts.P1}* P1 nuevos.${reevaluationLine}${initialLine}\n\nAcción: revisa la Bandeja Docente antes de continuar.`
-    : `🧠 *Censo Agenda Poli completado*\n\nHay *${input.reviewsCreated}* hallazgo(s) nuevos para revisión: P1 ${input.priorityCounts.P1} · P2 ${input.priorityCounts.P2}.${reevaluationLine}${initialLine}\n\nAcción: revisa la línea basal y decide si corresponde enviar un aviso al estudiante.`;
+    ? `🔴 *Atención docente*\n\nEl censo detectó *${input.priorityCounts.P0}* hallazgo(s) P0 de seguridad y *${input.priorityCounts.P1}* P1 nuevos.${reevaluationLine}${initialLine}${pendingLine}\n\nAcción: revisa la Bandeja Docente antes de continuar.`
+    : input.reviewsCreated === 0
+      ? `🧠 *Censo Agenda Poli completado*\n\nSin hallazgos nuevos en esta corrida.${pendingLine}${reevaluationLine}${initialLine}\n\nAcción: la bandeja todavía tiene casos esperando tu decisión.`
+      : `🧠 *Censo Agenda Poli completado*\n\nHay *${input.reviewsCreated}* hallazgo(s) nuevos para revisión: P1 ${input.priorityCounts.P1} · P2 ${input.priorityCounts.P2}.${reevaluationLine}${initialLine}${pendingLine}\n\nAcción: revisa la línea basal y decide si corresponde enviar un aviso al estudiante.`;
 
   try {
     await sendTelegramMessage(chatId, message, {

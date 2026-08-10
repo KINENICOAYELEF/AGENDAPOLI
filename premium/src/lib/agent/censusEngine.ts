@@ -329,6 +329,12 @@ export async function runCensusEngine() {
       recordsProcessed += recentRecords.length;
 
       for (const record of recentRecords) {
+        // Un borrador es trabajo en curso, no un registro incompleto. Auditarlo
+        // como si estuviera terminado llenaba la bandeja de falsos hallazgos y
+        // enterraba los reales. El borrador antiguo ya se avisa por otra vía.
+        const isDraftRecord = record.status === 'DRAFT' || record.estado === 'BORRADOR';
+        if (isDraftRecord) continue;
+
         const missingFields: string[] = [];
         let priority: 'P0' | 'P1' | 'P2' | 'P3' = 'P3';
 
@@ -338,8 +344,11 @@ export async function runCensusEngine() {
             const interviewComplete = hasValue(reassessment.interview?.change)
               && hasValue(reassessment.interview?.functionParticipation)
               && hasValue(reassessment.interview?.patientPriority);
-            const examComplete = hasValue(reassessment.exam?.selectedDomains)
-              && hasValue(reassessment.exam?.comparableResult || reassessment.exam?.objectiveFindings)
+            // `selectedDomains` no existe como control en ReevaluacionExpressForm:
+            // el formulario siempre lo deja vacío. Exigirlo marcaba como
+            // incompleta cualquier reevaluación bien hecha, por un campo que la
+            // estudiante no tenía manera de llenar.
+            const examComplete = hasValue(reassessment.exam?.comparableResult || reassessment.exam?.objectiveFindings)
               && hasValue(reassessment.exam?.testInterpretation);
             const reasoningComplete = hasValue(reassessment.reasoning?.hypothesis)
               && hasValue(reassessment.reasoning?.direction)
@@ -389,7 +398,10 @@ export async function runCensusEngine() {
                 collection: record.collection as 'evaluaciones' | 'evoluciones',
                 recordId: record.id,
                 fieldPath: missingFields[0] || 'completitud',
-                contentHash: `hash_${record.id}_${Date.now()}`,
+                // Hash estable por contenido: con Date.now() cambiaba en cada
+                // ejecución sin significar nada, así que era imposible saber si
+                // el registro realmente había cambiado desde la última revisión.
+                contentHash: `hash_${record.id}_${priority}_${missingFields.slice().sort().join('|') || 'ok'}`,
                 redactedExcerpt: cleanExcerpt.slice(0, 200),
               },
             ],
@@ -408,13 +420,27 @@ export async function runCensusEngine() {
           // el mismo registro. `create` conserva cualquier decisión docente ya
           // tomada y evita una lectura previa solo para deduplicar.
           const reviewId = `census_${year}_${student.id}_${record.collection}_${record.id}`;
+          const reviewRef = db.collection('teacher_agent_reviews').doc(reviewId);
           try {
-            await db.collection('teacher_agent_reviews').doc(reviewId).create(validatedReview);
+            await reviewRef.create(validatedReview);
             reviewsCreated++;
             priorityCounts[priority]++;
           } catch (writeError: any) {
             if (writeError?.code !== 6 && writeError?.code !== 'already-exists') {
               throw writeError;
+            }
+            // Ya existía. Si el docente todavía no lo ha resuelto, refrescamos el
+            // análisis: antes el hallazgo quedaba congelado con el diagnóstico de
+            // la primera ejecución aunque la ficha hubiera cambiado. Una decisión
+            // docente ya tomada (aceptada o descartada) nunca se reabre aquí.
+            try {
+              const existing = await reviewRef.get();
+              if (existing.exists && existing.data()?.status === 'PENDING_TEACHER') {
+                const { createdAt, ...refreshable } = validatedReview as any;
+                await reviewRef.update({ ...refreshable, updatedAt: new Date().toISOString() });
+              }
+            } catch (refreshError) {
+              console.warn('No se pudo refrescar el hallazgo existente', reviewId, refreshError);
             }
           }
         }

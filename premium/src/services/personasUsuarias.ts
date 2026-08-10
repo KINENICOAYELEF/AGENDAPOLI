@@ -15,6 +15,11 @@ type PatientCacheEntry = {
 const patientDirectoryCache = new Map<string, PatientCacheEntry>();
 const PATIENT_DIRECTORY_CACHE_TTL_MS = 5 * 60 * 1000;
 
+/** 12.345.678-K, 12345678K y 12.345.678-k son el mismo RUT. */
+function normalizeRut(rut?: string | null): string {
+    return String(rut || '').replace(/[.\-\s]/g, '').toUpperCase().trim();
+}
+
 /**
  * REPOSITORIO DE PERSONAS USUARIAS
  * Capa de abstracción. Internamente sigue comunicándose con la colección
@@ -110,6 +115,26 @@ export const PersonasUsuariasService = {
      * Por ahora, si se requiere búsqueda real en DB habría que hacer "IN" o Range Queries.
      * En la implementación actual, la búsqueda local se hace en el frontend.
      */
+
+    /**
+     * Busca una persona ya registrada con el mismo RUT.
+     *
+     * No existía ninguna comprobación de unicidad, así que la misma persona podía
+     * quedar creada dos veces con distinta asignación: sus procesos, evoluciones
+     * y citas quedaban repartidos entre dos expedientes y el historial clínico
+     * aparecía partido. Reutiliza el directorio cacheado, sin lecturas extra.
+     */
+    async findByRut(year: string, rut: string, excludeId?: string): Promise<PersonaUsuaria | null> {
+        const normalized = normalizeRut(rut);
+        if (!year || !normalized) return null;
+
+        const { data } = await this.getPaginated(year);
+        return data.find(persona => {
+            if (excludeId && persona.id === excludeId) return false;
+            const candidate = normalizeRut(persona.identity?.rut || (persona as any).rut || '');
+            return candidate !== '' && candidate === normalized;
+        }) || null;
+    },
 
     /**
      * Guarda (Crea o Actualiza) una Persona Usuaria

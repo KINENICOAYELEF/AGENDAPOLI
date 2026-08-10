@@ -99,6 +99,7 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHi
                     initialRecordType={initialRecordParams?.recordType}
                     initialAction={initialRecordParams?.action}
                     initialStep={initialRecordParams?.step}
+                    initialCitaId={initialRecordParams?.citaId}
                     onNavigationChange={onNavigationChange}
                     onBack={() => { setView('lista'); onNavigationChange?.({ action: 'PROCESOS' }); }}
                 />

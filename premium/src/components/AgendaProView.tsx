@@ -423,7 +423,11 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                                                         Cancelar
                                                     </button>
                                                     <Link
-                                                        href={`/app/usuarios?openFicha=${cita.usuariaId}&action=evolucionar`}
+                                                        // El citaId viaja en la URL para que al firmar la
+                                                        // evolución la cita quede marcada como atendida.
+                                                        // Sin él, la agenda seguía mostrando la sesión
+                                                        // pendiente aunque la ficha ya estuviera cerrada.
+                                                        href={`/app/usuarios?openFicha=${cita.usuariaId}&action=evolucionar&citaId=${cita.id}`}
                                                         className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-xs hover:bg-indigo-700 transition"
                                                     >
                                                         + Evolucionar Cita

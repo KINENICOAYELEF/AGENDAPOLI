@@ -17,6 +17,7 @@ function SearchParamsHandler({ onOpenFicha }: { onOpenFicha: (id: string, params
     const recordType = searchParams.get('recordType') || undefined;
     const step = searchParams.get('step') || undefined;
     const returnTo = searchParams.get('returnTo') || undefined;
+    const citaId = searchParams.get('citaId') || undefined;
 
     useEffect(() => {
         if (openFicha) {
@@ -26,10 +27,11 @@ function SearchParamsHandler({ onOpenFicha }: { onOpenFicha: (id: string, params
                 recordId: recordId || '',
                 recordType: recordType || '',
                 step: step || '',
-                returnTo: returnTo || ''
+                returnTo: returnTo || '',
+                citaId: citaId || ''
             });
         }
-    }, [openFicha, action, procesoId, recordId, recordType, step, returnTo, onOpenFicha]);
+    }, [openFicha, action, procesoId, recordId, recordType, step, returnTo, citaId, onOpenFicha]);
 
     return null;
 }

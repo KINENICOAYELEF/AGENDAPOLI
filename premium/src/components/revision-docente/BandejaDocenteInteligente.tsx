@@ -17,7 +17,7 @@ import type { TeacherAgentReview } from "@/lib/agent/contracts/review";
 import type { StudentLearningProfile } from "@/types/agentDataFoundation";
 import type { StudentClinicalTaskKind } from "@/types/studentClinicalTask";
 
-type ReviewWithId = TeacherAgentReview & { id: string };
+type ReviewWithId = TeacherAgentReview & { id: string; isStale?: boolean };
 type ProfileDisplay = StudentLearningProfile & { displayName?: string };
 const RECENT_REVIEW_WINDOW_MS = 48 * 60 * 60 * 1000;
 const PERSISTENT_ACTION_CATEGORIES = new Set([
@@ -79,19 +79,25 @@ export function BandejaDocenteInteligente() {
         limit(100),
       ));
 
+      // Un hallazgo pendiente NO se oculta por antigüedad. La ventana de 48h
+      // descartaba en el navegador todo lo que el censo había creado en días
+      // anteriores, y por eso la bandeja mostraba 0 aunque Firestore tuviera
+      // hallazgos sin revisar. Ahora solo se marcan visualmente como antiguos.
       const cutoff = Date.now() - RECENT_REVIEW_WINDOW_MS;
       const visibleReviews = reviewSnap.docs
-        .map((snapshot) => ({
-          id: snapshot.id,
-          ...(snapshot.data() as TeacherAgentReview),
-        }))
-        .filter((review) => {
+        .map((snapshot) => {
+          const review = {
+            id: snapshot.id,
+            ...(snapshot.data() as TeacherAgentReview),
+          };
           const created = new Date(review.createdAt).getTime();
-          // Las auditorías rutinarias caducan de la vista diaria; el hito de
-          // reevaluación permanece hasta que una reevaluación nueva lo cierre.
-          return PERSISTENT_ACTION_CATEGORIES.has(review.category || '') || (Number.isFinite(created) && created >= cutoff);
+          const isRecent = Number.isFinite(created) && created >= cutoff;
+          return {
+            ...review,
+            isStale: !isRecent && !PERSISTENT_ACTION_CATEGORIES.has(review.category || ''),
+          };
         })
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
       setReviews(visibleReviews);
 
       // Antes se leían 100 perfiles aunque solo hubiera pocos hallazgos
@@ -146,7 +152,18 @@ export function BandejaDocenteInteligente() {
       });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error || "No se pudo iniciar el censo.");
-      setNotice("Censo iniciado. Los hallazgos aparecerán aquí al finalizar; no se envía nada a estudiantes.");
+
+      // El censo corre sincrónico en el servidor: recargar aquí evita que la
+      // bandeja se quede diciendo "iniciado" con la lista vieja en pantalla.
+      const summary = result.result || result.data || {};
+      const created = summary.reviewsCreated ?? summary.created;
+      const processed = summary.recordsProcessed ?? summary.processed;
+      await load();
+      setNotice(
+        typeof created === 'number'
+          ? `Censo terminado: ${created} hallazgo(s) nuevo(s) sobre ${processed ?? '?'} registro(s) revisado(s). Nada se envía a estudiantes.`
+          : "Censo ejecutado. La bandeja se actualizó; no se envía nada a estudiantes.",
+      );
     } catch (error) {
       setNotice(explainAgentError(error));
     } finally {
@@ -298,6 +315,7 @@ export function BandejaDocenteInteligente() {
                 {review.category === 'REEVALUATION_DUE' && <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-black text-violet-800">REEVALUACIÓN PENDIENTE</span>}
                 {review.category === 'INITIAL_EVALUATION_MISSING' && <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[10px] font-black text-rose-800">SIN EVALUACIÓN INICIAL</span>}
                 {review.category === 'INITIAL_EVALUATION_INSUFFICIENT' && <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-black text-amber-800">LÍNEA BASAL INSUFICIENTE</span>}
+                {review.isStale && <span className="rounded-full border border-slate-300 bg-slate-100 px-2.5 py-1 text-[10px] font-black text-slate-600">ARRASTRADO</span>}
                 <strong className="text-sm text-slate-900">{student}</strong>
                 <span className="text-xs text-slate-500">{formatDate(review.createdAt)}</span>
               </div>
