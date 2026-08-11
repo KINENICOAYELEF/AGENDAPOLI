@@ -4,6 +4,7 @@ import { getAllowedTelegramChatId, sendTelegramMessage } from '@/lib/server/tele
 import { buildCoursePatterns, buildRotationSummary, buildWatchAlerts, formatRotationSummary } from '@/lib/agent/rotationSummary';
 import { buildClosingReport, formatClosingReport } from '@/lib/agent/rotationClosing';
 import { buildActiveRoster, rosterInRotation } from '@/lib/agent/activeRoster';
+import { priorityEmoji, priorityLabel } from '@/lib/agent/priorityLabels';
 import { findStudentMissingEndDate, getRotationPeriods, setPendingQuestion } from '@/lib/agent/rotationPeriods';
 
 export const RECENT_REVIEW_WINDOW_HOURS = 48;
@@ -172,7 +173,7 @@ export async function sendPeriodicAnalysis(year: string) {
         `${item.trend} *${item.name}* — ${item.nowActivity} sesión(es) en los últimos 3 días `
         + `(antes ${item.olderActivity})`
         + `${item.drafts ? ` · 📝 ${item.drafts} sin firmar` : ''}`
-        + `${item.p0 ? ` · 🔴 ${item.p0} P0` : ''}`,
+        + `${item.p0 ? ` · 🔴 ${item.p0} de seguridad` : ''}`,
       ).join('\n');
 
     const day = weekday === 1 ? 'Inicio de semana' : 'Medio de semana';
@@ -247,7 +248,7 @@ export async function sendCriticalAlerts() {
     try {
       await sendTelegramMessage(
         chatId,
-        `🔴 *RIESGO CLÍNICO DETECTADO*\n\n*${studentName}*\n${review.observation || ''}${coherence}\n\n[Abrir el registro](${href})\n\n_Esto no espera al resumen diario. Nada se envió a la estudiante._`,
+        `🔴 *OJO: posible riesgo para la persona*\n\n*${studentName}*\n${review.observation || ''}${coherence}\n\n[Abrir el registro](${href})\n\n_Esto no espera al resumen diario. Nada se envió a la estudiante._`,
       );
       await alertRef.update({ status: 'DELIVERED', deliveredAt: new Date().toISOString() });
       delivered++;
@@ -433,6 +434,8 @@ async function getTopPendingCases(limit = 5, year = new Date().getFullYear().toS
       id: review.id as string,
       token: tokens.get(review.id) || '',
       priority: review.priority as Priority,
+      priorityLabel: priorityLabel(review.priority),
+      priorityEmoji: priorityEmoji(review.priority),
       studentName: names.get(review.studentId) || review.studentId || 'Estudiante sin identificar',
       observation: String(review.observation || 'Sin observación registrada').slice(0, 220),
       coherence,
@@ -528,13 +531,15 @@ export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
   // Distinguir "nuevo" de "acumulado" evita que un aviso de cero hallazgos
   // nuevos se lea como si no hubiera nada pendiente en la bandeja.
   const pendingLine = pending
-    ? `\n📥 Pendientes sin revisar en bandeja: *${pending.total}* (P0 ${pending.p0} · P1 ${pending.p1}).`
+    ? `\n📥 Sin revisar en la bandeja: *${pending.total}*`
+      + `${pending.p0 ? ` · 🔴 ${pending.p0} de seguridad` : ''}`
+      + `${pending.p1 ? ` · 🟠 ${pending.p1} por revisar` : ''}.`
     : '';
   // Los casos concretos son lo que convierte el aviso en algo accionable.
   const cases = await getTopPendingCases(5).catch(() => []);
   const caseLines = cases.length
-    ? `\n\n${cases.map((item: { priority: Priority; studentName: string; observation: string; coherence: string; draftFeedback: string; href: string }) => [
-        `${item.priority === 'P0' ? '🔴' : item.priority === 'P1' ? '🟠' : '🔵'} *${item.studentName}* — ${item.observation}`,
+    ? `\n\n${cases.map((item: any) => [
+        `${item.priorityEmoji} *${item.studentName}* · ${item.priorityLabel}\n${item.observation}`,
         item.coherence ? `\n${item.coherence}` : '',
         item.draftFeedback ? `\n\n_Feedback propuesto:_\n${item.draftFeedback}` : '',
         `\n[Abrir y aprobar](${item.href})`,
@@ -553,10 +558,12 @@ export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
         : `\n\n🧠 _IA: ${llm.succeeded}/${llm.attempted} análisis completos${llm.failed ? `, ${llm.failed} fallidos` : ''}${llm.deferred ? `, ${llm.deferred} en cola` : ''}${llm.engines?.length ? ` · motor: ${llm.engines.join(', ')}` : ''}._${llm.failed && llm.lastError ? `\n⚠️ ${llm.lastError.slice(0, 180)}` : ''}`;
 
   const header = urgent
-    ? `🔴 *Atención docente*\n\nEl censo detectó *${input.priorityCounts.P0}* hallazgo(s) P0 de seguridad y *${input.priorityCounts.P1}* P1 nuevos.`
+    ? `🔴 *Atención*\n\nHay *${input.priorityCounts.P0}* situación(es) de seguridad y *${input.priorityCounts.P1}* por revisar.`
     : input.reviewsCreated === 0
-      ? `🧠 *Censo Agenda Poli completado*\n\nSin hallazgos nuevos en esta corrida.`
-      : `🧠 *Censo Agenda Poli completado*\n\nHay *${input.reviewsCreated}* hallazgo(s) nuevos: P1 ${input.priorityCounts.P1} · P2 ${input.priorityCounts.P2}.`;
+      ? `🧠 *Revisión terminada*\n\nSin novedades nuevas.`
+      : `🧠 *Revisión terminada*\n\n*${input.reviewsCreated}* cosa(s) nueva(s) para mirar`
+        + `${input.priorityCounts.P1 ? ` · 🟠 ${input.priorityCounts.P1} por revisar` : ''}`
+        + `${input.priorityCounts.P2 ? ` · 🔵 ${input.priorityCounts.P2} menores` : ''}.`;
 
   // Suplencias que dejaron de ser puntuales: la asignación quedó obsoleta y
   // los avisos de continuidad estaban yendo a quien ya no atiende.

@@ -16,6 +16,7 @@ import { auth } from "@/lib/firebase";
 import type { TeacherAgentReview } from "@/lib/agent/contracts/review";
 import type { StudentLearningProfile } from "@/types/agentDataFoundation";
 import type { StudentClinicalTaskKind } from "@/types/studentClinicalTask";
+import { priorityDescription, priorityEmoji, priorityLabel } from "@/lib/agent/priorityLabels";
 
 type ReviewWithId = TeacherAgentReview & { id: string; isStale?: boolean };
 type ProfileDisplay = StudentLearningProfile & { displayName?: string };
@@ -430,7 +431,12 @@ export function BandejaDocenteInteligente() {
           <article key={review.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <header className="flex flex-col gap-2 border-b border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-2">
-                <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${priorityStyle[review.priority]}`}>{review.priority}</span>
+                <span
+                  title={priorityDescription(review.priority)}
+                  className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${priorityStyle[review.priority]}`}
+                >
+                  {priorityEmoji(review.priority)} {priorityLabel(review.priority)}
+                </span>
                 {review.category === 'REEVALUATION_DUE' && <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-black text-violet-800">REEVALUACIÓN PENDIENTE</span>}
                 {review.category === 'INITIAL_EVALUATION_MISSING' && <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[10px] font-black text-rose-800">SIN EVALUACIÓN INICIAL</span>}
                 {review.category === 'INITIAL_EVALUATION_INSUFFICIENT' && <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-black text-amber-800">LÍNEA BASAL INSUFICIENTE</span>}

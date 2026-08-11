@@ -339,7 +339,7 @@ export function formatRotationSummary(summary: RotationSummary, appBaseUrl: stri
   const workingBlock = working.length
     ? working.map(line => {
         const flags = [
-          line.p0Findings > 0 ? `🔴 ${line.p0Findings} P0` : '',
+          line.p0Findings > 0 ? `🔴 ${line.p0Findings} de seguridad` : '',
           line.drafts > 0 ? `📝 ${line.drafts} sin firmar` : '',
           line.pendingFindings > 0 ? `📥 ${line.pendingFindings} por revisar` : '',
         ].filter(Boolean).join(' · ');

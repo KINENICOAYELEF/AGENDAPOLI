@@ -114,8 +114,8 @@ async function createInitialEvaluationContinuityReview(
     ? `initial_missing_${year}_${student.id}_${processId}`
     : `initial_insufficient_${year}_${student.id}_${processId}_${latestInitial.id}`;
   const observation = isMissing
-    ? `El estudiante asignado registra ${evolutions.length} evoluciones cerradas en el proceso, pero no existe una evaluación inicial utilizable.`
-    : `La línea basal disponible es insuficiente para seguimiento: falta ${gaps.join(', ')}. El estudiante asignado ya registra ${evolutions.length} evoluciones cerradas.`;
+    ? `Lleva ${evolutions.length} sesiones con esta persona y todavía no hay una evaluación inicial cerrada. Sin eso no hay con qué comparar los avances.`
+    : `Ya lleva ${evolutions.length} sesiones, pero la evaluación inicial no sirve como punto de partida: le falta ${gaps.join(', ')}.`;
   const source = latestInitial || latestEvolution;
   const payload = TeacherAgentReviewSchema.parse({
     year,
@@ -134,8 +134,8 @@ async function createInitialEvaluationContinuityReview(
     }],
     observation,
     pedagogicalInference: isMissing
-      ? 'La continuidad carece de una línea basal suficiente para contrastar objetivos, medidas y progresión. La autoría previa no debe atribuirse al estudiante actual.'
-      : 'La evaluación existe, pero no permite vincular de forma confiable entrevista, examen, hipótesis y plan. Corresponde revisión docente antes de solicitar regularización.',
+      ? 'Sin línea basal no se puede demostrar si la persona mejoró. Ojo: la evaluación puede haberla dejado pendiente alguien anterior, no necesariamente quien atiende hoy.'
+      : 'La evaluación está, pero no conecta entrevista, examen, hipótesis y plan. Vale la pena mirarla antes de pedirle que la rehaga.',
     confidence: 1,
     priority: 'P1' as const,
     status: 'PENDING_TEACHER' as const,
@@ -483,9 +483,9 @@ export async function runCensusEngine() {
             // mensaje quedaba en "falta ." sin decir nada. Cada caso dice ahora
             // lo suyo.
             observation: missingFields.length > 0
-              ? `Falta completar en ${record.collection === 'evoluciones' ? 'la evolución' : 'la evaluación'}: ${missingFields.join(', ')}.`
-              : `${record.collection === 'evoluciones' ? 'La evolución' : 'La evaluación'} quedó marcada con semáforo rojo de carga o seguridad. Requiere revisión docente.`,
-            pedagogicalInference: 'Se requiere revisión docente para verificar el razonamiento clínico del estudiante.',
+              ? `En ${record.collection === 'evoluciones' ? 'una evolución' : 'una evaluación'} del ${new Date(recordDate(record) || Date.now()).toLocaleDateString('es-CL')} quedó sin completar: ${missingFields.join(', ')}.`
+              : `Marcó semáforo rojo de carga o seguridad en ${record.collection === 'evoluciones' ? 'una evolución' : 'una evaluación'} del ${new Date(recordDate(record) || Date.now()).toLocaleDateString('es-CL')}, y conviene revisarlo.`,
+            pedagogicalInference: 'Puede ser un olvido al registrar o una laguna en el razonamiento. Conviene mirar la ficha antes de decidir.',
             confidence: 0.9,
             priority,
             status: 'PENDING_TEACHER' as const,

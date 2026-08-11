@@ -17,6 +17,7 @@ import { auth } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
 import type { StudentDossier } from "@/lib/teacher-inbox/studentDossier";
+import { priorityLabel } from "@/lib/agent/priorityLabels";
 
 /** Los mismos nombres legibles que usa la bandeja, para no hablar dos idiomas. */
 const COHERENCE_LABELS: Record<string, string> = {
@@ -289,10 +290,10 @@ export default function FichaAlumnoPage() {
           <AlertTriangle className="h-4 w-4" /> Hallazgos del agente ({dossier.findings.total})
         </h2>
         <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black">
-          <span className="rounded-full bg-rose-100 px-2.5 py-1 text-rose-800">P0: {dossier.findings.byPriority.P0}</span>
-          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">P1: {dossier.findings.byPriority.P1}</span>
-          <span className="rounded-full bg-blue-100 px-2.5 py-1 text-blue-800">P2: {dossier.findings.byPriority.P2}</span>
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">P3: {dossier.findings.byPriority.P3}</span>
+          <span className="rounded-full bg-rose-100 px-2.5 py-1 text-rose-800">🔴 Seguridad: {dossier.findings.byPriority.P0}</span>
+          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">🟠 Por revisar: {dossier.findings.byPriority.P1}</span>
+          <span className="rounded-full bg-blue-100 px-2.5 py-1 text-blue-800">🔵 Menores: {dossier.findings.byPriority.P2}</span>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">⚪️ Informativos: {dossier.findings.byPriority.P3}</span>
         </div>
 
         {dossier.findings.pending.length > 0 && (
@@ -301,7 +302,7 @@ export default function FichaAlumnoPage() {
             <ul className="mt-2 space-y-2">
               {dossier.findings.pending.map(finding => (
                 <li key={finding.id} className="rounded-xl border border-rose-100 bg-rose-50/40 p-3 text-sm text-slate-800">
-                  <span className="mr-2 text-[10px] font-black text-rose-700">{finding.priority}</span>
+                  <span className="mr-2 text-[10px] font-black text-rose-700">{priorityLabel(finding.priority)}</span>
                   {finding.observation}
                 </li>
               ))}
@@ -315,7 +316,7 @@ export default function FichaAlumnoPage() {
             <ul className="mt-2 space-y-1.5">
               {dossier.findings.history.map(finding => (
                 <li key={finding.id} className="text-sm text-slate-500">
-                  <span className="mr-2 text-[10px] font-black">{finding.priority}</span>
+                  <span className="mr-2 text-[10px] font-black">{priorityLabel(finding.priority)}</span>
                   {formatDate(finding.createdAt)} — {finding.observation.slice(0, 140)}
                 </li>
               ))}
