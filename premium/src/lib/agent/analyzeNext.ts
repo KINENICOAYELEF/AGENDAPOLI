@@ -63,7 +63,35 @@ export async function analyzeNextStudent(year: string): Promise<AnalyzeNextResul
 
   if (pending.length === 0) return { analyzed: null, remaining: 0, findingCreated: false };
 
-  const student = pending[0];
+  // Un hallazgo abierto por estudiante, no uno por día.
+  //
+  // Sin este tope, no revisar durante una semana producía siete avisos de la
+  // misma persona diciendo casi lo mismo, y la bandeja se volvía impasable —que
+  // es exactamente cómo se llegó a sesenta pendientes.
+  //
+  // Mientras el docente no decida, no se vuelve a analizar a esa persona: el
+  // aviso que ya tiene sigue siendo válido. Al resolverlo, entra de nuevo a la
+  // fila con datos frescos.
+  const openSnap = await db.collection('teacher_agent_reviews')
+    .where('status', '==', 'PENDING_TEACHER')
+    .get();
+  const withOpenFinding = new Set(
+    openSnap.docs
+      .filter((doc: any) => doc.id.startsWith('analysis_'))
+      .map((doc: any) => doc.data().studentId),
+  );
+
+  const analyzable = pending.filter(entry => !withOpenFinding.has(entry.id));
+  if (analyzable.length === 0) {
+    return {
+      analyzed: null,
+      remaining: 0,
+      findingCreated: false,
+      note: `${pending.length} estudiante(s) esperan tu decisión sobre su aviso anterior.`,
+    };
+  }
+
+  const student = analyzable[0];
 
   // Su actividad clínica reciente.
   const sinceIso = new Date(Date.now() - ACTIVITY_WINDOW_DAYS * 86400000).toISOString();
@@ -90,7 +118,7 @@ export async function analyzeNextStudent(year: string): Promise<AnalyzeNextResul
 
   if (records.length === 0) {
     await markAnalyzed();
-    return { analyzed: student.name, remaining: pending.length - 1, findingCreated: false, note: 'sin actividad reciente' };
+    return { analyzed: student.name, remaining: analyzable.length - 1, findingCreated: false, note: 'sin actividad reciente' };
   }
 
   // Desempeño oral: contrasta lo escrito con lo que sostiene al ser preguntada.
@@ -122,7 +150,7 @@ export async function analyzeNextStudent(year: string): Promise<AnalyzeNextResul
   await markAnalyzed();
 
   if (!analysis) {
-    return { analyzed: student.name, remaining: pending.length - 1, findingCreated: false, engine, note };
+    return { analyzed: student.name, remaining: analyzable.length - 1, findingCreated: false, engine, note };
   }
 
   // Guardar el hallazgo con su evidencia real.
@@ -139,7 +167,7 @@ export async function analyzeNextStudent(year: string): Promise<AnalyzeNextResul
     }];
   });
   if (sourceReferences.length === 0) {
-    return { analyzed: student.name, remaining: pending.length - 1, findingCreated: false, engine, note: 'sin evidencia verificable' };
+    return { analyzed: student.name, remaining: analyzable.length - 1, findingCreated: false, engine, note: 'sin evidencia verificable' };
   }
 
   const hasSafetyRisk = analysis.coherenceFindings?.some(
@@ -149,7 +177,9 @@ export async function analyzeNextStudent(year: string): Promise<AnalyzeNextResul
     ? (analysis.coherenceFindings.some(f => f.type === 'RIESGO_SEGURIDAD') ? 'P0' : 'P1')
     : analysis.priority;
 
-  const reviewId = `analysis_${year}_${student.id}_${new Date().toISOString().slice(0, 10)}`;
+  // Identidad estable por estudiante: al resolver el anterior, el siguiente
+  // análisis reemplaza el documento en vez de acumular uno nuevo cada día.
+  const reviewId = `analysis_${year}_${student.id}`;
   const payload = TeacherAgentReviewSchema.parse({
     year,
     studentId: student.id,
@@ -173,7 +203,7 @@ export async function analyzeNextStudent(year: string): Promise<AnalyzeNextResul
 
   await sendStudentAlert(db, { reviewId, studentName: student.name, priority, analysis });
 
-  return { analyzed: student.name, remaining: pending.length - 1, findingCreated: true, engine, note };
+  return { analyzed: student.name, remaining: analyzable.length - 1, findingCreated: true, engine, note };
 }
 
 /**
