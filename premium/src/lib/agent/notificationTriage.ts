@@ -52,6 +52,25 @@ export type CensusNotificationInput = {
   };
 };
 
+/**
+ * Recorta sin dejar la frase colgando.
+ *
+ * Cortar por número de caracteres producía finales como "El estudiante
+ * asignado" o "¿Qu", que se leen como un error del sistema. Se busca el último
+ * cierre de frase antes del límite.
+ */
+function trimToSentence(text: string, max: number): string {
+  const clean = String(text || '').trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max);
+  const lastStop = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('.\n'), cut.lastIndexOf('? '), cut.lastIndexOf('! '));
+  // Si el último punto queda demasiado atrás, es preferible cortar por palabra
+  // antes que devolver una frase suelta sin contenido.
+  if (lastStop > max * 0.5) return cut.slice(0, lastStop + 1);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${cut.slice(0, lastSpace > 0 ? lastSpace : max)}…`;
+}
+
 function recentCutoff(hours = RECENT_REVIEW_WINDOW_HOURS) {
   return Date.now() - hours * 60 * 60 * 1000;
 }
@@ -387,10 +406,25 @@ async function getTopPendingCases(limit = 5, year = new Date().getFullYear().toS
       const byPriority = (priorityRank[a.priority] ?? 9) - (priorityRank[b.priority] ?? 9);
       return byPriority !== 0 ? byPriority : String(b.createdAt).localeCompare(String(a.createdAt));
     })
+    .slice(0, 40);
+
+  // Cuatro hallazgos casi idénticos de la misma persona tapan a las demás. Se
+  // muestran los dos más graves de cada una y se anuncia el resto.
+  const byStudent = new Map<string, any[]>();
+  reviews.forEach((review: any) => {
+    const current = byStudent.get(review.studentId) || [];
+    current.push(review);
+    byStudent.set(review.studentId, current);
+  });
+  const grouped = [...byStudent.values()]
+    .flatMap(items => items.slice(0, 2).map((item, index) => ({
+      ...item,
+      othersFromSameStudent: index === 0 ? items.length - Math.min(items.length, 2) : 0,
+    })))
     .slice(0, limit);
 
   // Un UID no le dice nada a nadie: resolvemos el nombre de cada estudiante.
-  const studentIds = [...new Set(reviews.map((review: any) => review.studentId).filter(Boolean))];
+  const studentIds = [...new Set(grouped.map((review: any) => review.studentId).filter(Boolean))];
   const names = new Map<string, string>();
   await Promise.all(studentIds.map(async (id: any) => {
     try {
@@ -415,7 +449,7 @@ async function getTopPendingCases(limit = 5, year = new Date().getFullYear().toS
     }
   }));
 
-  return reviews.map((review: any) => {
+  return grouped.map((review: any) => {
     const source = review.sourceReferences?.[0];
     const href = source?.recordId
       ? `${APP_BASE_URL}/app/revision-docente/registros/${source.collection === 'evoluciones' ? 'EVOLUCION' : 'EVALUACION'}/${source.recordId}`
@@ -436,12 +470,13 @@ async function getTopPendingCases(limit = 5, year = new Date().getFullYear().toS
       priority: review.priority as Priority,
       priorityLabel: priorityLabel(review.priority),
       priorityEmoji: priorityEmoji(review.priority),
+      othersFromSameStudent: review.othersFromSameStudent || 0,
       studentName: names.get(review.studentId) || review.studentId || 'Estudiante sin identificar',
-      observation: String(review.observation || 'Sin observación registrada').slice(0, 220),
+      observation: trimToSentence(review.observation || 'Sin observación registrada', 400),
       coherence,
       // El feedback ya redactado viaja en el mensaje: puedes leerlo, y si te
       // sirve tal cual, reenviarlo sin abrir la plataforma.
-      draftFeedback: String(review.draftFeedback || '').slice(0, 700),
+      draftFeedback: trimToSentence(review.draftFeedback || '', 900),
       href,
     };
   });
@@ -542,6 +577,7 @@ export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
         `${item.priorityEmoji} *${item.studentName}* · ${item.priorityLabel}\n${item.observation}`,
         item.coherence ? `\n${item.coherence}` : '',
         item.draftFeedback ? `\n\n_Feedback propuesto:_\n${item.draftFeedback}` : '',
+        item.othersFromSameStudent > 0 ? `\n_(+${item.othersFromSameStudent} más de la misma persona en la bandeja.)_` : '',
         `\n[Abrir y aprobar](${item.href})`,
       ].filter(Boolean).join('')).join('\n\n———\n\n')}`
     : '';
@@ -576,7 +612,19 @@ export async function notifyTeacherOfCensus(input: CensusNotificationInput) {
       + `\n_Si ya no es suplencia, conviene reasignar desde el Panel Admin._`
     : '';
 
-  const message = `${header}${reevaluationLine}${initialLine}${pendingLine}${llmLine}${staleLine}${caseLines}\n\n_Nada de esto llega a las estudiantes hasta que tú lo apruebes._`;
+  // El conteo de quiénes se están revisando: permite detectar de inmediato si
+  // el filtro de rotación activa dejó fuera a alguien que sí está trabajando.
+  let rosterLine = '';
+  try {
+    const roster = await buildActiveRoster(new Date().getFullYear().toString());
+    const active = rosterInRotation(roster);
+    const trabajando = active.filter(entry => entry.status === 'ACTIVA').length;
+    const cerrando = active.length - trabajando;
+    rosterLine = `\n👥 Revisando a *${active.length}* interna(s)`
+      + `${cerrando > 0 ? ` (${trabajando} activas, ${cerrando} cerrando)` : ''}.`;
+  } catch { /* si falla, el aviso igual sale */ }
+
+  const message = `${header}${rosterLine}${reevaluationLine}${initialLine}${pendingLine}${llmLine}${staleLine}${caseLines}\n\n_Nada de esto llega a las estudiantes hasta que tú lo apruebes._`;
 
   // Un botón de aprobar y otro de descartar por caso: la decisión se toma desde
   // el celular sin abrir el navegador. Aprobar deja el texto guardado y listo;
