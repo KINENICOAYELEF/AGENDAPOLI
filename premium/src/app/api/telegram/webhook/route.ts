@@ -18,6 +18,7 @@ import { answerTeacherQuestion } from '@/lib/agent/assistant';
 import { censoAsignaciones } from '@/lib/agent/clinicalQueries';
 import { recordTeacherDecision } from '@/lib/agent/teacherCalibration';
 import { clearPendingQuestion, getPendingQuestion, saveRotationPeriod } from '@/lib/agent/rotationPeriods';
+import { buildActiveRoster, rosterInRotation } from '@/lib/agent/activeRoster';
 
 /**
  * Interpreta una respuesta suelta del docente como la fecha de término que el
@@ -28,6 +29,82 @@ import { clearPendingQuestion, getPendingQuestion, saveRotationPeriod } from '@/
  * Devuelve true si consumió el mensaje, para que no llegue también al
  * asistente y termine respondido como si fuera una consulta.
  */
+/**
+ * Registra varias fechas de término dichas en una sola frase.
+ *
+ * El docente comunica así de natural: "valentina y rocío se van este jueves,
+ * además está luna, diego, mariam". Preguntarle de a una tardaría una semana en
+ * completar la rotación, así que se acepta el mensaje entero.
+ *
+ * Los nombres se emparejan contra las internas reales; nunca se inventa una.
+ */
+async function tryBulkRotationDates(
+  text: string,
+  chatId: string,
+  reply: (chatId: string, text: string) => Promise<void>,
+): Promise<boolean> {
+  // Solo vale la pena intentarlo si el mensaje menciona un término y a alguien.
+  if (!/\b(termina|terminan|se va|se van|sale|salen|hasta|último día|ultimo dia)\b/i.test(text)) return false;
+
+  const year = new Date().getFullYear().toString();
+  const roster = await buildActiveRoster(year).catch(() => []);
+  const active = rosterInRotation(roster);
+  if (active.length === 0) return false;
+
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+  const parsed = await runAgentInteraction(
+    `Hoy es ${today}. El docente está diciendo cuándo terminan su rotación algunas internas.
+
+Internas reales (usa EXACTAMENTE estos identificadores):
+${active.map(entry => `- ${entry.id} = ${entry.name}`).join('\n')}
+
+Mensaje del docente: "${text}"
+
+Devuelve SOLO un JSON con esta forma:
+{"fechas":[{"id":"identificador","fecha":"AAAA-MM-DD"}]}
+
+Reglas:
+- Incluye únicamente a quienes el mensaje les asigna una fecha de término.
+- Si solo se les menciona sin decir cuándo terminan, NO las incluyas.
+- "este jueves" es el próximo jueves contando desde hoy.
+- Si no hay ninguna fecha asignable, devuelve {"fechas":[]}.`,
+    undefined,
+    undefined,
+    'routing',
+  );
+
+  if (parsed.status !== 'success') return false;
+
+  let entries: Array<{ id: string; fecha: string }> = [];
+  try {
+    const match = String(parsed.result || '').match(/\{[\s\S]*\}/);
+    entries = match ? (JSON.parse(match[0])?.fechas || []) : [];
+  } catch {
+    return false;
+  }
+
+  const valid = entries.filter(entry =>
+    entry?.id && /^\d{4}-\d{2}-\d{2}$/.test(entry.fecha || '')
+    && active.some(student => student.id === entry.id));
+  if (valid.length === 0) return false;
+
+  const byId = new Map(active.map(entry => [entry.id, entry.name]));
+  await Promise.all(valid.map(entry => saveRotationPeriod(entry.id, entry.fecha, 'telegram')));
+  await clearPendingQuestion();
+
+  const lines = valid.map(entry => {
+    const days = Math.ceil((new Date(entry.fecha).getTime() - Date.now()) / 86400000);
+    return `• *${byId.get(entry.id)}* — ${entry.fecha}${days >= 0 ? ` (en ${days} día(s))` : ''}`;
+  });
+
+  await reply(
+    chatId,
+    `✅ *Fechas anotadas*\n\n${lines.join('\n')}\n\n`
+    + `Te avisaré antes de que se vayan qué les queda pendiente.`,
+  );
+  return true;
+}
+
 async function tryAnswerRotationQuestion(
   text: string,
   chatId: string,
@@ -401,6 +478,8 @@ export async function POST(req: Request) {
           callback,
         );
       }
+    } else if (!callback && message?.text && await tryBulkRotationDates(message.text, senderChatId, sendOrUpdate)) {
+      // Varias fechas dichas de una vez: ya quedaron guardadas.
     } else if (!callback && message?.text && await tryAnswerRotationQuestion(message.text, senderChatId, sendOrUpdate)) {
       // La respuesta se consumió como fecha de término: no pasa al asistente.
     } else if (!callback && message?.text) {
