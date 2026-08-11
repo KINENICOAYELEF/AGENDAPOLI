@@ -442,6 +442,12 @@ export function BandejaDocenteInteligente() {
                 {review.category === 'INITIAL_EVALUATION_INSUFFICIENT' && <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-black text-amber-800">LÍNEA BASAL INSUFICIENTE</span>}
                 {review.isStale && <span className="rounded-full border border-slate-300 bg-slate-100 px-2.5 py-1 text-[10px] font-black text-slate-600">ARRASTRADO</span>}
                 <strong className="text-sm text-slate-900">{student}</strong>
+                {review.patientNames && review.patientNames.length > 0 && (
+                  // Sin el nombre, el hallazgo no se puede ir a corregir.
+                  <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600">
+                    👤 {review.patientNames.join(', ')}
+                  </span>
+                )}
                 <span className="text-xs text-slate-500">{formatDate(review.createdAt)}</span>
               </div>
               <span className="text-xs font-mono text-slate-500">Confianza IA: {Math.round(review.confidence * 100)}%</span>

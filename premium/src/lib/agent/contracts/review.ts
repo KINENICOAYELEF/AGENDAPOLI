@@ -27,6 +27,13 @@ export const TeacherAgentReviewSchema = z.object({
    * docente lo aprueba explícitamente.
    */
   draftFeedback: z.string().optional(),
+  /**
+   * Nombres de las personas atendidas que el hallazgo menciona.
+   *
+   * La evidencia va desidentificada al modelo, así que él solo puede decir "la
+   * usuaria de cadera". El docente necesita el nombre para poder ir a corregir.
+   */
+  patientNames: z.array(z.string()).optional(),
   /** Incoherencias detectadas entre la evaluación del estudiante y lo ejecutado. */
   coherenceFindings: z.array(z.object({
     type: z.string(),

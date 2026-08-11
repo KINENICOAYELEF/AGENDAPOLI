@@ -170,6 +170,34 @@ export async function analyzeNextStudent(year: string): Promise<AnalyzeNextResul
     return { analyzed: student.name, remaining: analyzable.length - 1, findingCreated: false, engine, note: 'sin evidencia verificable' };
   }
 
+  // Los nombres de las personas atendidas se resuelven DESPUÉS del análisis.
+  //
+  // La evidencia se desidentifica antes de enviarla al modelo, así que él solo
+  // puede decir "la usuaria de cadera". Para el docente eso es inservible: no
+  // puede ir a corregir un caso que no logra identificar. Como él es el
+  // supervisor tratante, sí corresponde que vea el nombre; lo que no
+  // corresponde es enviárselo al modelo.
+  const citedPatientIds = [...new Set(
+    analysis.evidence
+      .map(evidence => records.find((record: any) => record.id === evidence.recordId))
+      .filter(Boolean)
+      .map((record: any) => record.usuariaId || record.personaUsuariaId)
+      .filter(Boolean),
+  )];
+  const patientNames: Array<{ id: string; name: string }> = [];
+  await Promise.all(citedPatientIds.map(async (patientId: any) => {
+    try {
+      const snap = await db.doc(`programs/${year}/usuarias/${patientId}`).get();
+      const data = snap.data();
+      patientNames.push({
+        id: patientId,
+        name: data?.identity?.fullName || data?.nombreCompleto || `Persona ${String(patientId).slice(0, 6)}`,
+      });
+    } catch {
+      patientNames.push({ id: patientId, name: `Persona ${String(patientId).slice(0, 6)}` });
+    }
+  }));
+
   const hasSafetyRisk = analysis.coherenceFindings?.some(
     finding => finding.type === 'RIESGO_SEGURIDAD' || finding.severity === 'ALTA',
   );
@@ -191,6 +219,7 @@ export async function analyzeNextStudent(year: string): Promise<AnalyzeNextResul
     confidence: analysis.confidence,
     priority,
     status: 'PENDING_TEACHER',
+    patientNames: patientNames.map(patient => patient.name),
     createdAt: new Date().toISOString(),
   });
 
@@ -201,7 +230,7 @@ export async function analyzeNextStudent(year: string): Promise<AnalyzeNextResul
     lastUpdatedAt: new Date().toISOString(),
   }, { merge: true });
 
-  await sendStudentAlert(db, { reviewId, studentName: student.name, priority, analysis });
+  await sendStudentAlert(db, { reviewId, studentName: student.name, priority, analysis, patientNames });
 
   return { analyzed: student.name, remaining: analyzable.length - 1, findingCreated: true, engine, note };
 }
@@ -215,7 +244,14 @@ export async function analyzeNextStudent(year: string): Promise<AnalyzeNextResul
  */
 async function sendStudentAlert(
   db: ReturnType<typeof getAdminDb>,
-  input: { reviewId: string; studentName: string; priority: string; analysis: any },
+  input: {
+    reviewId: string;
+    studentName: string;
+    priority: string;
+    analysis: any;
+    /** Personas citadas en el análisis, para que el docente sepa a quién ir a ver. */
+    patientNames: Array<{ id: string; name: string }>;
+  },
 ) {
   if (!featureFlags.telegramTeacherEnabled) return;
   const chatId = getAllowedTelegramChatId();
@@ -237,7 +273,13 @@ async function sendStudentAlert(
         .join('\n')
     : '';
 
-  const text = `${priorityEmoji(input.priority)} *${input.studentName}* · ${priorityLabel(input.priority)}\n\n`
+  // Sin esta línea el aviso es inaccionable: el docente lee "la usuaria de
+  // cadera" y no sabe a cuál de sus pacientes ir.
+  const people = input.patientNames.length
+    ? `\n👤 _Sobre:_ ${input.patientNames.map(patient => patient.name).join(', ')}`
+    : '';
+
+  const text = `${priorityEmoji(input.priority)} *${input.studentName}* · ${priorityLabel(input.priority)}${people}\n\n`
     + `${input.analysis.observation}\n`
     + (coherence ? `\n${coherence}\n` : '')
     + `\n_Le diría esto:_\n${input.analysis.draftFeedback}`;
@@ -249,7 +291,11 @@ async function sendStudentAlert(
             { text: '✅ Enviarle esto', callback_data: `send:${token}` },
             { text: '🗑 Descartar', callback_data: `dismiss:${token}` },
           ],
-          [{ text: '📄 Ver su ficha', url: `${APP_BASE_URL}/app/revision-docente` }],
+          ...input.patientNames.slice(0, 2).map(patient => ([{
+            text: `📄 Abrir ${patient.name.split(' ')[0]}`,
+            url: `${APP_BASE_URL}/app/usuarios?openFicha=${patient.id}`,
+          }])),
+          [{ text: '🎓 Ver ficha de la interna', url: `${APP_BASE_URL}/app/revision-docente` }],
         ],
       }
     : undefined;
