@@ -162,6 +162,12 @@ const APP_BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://agendapoli.ver
 import { callGemini } from '@/lib/ai/geminiClient';
 import { runAgentInteraction } from '@/lib/agent/client';
 
+/**
+ * El censo pedido a mano se espera dentro de `after()` para poder informar su
+ * resultado. Sin este margen la plataforma cortaría la función antes.
+ */
+export const maxDuration = 300;
+
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://agendapoli.vercel.app').replace(/\/$/, '');
 
@@ -354,14 +360,51 @@ export async function POST(req: Request) {
     } else if (command === 'run') {
       const secret = process.env.AGENT_MCP_SECRET;
       if (!secret) throw new Error('AGENT_MCP_SECRET no está configurado para iniciar el censo.');
-      const response = await fetch(`${APP_URL}/api/agent/run`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${secret}` },
-        body: JSON.stringify({ triggeredBy: 'telegram', sync: false }),
+
+      await sendOrUpdate(senderChatId, '▶️ *Revisando ahora*\n\nTe respondo en menos de un minuto con lo que encuentre.', callback);
+
+      // Un censo pedido a mano SIEMPRE debe responder, encuentre o no algo.
+      // Antes se lanzaba en segundo plano y, si no había hallazgos nuevos, el
+      // aviso automático se omitía por diseño: el docente pedía una revisión y
+      // no recibía nada, sin poder distinguirlo de una falla.
+      after(async () => {
+        try {
+          const response = await fetch(`${APP_URL}/api/agent/run`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${secret}` },
+            body: JSON.stringify({ triggeredBy: 'telegram', sync: true }),
+          });
+          const run = await response.json().catch(() => ({}));
+          if (!response.ok || !run.success) throw new Error(run.error || 'No se pudo completar la revisión.');
+
+          const result = run.censusResult || {};
+          const llm = result.llm || {};
+          const notified = (run.notification as any)?.delivered;
+
+          await sendTelegramMessage(
+            senderChatId,
+            `✅ *Revisión terminada*\n\n`
+            + `• Internas revisadas: *${result.studentsProcessed ?? '?'}*\n`
+            + `• Registros mirados: *${result.recordsProcessed ?? 0}*\n`
+            + `• Cosas nuevas encontradas: *${result.reviewsCreated ?? 0}*\n`
+            + (result.archivedStaleFindings ? `• Avisos antiguos archivados: *${result.archivedStaleFindings}*\n` : '')
+            + `• IA: ${llm.enabled === false ? 'desactivada' : `${llm.succeeded ?? 0}/${llm.attempted ?? 0} análisis${llm.deferred ? `, ${llm.deferred} en cola` : ''}`}\n\n`
+            + (result.reviewsCreated > 0 && !notified
+                ? '_El detalle te llega en el aviso siguiente._'
+                : result.reviewsCreated > 0
+                  ? '_El detalle va en el mensaje que acabas de recibir._'
+                  : '_Sin novedades: nada nuevo que revisar._')
+            + '\n\n_No se enviará nada a estudiantes sin tu aprobación._',
+            teacherMenu,
+          );
+        } catch (runError: any) {
+          await sendTelegramMessage(
+            senderChatId,
+            `⚠️ *La revisión falló*\n\n${String(runError?.message || runError).slice(0, 300)}`,
+            teacherMenu,
+          );
+        }
       });
-      const run = await response.json().catch(() => ({}));
-      if (!response.ok || !run.success) throw new Error(run.error || 'No se pudo iniciar el censo.');
-      await sendOrUpdate(senderChatId, `▶️ *Censo iniciado ahora*\n\n• Ejecución: \`${String(run.runId || '').slice(0, 8)}\`\n• Te avisaré por este chat si aparecen hallazgos nuevos.\n• No se enviará nada a estudiantes sin tu aprobación.`, callback);
     } else if (command === 'errors') {
       // Consultaba `agent_execution_logs`, una colección que ningún código
       // escribe: siempre informaba cero errores aunque el agente estuviera
