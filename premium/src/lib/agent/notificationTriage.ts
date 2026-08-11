@@ -141,9 +141,10 @@ async function buildAnsweredComments() {
 export async function sendPeriodicAnalysis(year: string) {
   if (!featureFlags.telegramTeacherEnabled) return { delivered: false, reason: 'telegram_disabled' };
 
+  // Domingo: la jornada clínica va de lunes a jueves, así que el domingo es
+  // cuando la semana está cerrada y se puede mirar entera sin interrumpir.
   const santiagoNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
-  const weekday = santiagoNow.getDay(); // 1 = lunes, 4 = jueves
-  if (weekday !== 1 && weekday !== 4) return { delivered: false, reason: 'not_a_report_day' };
+  if (santiagoNow.getDay() !== 0) return { delivered: false, reason: 'not_a_report_day' };
 
   const chatId = getAllowedTelegramChatId();
   if (!chatId) return { delivered: false, reason: 'telegram_chat_not_configured' };
@@ -169,10 +170,10 @@ export async function sendPeriodicAnalysis(year: string) {
   }
 
   try {
-    // Se comparan dos ventanas iguales: los últimos días contra los anteriores.
+    // La semana que termina contra la anterior.
     const [current, previous] = await Promise.all([
-      buildRotationSummary(year, 3),
       buildRotationSummary(year, 7),
+      buildRotationSummary(year, 14),
     ]);
 
     const previousById = new Map(previous.lines.map(line => [line.studentId, line]));
@@ -190,17 +191,16 @@ export async function sendPeriodicAnalysis(year: string) {
       .sort((a, b) => (b.p0 - a.p0) || (a.nowActivity - b.nowActivity))
       .slice(0, 12)
       .map(item =>
-        `${item.trend} *${item.name}* — ${item.nowActivity} sesión(es) en los últimos 3 días `
-        + `(antes ${item.olderActivity})`
+        `${item.trend} *${item.name}* — ${item.nowActivity} sesión(es) esta semana `
+        + `(la anterior ${item.olderActivity})`
         + `${item.drafts ? ` · 📝 ${item.drafts} sin firmar` : ''}`
         + `${item.p0 ? ` · 🔴 ${item.p0} de seguridad` : ''}`,
       ).join('\n');
 
-    const day = weekday === 1 ? 'Inicio de semana' : 'Medio de semana';
     await sendTelegramMessage(
       chatId,
-      `🗓 *${day} — cómo viene cada estudiante*\n\n${body || '_Sin actividad registrada en el período._'}`
-      + `\n\n📈 subió · ➡️ igual · 📉 bajó, comparado con los días previos.`
+      `🗓 *Cierre de semana — cómo viene cada estudiante*\n\n${body || '_Sin actividad registrada en la semana._'}`
+      + `\n\n📈 subió · ➡️ igual · 📉 bajó, comparado con la semana anterior.`
       + `\n\n[Ver fichas completas](${APP_BASE_URL}/app/revision-docente)`,
     );
     await reportRef.update({ status: 'DELIVERED', deliveredAt: new Date().toISOString() });
@@ -294,8 +294,16 @@ export async function sendDailyRotationDigest(year: string) {
   const chatId = getAllowedTelegramChatId();
   if (!chatId) return { delivered: false, reason: 'telegram_chat_not_configured' };
 
+  // El internado trabaja de lunes a jueves: un resumen de viernes a sábado
+  // informaría sobre una jornada que no existió.
+  const santiagoNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
+  const weekday = santiagoNow.getDay();
+  if (weekday < 1 || weekday > 4) {
+    return { delivered: false, reason: 'fuera_de_jornada_clinica' };
+  }
+
   const db = getAdminDb();
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+  const today = santiagoNow.toLocaleDateString('en-CA');
   const digestRef = db.collection('teacher_notifications').doc(`rotation_digest_${today}`);
 
   try {

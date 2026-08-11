@@ -117,6 +117,120 @@ Reglas:
  * Solo se archiva si la frase habla de una interna concreta y afirma algo sobre
  * ella. Una pregunta sobre alguien no es una observación.
  */
+/**
+ * Ejecuta una orden del docente sobre una interna.
+ *
+ * "Dile a Rocío que reevalúe a la señora del hombro" es cómo pediría las cosas
+ * a un ayudante. Hasta ahora tenía que entrar a la plataforma, buscar el
+ * hallazgo y publicar la tarea; para algo que él ya tiene decidido, eso es
+ * puro trámite.
+ *
+ * La orden es su aprobación: no se le vuelve a preguntar. Pero el aviso
+ * confirma exactamente qué se envió y ofrece deshacerlo, porque un modelo
+ * puede entender mal a quién o qué.
+ */
+async function tryTeacherOrder(
+  text: string,
+  chatId: string,
+  reply: (chatId: string, text: string) => Promise<void>,
+): Promise<boolean> {
+  // Una orden es imperativa y dirigida a alguien.
+  if (!/\b(d[ií]le|dile|p[ií]dele|pidele|av[ií]sale|avisale|que\s+\w+\s+(reeval|complet|cierre|corrija|rehaga|firme))/i.test(text)) {
+    return false;
+  }
+
+  const year = new Date().getFullYear().toString();
+  const active = rosterInRotation(await buildActiveRoster(year).catch(() => []));
+  if (active.length === 0) return false;
+
+  // Personas atendidas, para resolver "la señora del hombro".
+  let patients: Array<{ id: string; name: string }> = [];
+  try {
+    const snapshot = await adminDb.collection(`programs/${year}/usuarias`).get();
+    patients = snapshot.docs.map((doc: any) => ({
+      id: doc.id,
+      name: doc.data()?.identity?.fullName || doc.data()?.nombreCompleto || '',
+    })).filter((patient: any) => patient.name);
+  } catch { /* la orden puede no referirse a nadie en concreto */ }
+
+  const parsed = await runAgentInteraction(
+    `El docente de un internado está dando una instrucción para una de sus internas.
+
+Internas (usa EXACTAMENTE estos identificadores):
+${active.map(entry => `- ${entry.id} = ${entry.name}`).join('\n')}
+
+Personas atendidas (identificador = nombre):
+${patients.slice(0, 120).map(patient => `- ${patient.id} = ${patient.name}`).join('\n')}
+
+Instrucción: "${text}"
+
+Devuelve SOLO un JSON con esta forma:
+{"orden":{"internaId":"identificador","personaId":"identificador o null","mensaje":"lo que hay que pedirle, redactado para ella"}}
+
+Reglas:
+- El mensaje va dirigido a la interna, tuteándola, en una o dos frases claras.
+- Si la instrucción menciona a una persona atendida, incluye su identificador.
+- Si no logras identificar con seguridad a la interna, devuelve {"orden":null}.
+- No inventes personas ni instrucciones que él no haya dado.`,
+    undefined,
+    undefined,
+    'routing',
+  );
+
+  if (parsed.status !== 'success') return false;
+
+  let orden: { internaId?: string; personaId?: string | null; mensaje?: string } | null = null;
+  try {
+    const match = String(parsed.result || '').match(/\{[\s\S]*\}/);
+    orden = match ? (JSON.parse(match[0])?.orden ?? null) : null;
+  } catch {
+    return false;
+  }
+
+  const student = active.find(entry => entry.id === orden?.internaId);
+  if (!student || !orden?.mensaje?.trim()) return false;
+
+  const patient = patients.find(item => item.id === orden?.personaId);
+  const taskId = `order_${student.id}_${Date.now()}`;
+
+  await adminDb.collection('student_clinical_tasks').doc(taskId).set({
+    year,
+    studentId: student.id,
+    patientId: patient?.id || null,
+    reviewId: taskId,
+    kind: 'TEACHER_FEEDBACK',
+    status: 'ACTIVE',
+    title: 'Tu docente te pide algo',
+    message: orden.mensaje.trim(),
+    actionLabel: patient ? 'Abrir ficha' : 'Entendido',
+    actionHref: patient ? `/app/usuarios?openFicha=${patient.id}` : '/app/dashboard',
+    createdAt: new Date().toISOString(),
+    createdBy: 'teacher_order_telegram',
+  });
+
+  // Token corto para poder deshacerlo desde el propio mensaje.
+  let token = '';
+  try {
+    const ref = await adminDb.collection('telegram_actions').add({
+      taskId,
+      kind: 'UNDO_ORDER',
+      createdAt: new Date().toISOString(),
+    });
+    token = ref.id;
+  } catch { /* sin token queda sin botón de deshacer, pero la orden se envió */ }
+
+  await sendTelegramMessage(
+    chatId,
+    `📨 *Enviado a ${student.name}*\n\n_"${orden.mensaje.trim()}"_`
+    + (patient ? `\n\n👤 Sobre: ${patient.name}` : '')
+    + `\n\nLe aparece al entrar a la plataforma.`,
+    token
+      ? { inline_keyboard: [[{ text: '↩️ Deshacer', callback_data: `undo:${token}` }]] }
+      : teacherMenu,
+  );
+  return true;
+}
+
 async function tryTeacherNote(
   text: string,
   chatId: string,
@@ -546,6 +660,22 @@ export async function POST(req: Request) {
           : '🗺 *Quién atiende a quién*\n\nNo hay personas asignadas a estudiantes en el año activo.',
         callback,
       );
+    } else if (command.startsWith('undo:')) {
+      // Un modelo puede confundir a quién iba dirigida la orden: deshacerla
+      // tiene que costar un toque, no una explicación a la estudiante.
+      const [, token] = command.split(':');
+      const tokenSnap = await adminDb.collection('telegram_actions').doc(token).get();
+      const taskId = tokenSnap.data()?.taskId;
+      if (!taskId) {
+        await sendOrUpdate(senderChatId, '⚠️ Ese botón ya expiró.', callback);
+      } else {
+        await adminDb.collection('student_clinical_tasks').doc(taskId).update({
+          status: 'CANCELLED',
+          resolvedAt: new Date().toISOString(),
+          resolution: 'undone_by_teacher',
+        });
+        await sendOrUpdate(senderChatId, '↩️ *Retirado.* Ya no le aparece.', callback);
+      }
     } else if (command.startsWith('send:')) {
       // Enviar el feedback a la estudiante en un toque, desde el aviso mismo.
       const [, token] = command.split(':');
@@ -641,6 +771,8 @@ export async function POST(req: Request) {
       // Varias fechas dichas de una vez: ya quedaron guardadas.
     } else if (!callback && message?.text && await tryAnswerRotationQuestion(message.text, senderChatId, sendOrUpdate)) {
       // La respuesta se consumió como fecha de término: no pasa al asistente.
+    } else if (!callback && message?.text && await tryTeacherOrder(message.text, senderChatId, sendOrUpdate)) {
+      // Era una instrucción suya: ya salió a la interna.
     } else if (!callback && message?.text && await tryTeacherNote(message.text, senderChatId, sendOrUpdate)) {
       // Era una observación suya sobre una interna: quedó archivada.
     } else if (!callback && message?.text) {
