@@ -2,6 +2,7 @@ import { featureFlags } from '@/lib/agent/config';
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { getAllowedTelegramChatId, sendTelegramMessage } from '@/lib/server/telegram';
 import { buildCoursePatterns, buildRotationSummary, buildWatchAlerts, formatRotationSummary } from '@/lib/agent/rotationSummary';
+import { buildClosingReport, formatClosingReport } from '@/lib/agent/rotationClosing';
 
 export const RECENT_REVIEW_WINDOW_HOURS = 48;
 
@@ -55,6 +56,54 @@ function recentCutoff(hours = RECENT_REVIEW_WINDOW_HOURS) {
 function isRecent(value: unknown, hours = RECENT_REVIEW_WINDOW_HOURS) {
   const time = new Date(String(value || '')).getTime();
   return Number.isFinite(time) && time >= recentCutoff(hours);
+}
+
+/** Hallazgos que llevan días esperando la decisión del docente. */
+async function buildTeacherBacklog() {
+  const db = getAdminDb();
+  const snapshot = await db.collection('teacher_agent_reviews')
+    .where('status', '==', 'PENDING_TEACHER')
+    .get();
+  if (snapshot.empty) return { pending: 0, oldestDays: 0 };
+
+  const ages = snapshot.docs
+    .map((doc: any) => new Date(doc.data().createdAt || Date.now()).getTime())
+    .filter((time: number) => Number.isFinite(time));
+  const oldest = ages.length ? Math.min(...ages) : Date.now();
+
+  return {
+    pending: snapshot.size,
+    oldestDays: Math.floor((Date.now() - oldest) / 86400000),
+  };
+}
+
+/** Comentarios que la estudiante marcó como corregidos desde el último aviso. */
+async function buildAnsweredComments() {
+  const db = getAdminDb();
+  const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const snapshot = await db.collection('record_comments')
+    .where('status', '==', 'RESOLVED')
+    .get();
+
+  const recent = snapshot.docs
+    .map((doc: any) => doc.data())
+    .filter((comment: any) => String(comment.resolvedAt || '') >= since);
+  if (recent.length === 0) return [];
+
+  const studentIds = [...new Set(recent.map((comment: any) => comment.studentId).filter(Boolean))];
+  const names = new Map<string, string>();
+  await Promise.all(studentIds.map(async (id: any) => {
+    try {
+      const userSnap = await db.collection('users').doc(id).get();
+      const data = userSnap.data();
+      if (data) names.set(id, data.displayName || data.email || id);
+    } catch { /* se muestra el identificador */ }
+  }));
+
+  return recent.map((comment: any) => ({
+    studentName: names.get(comment.studentId) || comment.studentId,
+    section: comment.section || 'sección no registrada',
+  }));
 }
 
 /**
@@ -244,10 +293,13 @@ export async function sendDailyRotationDigest(year: string) {
   }
 
   try {
-    const [summary, watchAlerts, coursePatterns] = await Promise.all([
+    const [summary, watchAlerts, coursePatterns, closingReport, teacherBacklog, answeredComments] = await Promise.all([
       buildRotationSummary(year, 7),
       buildWatchAlerts(year).catch(() => []),
       buildCoursePatterns(year).catch(() => []),
+      buildClosingReport(year).catch(() => []),
+      buildTeacherBacklog().catch(() => null),
+      buildAnsweredComments().catch(() => []),
     ]);
     // Agenda, simulaciones, exámenes y personas abandonadas: datos que ya
     // existían y que nadie auditaba.
@@ -263,7 +315,25 @@ export async function sendDailyRotationDigest(year: string) {
             + `   _${pattern.studentNames.slice(0, 5).join(', ')}_`,
           ).join('\n')
       : '';
-    await sendTelegramMessage(chatId, `${formatRotationSummary(summary, APP_BASE_URL)}${watchBlock}${patternBlock}`, {
+    // Cierre de rotación: el momento donde más cosas quedan huérfanas.
+    const closingBlock = closingReport.length ? `\n\n${formatClosingReport(closingReport)}` : '';
+
+    // Lo que espera decisión del propio docente. Sin este recordatorio la
+    // bandeja se llena, deja de mirarse, y los avisos nunca llegan a nadie.
+    const backlogBlock = teacherBacklog && teacherBacklog.pending > 0
+      ? `\n\n📥 *Te esperan a ti*: ${teacherBacklog.pending} hallazgo(s) sin decidir`
+        + `${teacherBacklog.oldestDays > 0 ? `, el más antiguo de hace ${teacherBacklog.oldestDays} día(s)` : ''}.`
+      : '';
+
+    // Cierra el círculo del feedback: sin esto, él comenta y nunca se entera
+    // de si la estudiante corrigió.
+    const answeredBlock = answeredComments.length
+      ? `\n\n✅ *Corrigieron lo que les comentaste*\n`
+        + answeredComments.slice(0, 5).map((item: { studentName: string; section: string }) =>
+            `• ${item.studentName} — ${item.section}`).join('\n')
+      : '';
+
+    await sendTelegramMessage(chatId, `${formatRotationSummary(summary, APP_BASE_URL)}${closingBlock}${watchBlock}${patternBlock}${backlogBlock}${answeredBlock}`, {
       inline_keyboard: [[{ text: '🔎 Abrir Bandeja Docente', url: `${APP_BASE_URL}/app/revision-docente` }]],
     });
     await digestRef.update({ status: 'DELIVERED', deliveredAt: new Date().toISOString() });

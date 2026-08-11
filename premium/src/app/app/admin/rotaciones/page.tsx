@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { UsersService } from '@/services/users';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
@@ -25,6 +26,10 @@ export default function GestionRotacionesPage() {
   const [saving, setSaving] = useState(false);
   const [createdSuccess, setCreatedSuccess] = useState(false);
   const [rotations, setRotations] = useState<Rotation[]>([]);
+  // Sin esta lista la rotación guarda fechas pero no quiénes están en ella, y
+  // el agente no puede saber a quién le quedan días para terminar.
+  const [interns, setInterns] = useState<Array<{ uid: string; displayName?: string; email?: string }>>([]);
+  const [selectedInterns, setSelectedInterns] = useState<Set<string>>(new Set());
   const [loadingRotations, setLoadingRotations] = useState(true);
 
   // Dynamic evaluation windows
@@ -82,6 +87,24 @@ export default function GestionRotacionesPage() {
     );
   }
 
+  useEffect(() => {
+    UsersService.getInterns()
+      .then(list => setInterns(list.map(intern => ({
+        uid: intern.uid,
+        displayName: intern.displayName || undefined,
+        email: intern.email || undefined,
+      }))))
+      .catch(error => console.error('No se pudo cargar la lista de estudiantes:', error));
+  }, []);
+
+  const toggleIntern = (uid: string) => {
+    setSelectedInterns(current => {
+      const next = new Set(current);
+      if (next.has(uid)) next.delete(uid); else next.add(uid);
+      return next;
+    });
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -94,12 +117,16 @@ export default function GestionRotacionesPage() {
         endDate,
         formativeWindow,
         finalWindow,
+        // Quiénes cursan esta rotación. Es el dato que permite avisar cuándo
+        // alguien está por terminar y qué le queda pendiente.
+        studentIds: Array.from(selectedInterns),
         status: 'ACTIVE',
         createdAt: new Date().toISOString(),
         createdBy: user?.uid,
       });
 
       setCreatedSuccess(true);
+      setSelectedInterns(new Set());
       await loadRotations();
       setTimeout(() => setCreatedSuccess(false), 4000);
     } catch (err) {
@@ -219,6 +246,44 @@ export default function GestionRotacionesPage() {
               <p className="text-[11px]">Del <strong>{finalWindow.from}</strong> al <strong>{finalWindow.to}</strong></p>
             </div>
           </div>
+        </div>
+
+        {/* ESTUDIANTES DE ESTA ROTACIÓN */}
+        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-2">
+          <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2">
+            <Award className="w-4 h-4 text-indigo-600" />
+            <span>Estudiantes de esta rotación</span>
+          </h4>
+          <p className="text-[11px] text-slate-500">
+            Sin esto el sistema sabe las fechas pero no a quién corresponden, y no puede avisarte
+            cuándo alguien está por terminar ni qué le queda pendiente.
+          </p>
+          {interns.length === 0 ? (
+            <p className="text-[11px] text-slate-400">Cargando estudiantes…</p>
+          ) : (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {interns.map(intern => {
+                const isSelected = selectedInterns.has(intern.uid);
+                return (
+                  <button
+                    key={intern.uid}
+                    type="button"
+                    onClick={() => toggleIntern(intern.uid)}
+                    className={`rounded-xl border px-3 py-1.5 text-[11px] font-bold transition ${
+                      isSelected
+                        ? 'border-indigo-500 bg-indigo-600 text-white'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300'
+                    }`}
+                  >
+                    {isSelected ? '✓ ' : ''}{intern.displayName || intern.email}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <p className="pt-1 text-[11px] font-semibold text-slate-600">
+            Seleccionadas: {selectedInterns.size}
+          </p>
         </div>
 
         <button
