@@ -479,7 +479,12 @@ export async function runCensusEngine() {
                 redactedExcerpt: cleanExcerpt.slice(0, 200),
               },
             ],
-            observation: `Incompletitud o incoherencia detectada en ${record.collection}: falta ${missingFields.join(', ')}.`,
+            // Un semáforo rojo eleva a P0 sin dejar campos faltantes, y el
+            // mensaje quedaba en "falta ." sin decir nada. Cada caso dice ahora
+            // lo suyo.
+            observation: missingFields.length > 0
+              ? `Falta completar en ${record.collection === 'evoluciones' ? 'la evolución' : 'la evaluación'}: ${missingFields.join(', ')}.`
+              : `${record.collection === 'evoluciones' ? 'La evolución' : 'La evaluación'} quedó marcada con semáforo rojo de carga o seguridad. Requiere revisión docente.`,
             pedagogicalInference: 'Se requiere revisión docente para verificar el razonamiento clínico del estudiante.',
             confidence: 0.9,
             priority,
@@ -754,6 +759,27 @@ export async function runCensusEngine() {
       sessions: item.sessionsConsidered,
     }));
 
+    // Archiva lo que quedó de rotaciones pasadas. Un hallazgo de alguien que se
+    // fue hace meses no se puede accionar: solo tapa lo de quienes sí están.
+    let archivedStaleFindings = 0;
+    try {
+      const inRotation = new Set(students.map((student: any) => student.id));
+      const pendingAll = await db.collection('teacher_agent_reviews')
+        .where('status', '==', 'PENDING_TEACHER')
+        .get();
+      const stalePending = pendingAll.docs.filter((doc: any) => !inRotation.has(doc.data().studentId));
+      for (const doc of stalePending.slice(0, 200)) {
+        await doc.ref.update({
+          status: 'DISMISSED',
+          reviewedAt: new Date().toISOString(),
+          resolution: 'archived_student_left_rotation',
+        });
+        archivedStaleFindings++;
+      }
+    } catch (archiveError) {
+      console.warn('No se pudieron archivar hallazgos de rotaciones pasadas:', archiveError);
+    }
+
     const studentTasksResolved = await reconcilePublishedStudentTasks(db, year, globalBaselines);
 
     console.log(
@@ -775,6 +801,7 @@ export async function runCensusEngine() {
         lastError: llmDiagnostics.lastError || undefined,
       },
       studentsProcessed: students.length,
+      archivedStaleFindings,
       staleAssignmentCases,
       recordsProcessed,
       reviewsCreated,

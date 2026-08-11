@@ -3,7 +3,7 @@ import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { getAllowedTelegramChatId, sendTelegramMessage } from '@/lib/server/telegram';
 import { buildCoursePatterns, buildRotationSummary, buildWatchAlerts, formatRotationSummary } from '@/lib/agent/rotationSummary';
 import { buildClosingReport, formatClosingReport } from '@/lib/agent/rotationClosing';
-import { buildActiveRoster } from '@/lib/agent/activeRoster';
+import { buildActiveRoster, rosterInRotation } from '@/lib/agent/activeRoster';
 import { findStudentMissingEndDate, getRotationPeriods, setPendingQuestion } from '@/lib/agent/rotationPeriods';
 
 export const RECENT_REVIEW_WINDOW_HOURS = 48;
@@ -368,13 +368,20 @@ export async function sendDailyRotationDigest(year: string) {
  * saber de quién se trata ni si urge. Aquí se resuelven los nombres reales y el
  * enlace al registro exacto.
  */
-async function getTopPendingCases(limit = 5) {
+async function getTopPendingCases(limit = 5, year = new Date().getFullYear().toString()) {
   const db = getAdminDb();
   const snapshot = await db.collection('teacher_agent_reviews').where('status', '==', 'PENDING_TEACHER').get();
+
+  // Un hallazgo de alguien que terminó su rotación hace meses ya no es
+  // accionable: no se le puede pedir que corrija nada. Mostrarlos llenaba el
+  // aviso de casos muertos y enterraba los de quienes sí están trabajando.
+  const roster = await buildActiveRoster(year).catch(() => []);
+  const inRotation = new Set(rosterInRotation(roster).map(entry => entry.id));
 
   const priorityRank: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
   const reviews = snapshot.docs
     .map((doc: any) => ({ id: doc.id, ...doc.data() }))
+    .filter((review: any) => inRotation.size === 0 || inRotation.has(review.studentId))
     .sort((a: any, b: any) => {
       const byPriority = (priorityRank[a.priority] ?? 9) - (priorityRank[b.priority] ?? 9);
       return byPriority !== 0 ? byPriority : String(b.createdAt).localeCompare(String(a.createdAt));
@@ -440,9 +447,19 @@ async function getTopPendingCases(limit = 5) {
 /** Solo muestra hallazgos recientes; el histórico se conserva pero no satura al docente. */
 export async function getRecentPendingReviewSummary(hours = RECENT_REVIEW_WINDOW_HOURS) {
   const db = getAdminDb();
-  const snapshot = await db.collection('teacher_agent_reviews').where('status', '==', 'PENDING_TEACHER').get();
+  const year = new Date().getFullYear().toString();
+  const [snapshot, roster] = await Promise.all([
+    db.collection('teacher_agent_reviews').where('status', '==', 'PENDING_TEACHER').get(),
+    buildActiveRoster(year).catch(() => []),
+  ]);
+  // Solo cuenta lo de quienes siguen en rotación: el resto no es trabajo
+  // pendiente, es historia.
+  const inRotation = new Set(rosterInRotation(roster).map(entry => entry.id));
   const persistent = new Set(['REEVALUATION_DUE', 'INITIAL_EVALUATION_MISSING', 'INITIAL_EVALUATION_INSUFFICIENT']);
-  const reviews = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })).filter((review: any) => isRecent(review.createdAt, hours) || persistent.has(review.category));
+  const reviews = snapshot.docs
+    .map((doc: any) => ({ id: doc.id, ...doc.data() }))
+    .filter((review: any) => inRotation.size === 0 || inRotation.has(review.studentId))
+    .filter((review: any) => isRecent(review.createdAt, hours) || persistent.has(review.category));
   const count = (priority: Priority) => reviews.filter((review: any) => review.priority === priority).length;
   const categoryCount = (category: string) => reviews.filter((review: any) => review.category === category).length;
   return {

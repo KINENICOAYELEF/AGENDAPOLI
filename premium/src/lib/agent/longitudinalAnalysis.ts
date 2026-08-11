@@ -157,12 +157,70 @@ export function buildDeidentifiedEvidence(records: ClinicalRecord[]) {
     }));
 }
 
+/**
+ * Recorta y rellena antes de validar.
+ *
+ * El contrato rechazaba respuestas por detalles que no invalidan el análisis:
+ * un extracto de 420 caracteres, un feedback un poco largo, una evidencia de
+ * más. Tirar todo el razonamiento por eso desperdicia una llamada al modelo y
+ * deja al docente sin nada. Se ajusta lo ajustable y solo se descarta cuando
+ * falta lo esencial.
+ */
+function coerceAnalysisShape(raw: any): any {
+  if (!raw || typeof raw !== 'object') return raw;
+  const cut = (value: unknown, max: number) =>
+    typeof value === 'string' ? value.trim().slice(0, max) : value;
+
+  return {
+    ...raw,
+    strengths: Array.isArray(raw.strengths) ? raw.strengths.slice(0, 4).map((item: any) => cut(item, 300)) : [],
+    improvementGaps: Array.isArray(raw.improvementGaps) ? raw.improvementGaps.slice(0, 4).map((item: any) => cut(item, 300)) : [],
+    recurringPattern: raw.recurringPattern ? cut(raw.recurringPattern, 500) : undefined,
+    coherenceFindings: Array.isArray(raw.coherenceFindings)
+      ? raw.coherenceFindings
+          .filter((finding: any) => finding?.type && finding?.explanation)
+          .slice(0, 5)
+          .map((finding: any) => ({
+            type: finding.type,
+            explanation: cut(finding.explanation, 600),
+            // Una severidad fuera del catálogo no justifica perder el hallazgo.
+            severity: ['ALTA', 'MEDIA', 'BAJA'].includes(finding.severity) ? finding.severity : 'MEDIA',
+          }))
+      : [],
+    observation: cut(raw.observation, 800),
+    pedagogicalInference: cut(raw.pedagogicalInference, 800),
+    socraticQuestion: cut(raw.socraticQuestion, 500),
+    recommendation: cut(raw.recommendation, 500),
+    draftFeedback: cut(raw.draftFeedback, 1800),
+    priority: ['P0', 'P1', 'P2', 'P3'].includes(raw.priority) ? raw.priority : 'P2',
+    confidence: typeof raw.confidence === 'number'
+      ? Math.min(1, Math.max(0, raw.confidence))
+      : 0.5,
+    evidence: Array.isArray(raw.evidence)
+      ? raw.evidence
+          .filter((item: any) => item?.recordId && item?.section && item?.excerpt)
+          .slice(0, 4)
+          .map((item: any) => ({
+            recordId: String(item.recordId),
+            collection: item.collection === 'evoluciones' ? 'evoluciones' : 'evaluaciones',
+            section: cut(item.section, 120),
+            excerpt: cut(item.excerpt, 400),
+          }))
+      : [],
+  };
+}
+
 export function parseLongitudinalAnalysis(raw: string): LongitudinalAnalysis | null {
   try {
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) return null;
-    return LongitudinalAnalysisSchema.parse(JSON.parse(jsonrepair(match[0])));
-  } catch {
+    const parsed = JSON.parse(jsonrepair(match[0]));
+    return LongitudinalAnalysisSchema.parse(coerceAnalysisShape(parsed));
+  } catch (error) {
+    // El motivo concreto sirve para saber si el prompt necesita ajuste o si el
+    // modelo simplemente devolvió basura.
+    console.warn('[Análisis longitudinal] JSON fuera de contrato:',
+      error instanceof Error ? error.message.slice(0, 300) : error);
     return null;
   }
 }

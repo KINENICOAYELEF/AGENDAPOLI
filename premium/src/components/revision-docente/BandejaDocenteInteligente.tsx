@@ -85,6 +85,8 @@ export function BandejaDocenteInteligente() {
     setLoading(true);
     setNotice(null);
     try {
+      // Los hallazgos de quienes ya terminaron su rotación se archivan solos en
+      // el censo. Aquí basta con no mostrar los que aún no alcanzó a limpiar.
       const reviewSnap = await getDocs(query(
         collection(db, "teacher_agent_reviews"),
         where("status", "==", "PENDING_TEACHER"),
