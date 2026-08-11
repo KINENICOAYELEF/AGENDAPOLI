@@ -6,6 +6,7 @@ import { buildClosingReport, formatClosingReport } from '@/lib/agent/rotationClo
 import { buildActiveRoster, rosterInRotation } from '@/lib/agent/activeRoster';
 import { priorityEmoji, priorityLabel } from '@/lib/agent/priorityLabels';
 import { findStudentMissingEndDate, getRotationPeriods, setPendingQuestion } from '@/lib/agent/rotationPeriods';
+import { daysSinceLastNote } from '@/lib/agent/teacherNotes';
 
 export const RECENT_REVIEW_WINDOW_HOURS = 48;
 
@@ -324,6 +325,30 @@ export async function sendDailyRotationDigest(year: string) {
       buildAnsweredComments().catch(() => []),
     ]);
 
+    // A quién no ha mirado hace tiempo. En una rotación la atención se concentra
+    // en dos o tres, y el resto pasa inadvertido hasta que hay que ponerle nota
+    // y no hay nada escrito sobre esa persona.
+    let unseenBlock = '';
+    try {
+      const roster = rosterInRotation(await buildActiveRoster(year));
+      const ages = await daysSinceLastNote(roster.map(entry => entry.id));
+      const unseen = roster
+        .filter(entry => {
+          const days = ages.get(entry.id);
+          return days === null || (days !== undefined && days >= 10);
+        })
+        .map(entry => ({ name: entry.name, days: ages.get(entry.id) }));
+      if (unseen.length > 0) {
+        unseenBlock = `\n\n👁 *No has anotado nada de*\n`
+          + unseen.slice(0, 5).map(item =>
+              `• ${item.name}${item.days === null || item.days === undefined ? ' (nunca)' : ` (hace ${item.days} días)`}`,
+            ).join('\n')
+          + `\n_Escríbeme lo que veas de ellas y lo guardo para su nota._`;
+      }
+    } catch (error) {
+      console.warn('No se pudo calcular a quién falta observar:', error);
+    }
+
     // Preguntar por UNA estudiante sin fecha de término. De a una: preguntar
     // por seis de golpe convierte el aviso en el formulario que se quiso evitar.
     let askBlock = '';
@@ -370,7 +395,7 @@ export async function sendDailyRotationDigest(year: string) {
             `• ${item.studentName} — ${item.section}`).join('\n')
       : '';
 
-    await sendTelegramMessage(chatId, `${formatRotationSummary(summary, APP_BASE_URL)}${closingBlock}${watchBlock}${patternBlock}${backlogBlock}${answeredBlock}${askBlock}`, {
+    await sendTelegramMessage(chatId, `${formatRotationSummary(summary, APP_BASE_URL)}${closingBlock}${watchBlock}${patternBlock}${backlogBlock}${answeredBlock}${unseenBlock}${askBlock}`, {
       inline_keyboard: [[{ text: '🔎 Abrir Bandeja Docente', url: `${APP_BASE_URL}/app/revision-docente` }]],
     });
     await digestRef.update({ status: 'DELIVERED', deliveredAt: new Date().toISOString() });

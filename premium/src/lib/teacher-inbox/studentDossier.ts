@@ -12,6 +12,7 @@
 
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { computeCompliance, getPracticeRequirements } from '@/lib/agent/practiceRequirements';
+import { getTeacherNotes } from '@/lib/agent/teacherNotes';
 
 export type DossierRecord = {
   id: string;
@@ -72,6 +73,8 @@ export type StudentDossier = {
     history: DossierFinding[];
   };
   deliveredFeedback: Array<{ id: string; approvedAt: string; messageBody: string }>;
+  /** Lo que el docente observó en el box y le dictó al bot. */
+  teacherNotes: Array<{ id?: string; note: string; tone: string; createdAt: string }>;
 };
 
 const APP_BASE = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
@@ -237,6 +240,14 @@ export async function buildStudentDossier(studentId: string, year: string): Prom
       pending: findings.filter((finding: DossierFinding) => finding.status === 'PENDING_TEACHER').slice(0, 10),
       history: findings.filter((finding: DossierFinding) => finding.status !== 'PENDING_TEACHER').slice(0, 20),
     },
+    // Lo que solo ve él: es la parte más pesada de la nota de proceso y la que
+    // no está en ningún registro clínico.
+    teacherNotes: (await getTeacherNotes(studentId, 30)).map(note => ({
+      id: note.id,
+      note: note.note,
+      tone: note.tone,
+      createdAt: note.createdAt,
+    })),
     deliveredFeedback: feedbackSnap.docs
       .map((doc: any) => {
         const data = doc.data();

@@ -262,6 +262,38 @@ export default function FichaAlumnoPage() {
         )}
       </section>
 
+      {/* Lo que el docente observó: materia prima de la nota de proceso */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-indigo-700">
+          <MessageSquare className="h-4 w-4" /> Lo que tú observaste
+        </h2>
+        <p className="mt-1 text-xs text-slate-500">
+          Lo que le fuiste dictando al bot. Es la parte de la nota de proceso que no está en ningún registro.
+        </p>
+        {dossier.teacherNotes.length === 0 ? (
+          <p className="mt-3 text-sm text-slate-400">
+            Todavía no has anotado nada de esta estudiante. Puedes decírselo al bot por Telegram:
+            &ldquo;la Javiera llegó tarde otra vez&rdquo;.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-2">
+            {dossier.teacherNotes.map((item, index) => (
+              <li
+                key={item.id || index}
+                className={`rounded-xl border-l-4 p-3 text-sm ${
+                  item.tone === "POSITIVA" ? "border-l-emerald-400 bg-emerald-50/50 text-emerald-950"
+                    : item.tone === "A_MEJORAR" ? "border-l-amber-400 bg-amber-50/50 text-amber-950"
+                    : "border-l-slate-300 bg-slate-50 text-slate-800"
+                }`}
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wide opacity-60">{formatDate(item.createdAt)}</p>
+                <p className="mt-0.5">{item.note}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       {/* Feedback ya entregado */}
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-emerald-700">

@@ -19,6 +19,7 @@ import { censoAsignaciones } from '@/lib/agent/clinicalQueries';
 import { recordTeacherDecision } from '@/lib/agent/teacherCalibration';
 import { clearPendingQuestion, getPendingQuestion, saveRotationPeriod } from '@/lib/agent/rotationPeriods';
 import { buildActiveRoster, rosterInRotation } from '@/lib/agent/activeRoster';
+import { saveTeacherNote } from '@/lib/agent/teacherNotes';
 
 /**
  * Interpreta una respuesta suelta del docente como la fecha de término que el
@@ -101,6 +102,86 @@ Reglas:
     chatId,
     `✅ *Fechas anotadas*\n\n${lines.join('\n')}\n\n`
     + `Te avisaré antes de que se vayan qué les queda pendiente.`,
+  );
+  return true;
+}
+
+/**
+ * Archiva una observación del docente sobre una estudiante.
+ *
+ * La parte más pesada de la nota de proceso —actitud, trato con la persona
+ * atendida, puntualidad, cómo recibe una corrección— la observa él en el box y
+ * no está en ninguna pantalla. Pedirle que entre a registrarla no funciona: no
+ * lo va a hacer. Se recoge por donde ya conversa.
+ *
+ * Solo se archiva si la frase habla de una interna concreta y afirma algo sobre
+ * ella. Una pregunta sobre alguien no es una observación.
+ */
+async function tryTeacherNote(
+  text: string,
+  chatId: string,
+  reply: (chatId: string, text: string) => Promise<void>,
+): Promise<boolean> {
+  // Una pregunta va al asistente; aquí solo interesan las afirmaciones.
+  if (/[?¿]/.test(text)) return false;
+  if (text.trim().split(/\s+/).length < 3) return false;
+
+  const year = new Date().getFullYear().toString();
+  const active = rosterInRotation(await buildActiveRoster(year).catch(() => []));
+  if (active.length === 0) return false;
+
+  const parsed = await runAgentInteraction(
+    `El docente de un internado está comentando algo sobre sus internas.
+
+Internas reales (usa EXACTAMENTE estos identificadores):
+${active.map(entry => `- ${entry.id} = ${entry.name}`).join('\n')}
+
+Mensaje: "${text}"
+
+Devuelve SOLO un JSON con esta forma:
+{"nota":{"id":"identificador","texto":"la observación tal como la dijo","tono":"POSITIVA|A_MEJORAR|NEUTRA"}}
+
+Reglas:
+- Solo si el mensaje AFIRMA algo sobre una interna concreta: cómo se comportó,
+  cómo trabajó, algo que hizo bien o mal, una actitud.
+- Si es una pregunta, una orden, una fecha de término o algo que no habla de
+  una interna, devuelve {"nota":null}.
+- No inventes: el texto debe reflejar lo que él dijo.`,
+    undefined,
+    undefined,
+    'routing',
+  );
+
+  if (parsed.status !== 'success') return false;
+
+  let nota: { id?: string; texto?: string; tono?: string } | null = null;
+  try {
+    const match = String(parsed.result || '').match(/\{[\s\S]*\}/);
+    nota = match ? (JSON.parse(match[0])?.nota ?? null) : null;
+  } catch {
+    return false;
+  }
+
+  const student = active.find(entry => entry.id === nota?.id);
+  if (!student || !nota?.texto?.trim()) return false;
+
+  const tone = ['POSITIVA', 'A_MEJORAR', 'NEUTRA'].includes(String(nota.tono))
+    ? (nota.tono as 'POSITIVA' | 'A_MEJORAR' | 'NEUTRA')
+    : 'NEUTRA';
+
+  await saveTeacherNote({
+    studentId: student.id,
+    studentName: student.name,
+    note: nota.texto.trim(),
+    tone,
+    source: 'telegram',
+  });
+
+  const icon = tone === 'POSITIVA' ? '🟢' : tone === 'A_MEJORAR' ? '🟠' : '⚪️';
+  await reply(
+    chatId,
+    `📌 Anotado sobre *${student.name}* ${icon}\n\n_"${nota.texto.trim()}"_\n\n`
+    + `Lo vas a tener a mano cuando le pongas la nota de proceso.`,
   );
   return true;
 }
@@ -560,6 +641,8 @@ export async function POST(req: Request) {
       // Varias fechas dichas de una vez: ya quedaron guardadas.
     } else if (!callback && message?.text && await tryAnswerRotationQuestion(message.text, senderChatId, sendOrUpdate)) {
       // La respuesta se consumió como fecha de término: no pasa al asistente.
+    } else if (!callback && message?.text && await tryTeacherNote(message.text, senderChatId, sendOrUpdate)) {
+      // Era una observación suya sobre una interna: quedó archivada.
     } else if (!callback && message?.text) {
       // Cualquier cosa escrita que no sea un comando pasa al asistente, que
       // consulta la base antes de responder. Antes se devolvía "no reconocí esa
