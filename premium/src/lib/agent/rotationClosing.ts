@@ -6,13 +6,15 @@
  * completar—. Hoy eso el docente lo lleva de memoria, y lo que se le pasa
  * queda huérfano.
  *
- * Depende de que la rotación tenga estudiantes asociados: la pantalla de
- * Rotaciones guardaba fechas pero no a quién correspondían, así que era
- * imposible saber a quién le quedaban días.
+ * Necesita saber cuándo termina cada una, que es el único dato que no se puede
+ * deducir de la actividad: terminar es una decisión, no un hecho observable.
+ * Se obtiene preguntándoselo al docente por Telegram, y como respaldo desde las
+ * rotaciones cargadas en el panel.
  */
 
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { computeCompliance, getPracticeRequirements } from './practiceRequirements';
+import { getRotationPeriods } from './rotationPeriods';
 
 /** Con cuántos días de anticipación empieza a avisar. */
 const CLOSING_WINDOW_DAYS = 10;
@@ -41,15 +43,28 @@ function iso(value: any): string {
 /**
  * Quiénes están por terminar y qué dejan pendiente.
  *
- * Devuelve vacío si ninguna rotación tiene estudiantes asociados: es preferible
- * no avisar nada a inventar un cierre que no se sabe cuándo ocurre.
+ * Devuelve vacío si no hay ninguna fecha de término conocida: es preferible no
+ * avisar nada a inventar un cierre que no se sabe cuándo ocurre.
  */
 export async function buildClosingReport(year: string): Promise<ClosingStudent[]> {
   const db = getAdminDb();
 
-  const rotationsSnap = await db.collection(`programs/${year}/rotations`).get();
   const closing: Array<{ studentId: string; label: string; endDate: string; daysLeft: number }> = [];
 
+  // Fuente principal: lo que el docente respondió por Telegram. Cargar una
+  // rotación completa en un formulario es tedioso y por eso no se hacía; el
+  // dato quedaba solo en su cabeza.
+  const periods = await getRotationPeriods();
+  periods.forEach((period, studentId) => {
+    const endTime = new Date(period.endDate).getTime();
+    if (Number.isNaN(endTime)) return;
+    const daysLeft = Math.ceil((endTime - Date.now()) / 86400000);
+    if (daysLeft < 0 || daysLeft > CLOSING_WINDOW_DAYS) return;
+    closing.push({ studentId, label: 'rotación en curso', endDate: period.endDate, daysLeft });
+  });
+
+  // Fuente secundaria: rotaciones con estudiantes cargados desde el panel.
+  const rotationsSnap = await db.collection(`programs/${year}/rotations`).get();
   rotationsSnap.docs.forEach((doc: any) => {
     const data = doc.data();
     const endValue = iso(data.endDate || data.fechaTermino);
@@ -63,6 +78,8 @@ export async function buildClosingReport(year: string): Promise<ClosingStudent[]
     if (daysLeft < 0 || daysLeft > CLOSING_WINDOW_DAYS) return;
 
     studentIds.forEach(studentId => {
+      // La respuesta directa del docente manda sobre la fecha del formulario.
+      if (closing.some(item => item.studentId === studentId)) return;
       closing.push({ studentId, label: data.label || data.name || 'Rotación', endDate: endValue, daysLeft });
     });
   });

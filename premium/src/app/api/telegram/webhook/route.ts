@@ -17,6 +17,69 @@ import { buildRotationSummary, formatRotationSummary } from '@/lib/agent/rotatio
 import { answerTeacherQuestion } from '@/lib/agent/assistant';
 import { censoAsignaciones } from '@/lib/agent/clinicalQueries';
 import { recordTeacherDecision } from '@/lib/agent/teacherCalibration';
+import { clearPendingQuestion, getPendingQuestion, saveRotationPeriod } from '@/lib/agent/rotationPeriods';
+
+/**
+ * Interpreta una respuesta suelta del docente como la fecha de término que el
+ * bot le preguntó.
+ *
+ * La fecha se extrae con el modelo y no con expresiones regulares porque él
+ * responde como habla: "el jueves", "en dos semanas más", "22 de agosto".
+ * Devuelve true si consumió el mensaje, para que no llegue también al
+ * asistente y termine respondido como si fuera una consulta.
+ */
+async function tryAnswerRotationQuestion(
+  text: string,
+  chatId: string,
+  reply: (chatId: string, text: string) => Promise<void>,
+): Promise<boolean> {
+  const pending = await getPendingQuestion();
+  if (!pending) return false;
+
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+  const parsed = await runAgentInteraction(
+    `Hoy es ${today}. El docente respondió a la pregunta "¿cuándo termina su rotación ${pending.studentName}?".
+
+Su respuesta literal: "${text}"
+
+Devuelve SOLO un JSON con esta forma exacta:
+{"fecha":"AAAA-MM-DD"}
+
+Reglas:
+- Si la respuesta indica una fecha, conviértela a formato AAAA-MM-DD usando el año en curso salvo que diga otro.
+- "el jueves" significa el próximo jueves a partir de hoy.
+- Si la respuesta NO contiene ninguna fecha —por ejemplo es una pregunta sobre otra cosa— devuelve {"fecha":null}.`,
+    undefined,
+    undefined,
+    'routing',
+  );
+
+  if (parsed.status !== 'success') return false;
+
+  let fecha: string | null = null;
+  try {
+    const match = String(parsed.result || '').match(/\{[\s\S]*\}/);
+    fecha = match ? JSON.parse(match[0])?.fecha ?? null : null;
+  } catch {
+    return false;
+  }
+
+  // Sin fecha reconocible, el mensaje era otra cosa: se deja pasar al asistente
+  // y la pregunta sigue abierta.
+  if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return false;
+
+  await saveRotationPeriod(pending.studentId, fecha, 'telegram');
+  await clearPendingQuestion();
+
+  const days = Math.ceil((new Date(fecha).getTime() - Date.now()) / 86400000);
+  await reply(
+    chatId,
+    `✅ Anotado: *${pending.studentName}* termina el ${fecha}`
+    + `${days >= 0 ? ` (en ${days} día(s))` : ' (ya pasó)'}.\n\n`
+    + `Te avisaré con anticipación qué le queda pendiente antes de que se vaya.`,
+  );
+  return true;
+}
 
 const APP_BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://agendapoli.vercel.app').replace(/\/$/, '');
 import { callGemini } from '@/lib/ai/geminiClient';
@@ -338,6 +401,8 @@ export async function POST(req: Request) {
           callback,
         );
       }
+    } else if (!callback && message?.text && await tryAnswerRotationQuestion(message.text, senderChatId, sendOrUpdate)) {
+      // La respuesta se consumió como fecha de término: no pasa al asistente.
     } else if (!callback && message?.text) {
       // Cualquier cosa escrita que no sea un comando pasa al asistente, que
       // consulta la base antes de responder. Antes se devolvía "no reconocí esa

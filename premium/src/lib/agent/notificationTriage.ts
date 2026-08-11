@@ -3,6 +3,8 @@ import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { getAllowedTelegramChatId, sendTelegramMessage } from '@/lib/server/telegram';
 import { buildCoursePatterns, buildRotationSummary, buildWatchAlerts, formatRotationSummary } from '@/lib/agent/rotationSummary';
 import { buildClosingReport, formatClosingReport } from '@/lib/agent/rotationClosing';
+import { buildActiveRoster } from '@/lib/agent/activeRoster';
+import { findStudentMissingEndDate, getRotationPeriods, setPendingQuestion } from '@/lib/agent/rotationPeriods';
 
 export const RECENT_REVIEW_WINDOW_HOURS = 48;
 
@@ -301,6 +303,21 @@ export async function sendDailyRotationDigest(year: string) {
       buildTeacherBacklog().catch(() => null),
       buildAnsweredComments().catch(() => []),
     ]);
+
+    // Preguntar por UNA estudiante sin fecha de término. De a una: preguntar
+    // por seis de golpe convierte el aviso en el formulario que se quiso evitar.
+    let askBlock = '';
+    try {
+      const [roster, periods] = await Promise.all([buildActiveRoster(year), getRotationPeriods()]);
+      const missing = findStudentMissingEndDate(roster, periods);
+      if (missing) {
+        await setPendingQuestion(missing.id, missing.name);
+        askBlock = `\n\n❓ *¿Cuándo termina su rotación ${missing.name}?*\n`
+          + `_Respóndeme por aquí como quieras ("el 22", "en dos semanas") y lo anoto._`;
+      }
+    } catch (error) {
+      console.warn('No se pudo preparar la pregunta de fecha de término:', error);
+    }
     // Agenda, simulaciones, exámenes y personas abandonadas: datos que ya
     // existían y que nadie auditaba.
     const watchBlock = watchAlerts.length
@@ -333,7 +350,7 @@ export async function sendDailyRotationDigest(year: string) {
             `• ${item.studentName} — ${item.section}`).join('\n')
       : '';
 
-    await sendTelegramMessage(chatId, `${formatRotationSummary(summary, APP_BASE_URL)}${closingBlock}${watchBlock}${patternBlock}${backlogBlock}${answeredBlock}`, {
+    await sendTelegramMessage(chatId, `${formatRotationSummary(summary, APP_BASE_URL)}${closingBlock}${watchBlock}${patternBlock}${backlogBlock}${answeredBlock}${askBlock}`, {
       inline_keyboard: [[{ text: '🔎 Abrir Bandeja Docente', url: `${APP_BASE_URL}/app/revision-docente` }]],
     });
     await digestRef.update({ status: 'DELIVERED', deliveredAt: new Date().toISOString() });
