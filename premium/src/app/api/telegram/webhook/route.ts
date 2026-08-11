@@ -465,6 +465,41 @@ export async function POST(req: Request) {
           : '🗺 *Quién atiende a quién*\n\nNo hay personas asignadas a estudiantes en el año activo.',
         callback,
       );
+    } else if (command.startsWith('send:')) {
+      // Enviar el feedback a la estudiante en un toque, desde el aviso mismo.
+      const [, token] = command.split(':');
+      const tokenSnap = await adminDb.collection('telegram_actions').doc(token).get();
+      const reviewId = tokenSnap.data()?.reviewId;
+      const reviewRef = reviewId ? adminDb.collection('teacher_agent_reviews').doc(reviewId) : null;
+      const reviewSnap = reviewRef ? await reviewRef.get() : null;
+
+      if (!reviewSnap?.exists) {
+        await sendOrUpdate(senderChatId, '⚠️ Ese aviso ya expiró. Abre la bandeja para resolverlo.', callback);
+      } else if (reviewSnap.data()?.status !== 'PENDING_TEACHER') {
+        await sendOrUpdate(senderChatId, 'ℹ️ Ya lo habías resuelto antes. No se cambió nada.', callback);
+      } else {
+        const review = reviewSnap.data() || {};
+        await adminDb.collection('student_clinical_tasks').doc(`feedback_${reviewId}`).set({
+          year: review.year,
+          studentId: review.studentId,
+          reviewId,
+          kind: 'TEACHER_FEEDBACK',
+          status: 'ACTIVE',
+          title: 'Retroalimentación de tu docente',
+          message: review.draftFeedback || review.observation || '',
+          actionLabel: 'Entendido',
+          actionHref: '/app/dashboard',
+          createdAt: new Date().toISOString(),
+          createdBy: 'teacher_telegram',
+        }, { merge: true });
+        await reviewRef!.update({ status: 'SHARED', reviewedAt: new Date().toISOString(), reviewedVia: 'telegram' });
+        await recordTeacherDecision({
+          reviewId, kind: 'SHARED', category: review.category, priority: review.priority,
+          coherenceTypes: (review.coherenceFindings || []).map((finding: any) => finding.type),
+          via: 'telegram',
+        });
+        await sendOrUpdate(senderChatId, '✅ *Enviado.* Le aparecerá en su página al entrar.', callback);
+      }
     } else if (command.startsWith('approve:') || command.startsWith('dismiss:')) {
       // Aprobar o descartar un hallazgo sin salir del chat. La decisión sigue
       // siendo del docente: el bot nunca resuelve nada por su cuenta, y aprobar

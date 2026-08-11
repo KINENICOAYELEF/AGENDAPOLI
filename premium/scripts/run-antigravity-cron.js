@@ -77,6 +77,40 @@ function isTimeoutError(error) {
     || message.includes('gateway timeout');
 }
 
+/**
+ * Analiza a la rotación completa, de a una por llamada.
+ *
+ * Cada llamada cabe holgadamente en el límite de la función; el bucle vive
+ * aquí, donde no hay tope de duración.
+ */
+async function analyzeEveryone(maxSteps = 12) {
+  for (let step = 1; step <= maxSteps; step++) {
+    try {
+      const response = await fetch(`${APP_URL}/api/agent/analyze-next`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${AGENT_SECRET}` },
+        body: JSON.stringify({}),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.success) {
+        console.warn(`::warning::El análisis por estudiante falló en el paso ${step}: ${data.error || response.status}`);
+        return;
+      }
+      if (!data.analyzed) {
+        console.log(`[Antigravity Cron] Análisis al día tras ${step - 1} paso(s).`);
+        return;
+      }
+      console.log(`[Antigravity Cron] Analizada ${data.analyzed}. Quedan ${data.remaining}.`);
+      if (data.remaining === 0) return;
+    } catch (stepError) {
+      console.warn(`::warning::Error analizando en el paso ${step}: ${stepError.message}`);
+      return;
+    }
+  }
+  console.warn(`::warning::Se alcanzó el tope de ${maxSteps} análisis por corrida; el resto sigue en la próxima.`);
+}
+
 async function runCron() {
   console.log(`[Antigravity Cron] Iniciando censo y síntesis nocturna en: ${APP_URL}`);
 
@@ -131,6 +165,10 @@ async function runCron() {
       } else if (llm && llm.attempted > 0 && llm.succeeded === 0) {
         console.warn(`::warning::La IA se intentó ${llm.attempted} vez/veces y ninguna completó. Último error: ${llm.lastError || 'sin detalle'}.`);
       }
+      // El análisis pesado se hace de a una estudiante por llamada. GitHub
+      // Actions no tiene límite de tiempo, así que repetir aquí cubre a toda la
+      // rotación; dentro de una sola petición a Vercel no cabía.
+      await analyzeEveryone();
       return;
     } catch (err) {
       clearTimeout(timeout);
