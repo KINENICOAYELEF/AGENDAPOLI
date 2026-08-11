@@ -1,10 +1,8 @@
 /**
  * EXIGENCIAS DE PRÁCTICA DE LA ROTACIÓN
  *
- * El mínimo estaba escrito como "15" a mano en cuatro lugares distintos, sumaba
- * todo en un solo número y no se podía cambiar sin tocar el código. El docente
- * exige cosas distintas de cada actividad —el simulador escrito y el OSCE por
- * voz no son intercambiables— y quiere poder incorporar otras funciones.
+ * El mínimo estaba escrito como "15" a mano en cuatro lugares distintos y no se
+ * podía cambiar sin tocar el código.
  *
  * Aquí vive una única definición, configurable, contra la que miden el agente,
  * la ficha del alumno y los avisos.
@@ -13,29 +11,34 @@
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 
 export type PracticeRequirements = {
-  /** Simulador de examen escrito. */
-  escrito: number;
-  /** OSCE por voz. */
-  voz: number;
-  /** Defensa de comisión por voz. */
-  defensa: number;
-  /** Entrenamiento clínico EBM. Queda en 0 mientras no se exija. */
-  entrenamiento: number;
+  /**
+   * Prácticas exigidas en total. La estudiante elige la mezcla.
+   *
+   * El docente exige una cantidad, no una repartición: obligar a un número
+   * exacto de cada modalidad le quitaría a ella la decisión de dónde necesita
+   * practicar más.
+   */
+  total: number;
+  /**
+   * Mínimos por modalidad, opcionales.
+   *
+   * Quedan en cero: existen por si más adelante quiere exigir, por ejemplo, un
+   * piso de defensas, sin tener que volver a tocar el código.
+   */
+  minEscrito: number;
+  minVoz: number;
+  minDefensa: number;
+  minEntrenamiento: number;
   updatedAt?: string;
   updatedBy?: string;
 };
 
-/**
- * Valores por defecto.
- *
- * Reparten el 15 histórico entre las dos actividades que el docente declara
- * obligatorias, y dejan las demás sin exigir hasta que él lo decida.
- */
 export const DEFAULT_REQUIREMENTS: PracticeRequirements = {
-  escrito: 10,
-  voz: 5,
-  defensa: 0,
-  entrenamiento: 0,
+  total: 15,
+  minEscrito: 0,
+  minVoz: 0,
+  minDefensa: 0,
+  minEntrenamiento: 0,
 };
 
 const REQUIREMENTS_PATH = 'settings/practice_requirements';
@@ -47,10 +50,11 @@ export async function getPracticeRequirements(): Promise<PracticeRequirements> {
     if (!snapshot.exists) return DEFAULT_REQUIREMENTS;
     const data = snapshot.data() || {};
     return {
-      escrito: Number(data.escrito ?? DEFAULT_REQUIREMENTS.escrito),
-      voz: Number(data.voz ?? DEFAULT_REQUIREMENTS.voz),
-      defensa: Number(data.defensa ?? DEFAULT_REQUIREMENTS.defensa),
-      entrenamiento: Number(data.entrenamiento ?? DEFAULT_REQUIREMENTS.entrenamiento),
+      total: Number(data.total ?? DEFAULT_REQUIREMENTS.total),
+      minEscrito: Number(data.minEscrito ?? 0),
+      minVoz: Number(data.minVoz ?? 0),
+      minDefensa: Number(data.minDefensa ?? 0),
+      minEntrenamiento: Number(data.minEntrenamiento ?? 0),
       updatedAt: data.updatedAt,
       updatedBy: data.updatedBy,
     };
@@ -62,19 +66,19 @@ export async function getPracticeRequirements(): Promise<PracticeRequirements> {
 
 export type PracticeCompliance = {
   studentId: string;
+  total: number;
+  required: number;
   done: { escrito: number; voz: number; defensa: number; entrenamiento: number; sinClasificar: number };
-  missing: { escrito: number; voz: number; defensa: number; entrenamiento: number };
   meetsAll: boolean;
   /** Resumen legible de lo que falta, listo para un mensaje. */
   summary: string;
 };
 
 /**
- * Cumplimiento por estudiante frente a las exigencias vigentes.
+ * Cumplimiento frente a las exigencias vigentes.
  *
- * Los intentos previos a la distinción escrito/voz no tienen modalidad. No se
- * les adivina una: se cuentan aparte, y se descuentan del faltante para no
- * reclamarle a alguien prácticas que sí hizo.
+ * Lo que se exige es una cantidad total; el desglose por modalidad se informa
+ * porque le sirve al docente para conversar, no para reclamar.
  */
 export function computeCompliance(
   studentId: string,
@@ -91,34 +95,29 @@ export function computeCompliance(
     else done.sinClasificar++;
   });
 
-  // Los antiguos sin modalidad cubren primero lo escrito, que es la exigencia
-  // mayor, y el remanente cubre voz. Es una atribución conservadora: nunca
-  // inventa cumplimiento por encima de lo realmente realizado.
-  let unclassified = done.sinClasificar;
-  const cover = (pending: number) => {
-    const used = Math.min(pending, unclassified);
-    unclassified -= used;
-    return pending - used;
-  };
+  const total = attempts.length;
+  const faltan = Math.max(0, requirements.total - total);
 
-  const missing = {
-    escrito: cover(Math.max(0, requirements.escrito - done.escrito)),
-    voz: cover(Math.max(0, requirements.voz - done.voz)),
-    defensa: Math.max(0, requirements.defensa - done.defensa),
-    entrenamiento: Math.max(0, requirements.entrenamiento - done.entrenamiento),
-  };
+  // Los pisos por modalidad solo se evalúan si el docente los configuró.
+  const shortfalls: string[] = [];
+  if (requirements.minEscrito > done.escrito) shortfalls.push(`${requirements.minEscrito - done.escrito} escrita(s)`);
+  if (requirements.minVoz > done.voz) shortfalls.push(`${requirements.minVoz - done.voz} de voz`);
+  if (requirements.minDefensa > done.defensa) shortfalls.push(`${requirements.minDefensa - done.defensa} defensa(s)`);
+  if (requirements.minEntrenamiento > done.entrenamiento) shortfalls.push(`${requirements.minEntrenamiento - done.entrenamiento} de entrenamiento`);
 
-  const parts: string[] = [];
-  if (missing.escrito > 0) parts.push(`${missing.escrito} escrita(s)`);
-  if (missing.voz > 0) parts.push(`${missing.voz} de voz`);
-  if (missing.defensa > 0) parts.push(`${missing.defensa} defensa(s)`);
-  if (missing.entrenamiento > 0) parts.push(`${missing.entrenamiento} de entrenamiento`);
+  const meetsAll = faltan === 0 && shortfalls.length === 0;
+  const desglose = `${done.escrito} escrita(s), ${done.voz} de voz, ${done.defensa} defensa(s)`;
 
   return {
     studentId,
+    total,
+    required: requirements.total,
     done,
-    missing,
-    meetsAll: parts.length === 0,
-    summary: parts.length === 0 ? 'Cumple todas las exigencias.' : `Le falta ${parts.join(', ')}.`,
+    meetsAll,
+    summary: meetsAll
+      ? `Cumple: ${total}/${requirements.total} (${desglose}).`
+      : faltan > 0
+        ? `Lleva ${total}/${requirements.total}. Le faltan ${faltan}${shortfalls.length ? `, y como mínimo ${shortfalls.join(', ')}` : ''}.`
+        : `Lleva ${total}/${requirements.total}, pero le falta como mínimo ${shortfalls.join(', ')}.`,
   };
 }
