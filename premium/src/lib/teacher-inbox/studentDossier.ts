@@ -107,14 +107,36 @@ function mapFinding(id: string, data: any): DossierFinding {
   };
 }
 
+/**
+ * Registros de una estudiante, buscando su autoría en todos los campos donde
+ * históricamente se guardó.
+ *
+ * Son tres consultas por colección en vez de una, pero cada una es acotada por
+ * igualdad y devuelve pocos documentos. La alternativa —leer la colección
+ * entera y filtrar— cuesta muchísimo más.
+ */
+async function authoredBy(db: ReturnType<typeof getAdminDb>, path: string, studentId: string) {
+  const fields = ['audit.createdBy', 'autorUid', 'clinicianResponsible'];
+  const snapshots = await Promise.all(fields.map(field =>
+    db.collection(path).where(field, '==', studentId).get().catch(() => ({ docs: [] as any[] })),
+  ));
+  // Un mismo registro puede coincidir por más de un campo.
+  const unique = new Map<string, any>();
+  snapshots.forEach((snapshot: any) => snapshot.docs.forEach((doc: any) => unique.set(doc.id, doc)));
+  return { docs: [...unique.values()], size: unique.size };
+}
+
 export async function buildStudentDossier(studentId: string, year: string): Promise<StudentDossier> {
   const db = getAdminDb();
 
   const [userSnap, profileSnap, evalsSnap, evolsSnap, findingsSnap, feedbackSnap, osceSnap, defenseSnap] = await Promise.all([
     db.collection('users').doc(studentId).get(),
     db.collection('student_learning_profiles').doc(studentId).get(),
-    db.collection(`programs/${year}/evaluaciones`).where('audit.createdBy', '==', studentId).get(),
-    db.collection(`programs/${year}/evoluciones`).where('audit.createdBy', '==', studentId).get(),
+    // La autoría se guarda en tres campos según la antigüedad del registro.
+    // Consultar solo `audit.createdBy` dejaba fuera todo lo anterior y la ficha
+    // mostraba cero actividad de alguien que sí había trabajado.
+    authoredBy(db, `programs/${year}/evaluaciones`, studentId),
+    authoredBy(db, `programs/${year}/evoluciones`, studentId),
     db.collection('teacher_agent_reviews').where('studentId', '==', studentId).get(),
     db.collection('student_message_drafts').where('studentId', '==', studentId).get(),
     db.collection('simulador_intentos').where('userId', '==', studentId).get(),

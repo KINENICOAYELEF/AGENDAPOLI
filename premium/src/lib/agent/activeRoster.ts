@@ -74,6 +74,8 @@ export async function buildActiveRoster(year: string): Promise<RosterEntry[]> {
   const recordCount = new Map<string, number>();
   const register = (doc: any) => {
     const data = doc.data();
+    // Tres campos según la antigüedad del registro: mirar solo uno hacía
+    // aparecer como inactiva a quien sí estaba trabajando.
     const author = data.audit?.createdBy || data.autorUid || data.clinicianResponsible;
     if (!author) return;
     const at = iso(data.sessionAt) || iso(data.audit?.createdAt);

@@ -302,6 +302,30 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
     // FASE 2.1.21: Continuidad
     const [lastClosedEvol, setLastClosedEvol] = useState<Evolucion | null>(null);
+    /**
+     * Nombre de quien firma.
+     *
+     * Las evoluciones guardan la autoría como identificador, así que la firma
+     * mostraba una cadena como "U43hfENjnRWDrDx..." en vez de una persona. Las
+     * nuevas guardan el nombre; para las anteriores se resuelve al abrirlas.
+     */
+    const [authorName, setAuthorName] = useState<string>('');
+    useEffect(() => {
+        const stored = (formData as any).clinicianResponsibleName
+            || (initialData as any)?.clinicianResponsibleName;
+        if (stored) { setAuthorName(stored); return; }
+
+        const authorId = formData.clinicianResponsible || (initialData?.audit as any)?.createdBy;
+        if (!authorId) { setAuthorName(user?.displayName || user?.email || ''); return; }
+        if (authorId === user?.uid) { setAuthorName(user?.displayName || user?.email || ''); return; }
+
+        getDoc(doc(db, 'users', authorId))
+            .then(snap => {
+                const data = snap.data();
+                setAuthorName(data?.displayName || data?.email || 'Kinesiólogo(a)');
+            })
+            .catch(() => setAuthorName('Kinesiólogo(a)'));
+    }, [formData.clinicianResponsible, (formData as any).clinicianResponsibleName, initialData, user]);
     const [repeatedFromLast, setRepeatedFromLast] = useState(false);
     const [isLoadingContinuity, setIsLoadingContinuity] = useState(false);
 
@@ -1144,6 +1168,10 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 sessionAtChangeReason: formData.sessionAtChangeReason || null,
                 sessionAtHistory: formData.sessionAtHistory || null,
                 clinicianResponsible: user.uid,
+                // El identificador solo sirve a la máquina. Guardar también el
+                // nombre evita que la firma de la ficha muestre un código y que
+                // haya que resolverlo en cada lectura.
+                clinicianResponsibleName: user.displayName || user.email || '',
 
                 sessionStatus: formData.sessionStatus || 'Realizada',
                 vitalSigns: formData.vitalSigns || null,
@@ -1970,7 +1998,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                 {user?.photoURL ? <img src={user.photoURL} alt="pro" className="w-full h-full object-cover" /> : <span className="font-black text-slate-400 text-xs">KF</span>}
                             </div>
                             <div>
-                                <div className="text-sm font-black text-slate-900">{formData.clinicianResponsible || user?.displayName || "Kinesiólogo(a)"}</div>
+                                <div className="text-sm font-black text-slate-900">{authorName || user?.displayName || "Kinesiólogo(a)"}</div>
                                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Firma Electrónica Simple</div>
                             </div>
                         </div>

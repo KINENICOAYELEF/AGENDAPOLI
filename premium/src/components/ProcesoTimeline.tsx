@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { doc, deleteDoc, collection, query, where, orderBy, getDocs } from "firebase/firestore";
+import { doc, deleteDoc, collection, query, where, orderBy, getDoc, getDocs } from "firebase/firestore";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { Evaluacion, Evolucion, Proceso } from "@/types/clinica";
@@ -55,6 +55,14 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
     const [selectedEvol, setSelectedEvol] = useState<Evolucion | null>(null);
 
     // Estado para el modal de historial
+    /**
+     * Quién escribió cada registro.
+     *
+     * Los documentos guardan la autoría como identificador y el timeline no la
+     * mostraba: al abrir un proceso atendido por varias internas era imposible
+     * saber quién había hecho qué. Se resuelven los nombres una sola vez.
+     */
+    const [authorNames, setAuthorNames] = useState<Record<string, string>>({});
     const [historySnapshots, setHistorySnapshots] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -92,6 +100,29 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
             // Ordenar por fecha descendente
             loadedItems.sort((a, b) => b.date.getTime() - a.date.getTime());
             setItems(loadedItems);
+
+            // Nombres de quienes firmaron, para no mostrar identificadores.
+            const authorIds = [...new Set(loadedItems
+                .map(item => (item.data as any).clinicianResponsible || item.data.audit?.createdBy)
+                .filter(Boolean))] as string[];
+            const resolved: Record<string, string> = {};
+            loadedItems.forEach(item => {
+                const stored = (item.data as any).clinicianResponsibleName;
+                const authorId = (item.data as any).clinicianResponsible || item.data.audit?.createdBy;
+                if (stored && authorId) resolved[authorId] = stored;
+            });
+            await Promise.all(authorIds
+                .filter(id => !resolved[id])
+                .map(async (id) => {
+                    try {
+                        const snap = await getDoc(doc(db, 'users', id));
+                        const data = snap.data();
+                        resolved[id] = data?.displayName || data?.email || 'Autor no identificado';
+                    } catch {
+                        resolved[id] = 'Autor no identificado';
+                    }
+                }));
+            setAuthorNames(resolved);
 
             // Auto-open exact record if initialRecordId matches
             if (initialRecordId) {
@@ -448,9 +479,21 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                                                     </span>
                                                 ) : null}
                                             </div>
-                                            <div className="text-sm font-bold text-slate-800 leading-tight mb-2">
+                                            <div className="text-sm font-bold text-slate-800 leading-tight mb-1">
                                                 {isEval ? (isReeval ? 'Re-Evaluación Seguimiento' : 'Evaluación Inicial') : 'Evolución de Sesión'}
                                             </div>
+                                            {/* Quién lo hizo: sin esto, en un proceso con suplencias no
+                                                se puede saber a quién corregir. */}
+                                            {(() => {
+                                                const authorId = (item.data as any).clinicianResponsible || item.data.audit?.createdBy;
+                                                const name = (item.data as any).clinicianResponsibleName
+                                                    || (authorId ? authorNames[authorId] : '');
+                                                return name ? (
+                                                    <div className="text-[10px] font-semibold text-slate-500 mb-2">
+                                                        por {name}
+                                                    </div>
+                                                ) : null;
+                                            })()}
 
                                             {/* MINI RESUMEN CLÍNICO */}
                                             {isEval && (item.data as any).autoSynthesis?.clasificacion_dolor && (

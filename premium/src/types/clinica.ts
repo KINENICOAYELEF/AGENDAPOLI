@@ -1183,6 +1183,8 @@ export interface Evolucion {
     casoId?: string | null;     // Legacy, equivalente a procesoId
     procesoId?: string | null;         // FASE 2.2.4: Conexión explícita al Proceso
     citaId?: string | null;            // Cita de agenda que originó la sesión
+    /** Nombre de quien firma. El identificador solo sirve a la máquina. */
+    clinicianResponsibleName?: string;
     sesionId?: string | null;
     evaluationIndexId?: string; // FASE 2.2.4: Eval inicial vigente del proceso
     loadTrafficLightAtSession?: 'Verde' | 'Amarillo' | 'Rojo'; // FASE 2.2.4
