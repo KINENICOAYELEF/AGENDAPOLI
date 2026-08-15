@@ -13,6 +13,7 @@
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import { computeCompliance, getPracticeRequirements } from '@/lib/agent/practiceRequirements';
 import { getTeacherNotes } from '@/lib/agent/teacherNotes';
+import { getCompetencyHistory } from '@/lib/agent/competencies';
 
 export type DossierRecord = {
   id: string;
@@ -73,6 +74,13 @@ export type StudentDossier = {
     history: DossierFinding[];
   };
   deliveredFeedback: Array<{ id: string; approvedAt: string; messageBody: string }>;
+  /** Perfil por competencia y su trayectoria semanal. */
+  competencies: {
+    current: Array<{ competency: string; level: string; comment: string; week?: number }>;
+    history: Array<{ week: number; levels: Record<string, string> }>;
+    rotationWeek: number | null;
+    rotationTotalWeeks: number | null;
+  };
   /** Lo que el docente observó en el box y le dictó al bot. */
   teacherNotes: Array<{ id?: string; note: string; tone: string; createdAt: string }>;
 };
@@ -261,6 +269,17 @@ export async function buildStudentDossier(studentId: string, year: string): Prom
         .sort((a, b) => b.count - a.count),
       pending: findings.filter((finding: DossierFinding) => finding.status === 'PENDING_TEACHER').slice(0, 10),
       history: findings.filter((finding: DossierFinding) => finding.status !== 'PENDING_TEACHER').slice(0, 20),
+    },
+    competencies: {
+      current: Object.entries((profile.competencies || {}) as Record<string, any>).map(([competency, value]) => ({
+        competency,
+        level: value?.level || 'EN_DESARROLLO',
+        comment: value?.comment || '',
+        week: value?.week,
+      })),
+      history: await getCompetencyHistory(studentId),
+      rotationWeek: profile.rotationWeek ?? null,
+      rotationTotalWeeks: profile.rotationTotalWeeks ?? null,
     },
     // Lo que solo ve él: es la parte más pesada de la nota de proceso y la que
     // no está en ningún registro clínico.

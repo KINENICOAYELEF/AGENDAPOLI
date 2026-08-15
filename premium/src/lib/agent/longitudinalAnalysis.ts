@@ -28,7 +28,24 @@ const CoherenceFindingSchema = z.object({
   severity: z.enum(['ALTA', 'MEDIA', 'BAJA']),
 });
 
+/** Nivel alcanzado en una competencia clínica concreta. */
+const CompetencyAssessmentSchema = z.object({
+  competency: z.enum([
+    'RAZONAMIENTO', 'EXAMEN_FISICO', 'OBJETIVOS',
+    'DOSIFICACION', 'REEVALUACION', 'SEGURIDAD', 'REGISTRO',
+  ]),
+  level: z.enum(['INSUFICIENTE', 'EN_DESARROLLO', 'LOGRADO', 'DESTACADO']),
+  comment: z.string().min(1).max(400),
+});
+
 const LongitudinalAnalysisSchema = z.object({
+  /**
+   * Perfil por competencia.
+   *
+   * Convierte una lista de incidentes en algo evaluable: cinco hallazgos
+   * distintos suelen ser la misma competencia fallando por cinco lados.
+   */
+  competencies: z.array(CompetencyAssessmentSchema).max(7).default([]),
   strengths: z.array(z.string().min(1).max(300)).max(4).default([]),
   improvementGaps: z.array(z.string().min(1).max(300)).max(4).default([]),
   recurringPattern: z.string().min(1).max(500).optional(),
@@ -171,8 +188,24 @@ function coerceAnalysisShape(raw: any): any {
   const cut = (value: unknown, max: number) =>
     typeof value === 'string' ? value.trim().slice(0, max) : value;
 
+  const validCompetencies = new Set([
+    'RAZONAMIENTO', 'EXAMEN_FISICO', 'OBJETIVOS',
+    'DOSIFICACION', 'REEVALUACION', 'SEGURIDAD', 'REGISTRO',
+  ]);
+  const validLevels = new Set(['INSUFICIENTE', 'EN_DESARROLLO', 'LOGRADO', 'DESTACADO']);
+
   return {
     ...raw,
+    competencies: Array.isArray(raw.competencies)
+      ? raw.competencies
+          .filter((item: any) => validCompetencies.has(item?.competency) && validLevels.has(item?.level))
+          .slice(0, 7)
+          .map((item: any) => ({
+            competency: item.competency,
+            level: item.level,
+            comment: cut(item.comment || 'Sin comentario.', 400),
+          }))
+      : [],
     strengths: Array.isArray(raw.strengths) ? raw.strengths.slice(0, 4).map((item: any) => cut(item, 300)) : [],
     improvementGaps: Array.isArray(raw.improvementGaps) ? raw.improvementGaps.slice(0, 4).map((item: any) => cut(item, 300)) : [],
     recurringPattern: raw.recurringPattern ? cut(raw.recurringPattern, 500) : undefined,
@@ -225,6 +258,59 @@ export function parseLongitudinalAnalysis(raw: string): LongitudinalAnalysis | n
   }
 }
 
+/**
+ * Segundo pase: confirma cada afirmación contra la evidencia original.
+ *
+ * Un modelo que analiza y publica en un solo paso produce afirmaciones que
+ * suenan razonables pero no están respaldadas, y basta un puñado de esas para
+ * que el docente deje de confiar en todo el conjunto. Aquí se releen los
+ * hallazgos contra el texto real y se descarta lo que no se puede confirmar.
+ *
+ * Cuesta una llamada adicional. Vale la pena: un hallazgo falso cuesta mucho
+ * más que una llamada.
+ */
+async function verifyFindings(
+  analysis: LongitudinalAnalysis,
+  evidence: ReturnType<typeof buildDeidentifiedEvidence>,
+): Promise<LongitudinalAnalysis> {
+  if (analysis.coherenceFindings.length === 0) return analysis;
+
+  const response = await runAgentInteraction(
+    `Eres un revisor estricto. Otro modelo analizó los registros de una estudiante y afirmó lo siguiente. Tu única tarea es comprobar si cada afirmación está REALMENTE respaldada por la evidencia.
+
+AFIRMACIONES:
+${analysis.coherenceFindings.map((finding, index) => `${index}. [${finding.type}] ${finding.explanation}`).join('\n')}
+
+EVIDENCIA COMPLETA:
+${JSON.stringify(evidence).slice(0, 20000)}
+
+Devuelve SOLO un JSON:
+{"confirmadas":[0,2]}
+
+Incluye el índice de una afirmación solo si puedes señalar en la evidencia el dato concreto que la sostiene. Ante la duda, NO la incluyas: es preferible perder un hallazgo verdadero que publicar uno falso.`,
+    undefined,
+    undefined,
+    'routing',
+  );
+
+  if (response.status !== 'success') return analysis;
+
+  try {
+    const match = String(response.result || '').match(/\{[\s\S]*\}/);
+    const confirmed: number[] = match ? (JSON.parse(match[0])?.confirmadas || []) : [];
+    if (!Array.isArray(confirmed)) return analysis;
+
+    const kept = analysis.coherenceFindings.filter((_, index) => confirmed.includes(index));
+    const discarded = analysis.coherenceFindings.length - kept.length;
+    if (discarded > 0) {
+      console.log(`[Verificación] Se descartaron ${discarded} de ${analysis.coherenceFindings.length} hallazgos sin respaldo.`);
+    }
+    return { ...analysis, coherenceFindings: kept };
+  } catch {
+    return analysis;
+  }
+}
+
 /** Resultado del análisis y por qué falló, cuando falla. */
 export type LongitudinalAnalysisOutcome = {
   analysis: LongitudinalAnalysis | null;
@@ -240,6 +326,8 @@ export async function analyzeStudentLongitudinal(
   calibrationNote = '',
   /** Resultados de OSCE y defensas: el razonamiento oral, que las fichas no muestran. */
   oralEvidence: any[] = [],
+  /** En qué semana de su rotación va y qué se le puede exigir a esa altura. */
+  stageContext = '',
 ): Promise<LongitudinalAnalysisOutcome> {
   const evidence = buildDeidentifiedEvidence(records);
   if (evidence.length === 0) {
@@ -248,6 +336,9 @@ export async function analyzeStudentLongitudinal(
   const processGroups = buildProcessGroupedEvidence(records);
 
   const prompt = `Eres el asistente de un kinesiólogo docente a cargo de un internado clínico. Analizas a un estudiante identificado como ${studentId}.
+
+ETAPA DE LA ESTUDIANTE
+${stageContext || 'No se conoce en qué punto de su rotación está.'}
 
 TU TAREA PRINCIPAL ES JUZGAR COHERENCIA CLÍNICA.
 No basta con revisar si los campos están llenos. Debes contrastar, dentro de cada proceso, lo que el propio estudiante concluyó contra lo que efectivamente ejecutó:
@@ -266,12 +357,25 @@ REGLAS QUE NO PUEDES ROMPER:
 - Si la evidencia es insuficiente para concluir, responde prioridad P3 y explica la limitación. Es preferible no afirmar nada a afirmar de más.
 - Cada conclusión debe citar recordId, collection, section y un extracto literalmente presente en la evidencia.
 
+EVALÚA POR COMPETENCIA (campo competencies).
+Además de los hechos, dictamina el nivel alcanzado en cada competencia que la evidencia permita juzgar. NO inventes un nivel para una competencia sobre la que no hay evidencia: en ese caso, simplemente omítela.
+
+- RAZONAMIENTO: hipótesis, diagnóstico, uso de la evidencia recogida.
+- EXAMEN_FISICO: pertinencia y calidad de lo que evalúa y mide.
+- OBJETIVOS: objetivos verificables y coherentes con el diagnóstico.
+- DOSIFICACION: carga, progresión y su fundamento.
+- REEVALUACION: volver a medir y decidir con eso.
+- SEGURIDAD: conducta frente a señales de alarma y tolerancia.
+- REGISTRO: que lo escrito permita a otro continuar el caso.
+
+Niveles: INSUFICIENTE, EN_DESARROLLO, LOGRADO, DESTACADO. Júzgalos SEGÚN LA ETAPA indicada arriba: lo exigible en la semana 2 no es lo exigible en la semana 7.
+
 ADEMÁS, REDACTA EL FEEDBACK (campo draftFeedback).
 Escríbelo como lo escribiría un docente clínico dirigiéndose a su estudiante: en español de Chile, tono ${preferredTone}, tuteando, entre 80 y 200 palabras. Parte reconociendo algo concreto que hizo bien, luego plantea la observación principal apoyada en su propio registro, y cierra con una pregunta que la haga razonar en vez de darle la respuesta. No uses viñetas ni encabezados: es un mensaje, no un informe. No firmes.
 Este texto es un BORRADOR para que el docente lo apruebe. Nunca contactas tú al estudiante.
 
 Responde SOLO JSON válido con esta forma exacta:
-{"strengths":["..."],"improvementGaps":["..."],"recurringPattern":"... opcional","coherenceFindings":[{"type":"INTERVENCION_NO_CORRESPONDE|OBJETIVO_ABANDONADO|DOSIFICACION_INADECUADA|PLAN_ESTANCADO|RIESGO_SEGURIDAD|SIN_REEVALUACION","explanation":"...","severity":"ALTA|MEDIA|BAJA"}],"observation":"...","pedagogicalInference":"...","socraticQuestion":"...","recommendation":"...","draftFeedback":"...","priority":"P0|P1|P2|P3","confidence":0.0,"evidence":[{"recordId":"...","collection":"evaluaciones|evoluciones","section":"...","excerpt":"..."}]}
+{"competencies":[{"competency":"RAZONAMIENTO|EXAMEN_FISICO|OBJETIVOS|DOSIFICACION|REEVALUACION|SEGURIDAD|REGISTRO","level":"INSUFICIENTE|EN_DESARROLLO|LOGRADO|DESTACADO","comment":"..."}],"strengths":["..."],"improvementGaps":["..."],"recurringPattern":"... opcional","coherenceFindings":[{"type":"INTERVENCION_NO_CORRESPONDE|OBJETIVO_ABANDONADO|DOSIFICACION_INADECUADA|PLAN_ESTANCADO|RIESGO_SEGURIDAD|SIN_REEVALUACION","explanation":"...","severity":"ALTA|MEDIA|BAJA"}],"observation":"...","pedagogicalInference":"...","socraticQuestion":"...","recommendation":"...","draftFeedback":"...","priority":"P0|P1|P2|P3","confidence":0.0,"evidence":[{"recordId":"...","collection":"evaluaciones|evoluciones","section":"...","excerpt":"..."}]}
 
 EVIDENCIA AGRUPADA POR PROCESO (evaluación y objetivos declarados junto a las sesiones ejecutadas):
 ${JSON.stringify(processGroups)}
@@ -292,8 +396,9 @@ Contrasta lo escrito con lo oral. Una estudiante puede redactar fichas impecable
   }
 
   const analysis = parseLongitudinalAnalysis(response.result || '');
+  const verified = analysis ? await verifyFindings(analysis, evidence) : null;
   return {
-    analysis,
+    analysis: verified,
     engine: (response as any).engine || 'antigravity',
     note: analysis
       ? (response as any).engineNote || ''

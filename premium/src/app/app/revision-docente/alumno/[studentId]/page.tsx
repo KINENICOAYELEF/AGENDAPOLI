@@ -19,6 +19,40 @@ import { useYear } from "@/context/YearContext";
 import type { StudentDossier } from "@/lib/teacher-inbox/studentDossier";
 import { priorityLabel } from "@/lib/agent/priorityLabels";
 
+const COMPETENCY_LABELS: Record<string, string> = {
+  RAZONAMIENTO: "Razonamiento diagnóstico",
+  EXAMEN_FISICO: "Examen físico",
+  OBJETIVOS: "Objetivos y plan",
+  DOSIFICACION: "Dosificación y progresión",
+  REEVALUACION: "Reevaluación",
+  SEGURIDAD: "Seguridad clínica",
+  REGISTRO: "Calidad del registro",
+};
+
+const LEVEL_LABELS: Record<string, string> = {
+  INSUFICIENTE: "Insuficiente",
+  EN_DESARROLLO: "En desarrollo",
+  LOGRADO: "Logrado",
+  DESTACADO: "Destacado",
+};
+
+const LEVEL_EMOJI: Record<string, string> = {
+  INSUFICIENTE: "🔴",
+  EN_DESARROLLO: "🟠",
+  LOGRADO: "🟢",
+  DESTACADO: "⭐️",
+};
+
+const LEVEL_STYLE: Record<string, string> = {
+  INSUFICIENTE: "border-l-rose-400 bg-rose-50/50",
+  EN_DESARROLLO: "border-l-amber-400 bg-amber-50/50",
+  LOGRADO: "border-l-emerald-400 bg-emerald-50/50",
+  DESTACADO: "border-l-indigo-400 bg-indigo-50/50",
+};
+
+/** De lo que falla a lo logrado: el docente lee primero lo que hay que atender. */
+const LEVEL_ORDER = ["INSUFICIENTE", "EN_DESARROLLO", "LOGRADO", "DESTACADO"];
+
 /** Los mismos nombres legibles que usa la bandeja, para no hablar dos idiomas. */
 const COHERENCE_LABELS: Record<string, string> = {
   INTERVENCION_NO_CORRESPONDE: "Intervención sin relación con el diagnóstico",
@@ -139,6 +173,70 @@ export default function FichaAlumnoPage() {
           />
         </div>
       </header>
+
+      {/* Perfil por competencia: el insumo directo de la nota de proceso */}
+      {dossier.competencies.current.length > 0 && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-indigo-700">
+            <GraduationCap className="h-4 w-4" /> Competencias clínicas
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            {dossier.competencies.rotationWeek
+              ? `Evaluadas según su etapa: semana ${dossier.competencies.rotationWeek}${dossier.competencies.rotationTotalWeeks ? ` de ${dossier.competencies.rotationTotalWeeks}` : ''}.`
+              : 'Lo exigible depende de la etapa; su fecha de término aún no está registrada.'}
+          </p>
+
+          <ul className="mt-4 space-y-2">
+            {[...dossier.competencies.current]
+              .sort((a, b) => LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level))
+              .map(item => (
+                <li key={item.competency} className={`rounded-xl border-l-4 p-3 ${LEVEL_STYLE[item.level] || "border-l-slate-300 bg-slate-50"}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-bold text-slate-800">
+                      {COMPETENCY_LABELS[item.competency] || item.competency}
+                    </span>
+                    <span className="shrink-0 text-xs font-black">
+                      {LEVEL_EMOJI[item.level]} {LEVEL_LABELS[item.level] || item.level}
+                    </span>
+                  </div>
+                  {item.comment && <p className="mt-1 text-xs text-slate-600">{item.comment}</p>}
+                </li>
+              ))}
+          </ul>
+
+          {dossier.competencies.history.length > 1 && (
+            // La trayectoria responde algo que el estado actual no: si el
+            // feedback que le diste hace semanas cambió algo.
+            <div className="mt-5">
+              <h3 className="text-xs font-black uppercase tracking-wide text-slate-500">Cómo ha evolucionado</h3>
+              <div className="mt-2 overflow-x-auto">
+                <table className="w-full min-w-[420px] text-left text-xs">
+                  <thead className="text-[10px] uppercase tracking-wide text-slate-400">
+                    <tr>
+                      <th className="pb-1 pr-2 font-bold">Competencia</th>
+                      {dossier.competencies.history.map(entry => (
+                        <th key={entry.week} className="pb-1 px-1 font-bold">S{entry.week}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {dossier.competencies.current.map(item => (
+                      <tr key={item.competency}>
+                        <td className="py-1.5 pr-2 text-slate-700">{COMPETENCY_LABELS[item.competency] || item.competency}</td>
+                        {dossier.competencies.history.map(entry => (
+                          <td key={entry.week} className="py-1.5 px-1 text-center">
+                            {LEVEL_EMOJI[entry.levels?.[item.competency]] || '·'}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Patrones: lo que se repite es lo que hay que enseñar */}
       {dossier.findings.coherenceTally.length > 0 && (

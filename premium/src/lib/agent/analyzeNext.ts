@@ -21,6 +21,13 @@ import { deidentifyText } from './deidentify';
 import { getAllowedTelegramChatId, sendTelegramMessage } from '@/lib/server/telegram';
 import { featureFlags } from './config';
 import { priorityEmoji, priorityLabel } from './priorityLabels';
+import {
+  COMPETENCY_LABELS, LEVEL_EMOJI, getRotationStage, saveCompetencyProfile, stageExpectation,
+  type Competency, type CompetencyLevel,
+} from './competencies';
+
+/** De lo más preocupante a lo mejor logrado: el docente lee primero lo que falla. */
+const LEVEL_ORDER: CompetencyLevel[] = ['INSUFICIENTE', 'EN_DESARROLLO', 'LOGRADO', 'DESTACADO'];
 
 /** Cada cuánto se vuelve a analizar a la misma persona. */
 const REANALYSIS_INTERVAL_HOURS = 20;
@@ -143,8 +150,14 @@ export async function analyzeNextStudent(year: string): Promise<AnalyzeNextResul
   } catch { /* el análisis clínico sigue siendo válido sin esto */ }
 
   const calibration = calibrationInstruction(await getTeacherCalibration());
+
+  // En qué semana va: lo exigible en la semana 2 no es lo exigible en la 7, y
+  // sin este dato el agente juzgaba igual los dos casos.
+  const stage = await getRotationStage(year, student.id);
+  const stageContext = `${stage.description}\n${stageExpectation(stage)}`;
+
   const { analysis, engine, note } = await analyzeStudentLongitudinal(
-    student.id, records, 'constructive', calibration, oralEvidence,
+    student.id, records, 'constructive', calibration, oralEvidence, stageContext,
   );
 
   await markAnalyzed();
@@ -230,7 +243,11 @@ export async function analyzeNextStudent(year: string): Promise<AnalyzeNextResul
     lastUpdatedAt: new Date().toISOString(),
   }, { merge: true });
 
-  await sendStudentAlert(db, { reviewId, studentName: student.name, priority, analysis, patientNames });
+  // El perfil por competencia y su corte semanal: es lo que convierte los
+  // hallazgos sueltos en algo evaluable, y el insumo de la nota de proceso.
+  await saveCompetencyProfile(student.id, analysis.competencies || [], stage);
+
+  await sendStudentAlert(db, { reviewId, studentName: student.name, priority, analysis, patientNames, stage });
 
   return { analyzed: student.name, remaining: analyzable.length - 1, findingCreated: true, engine, note };
 }
@@ -251,6 +268,7 @@ async function sendStudentAlert(
     analysis: any;
     /** Personas citadas en el análisis, para que el docente sepa a quién ir a ver. */
     patientNames: Array<{ id: string; name: string }>;
+    stage: { currentWeek: number | null; totalWeeks: number | null };
   },
 ) {
   if (!featureFlags.telegramTeacherEnabled) return;
@@ -279,10 +297,25 @@ async function sendStudentAlert(
     ? `\n👤 _Sobre:_ ${input.patientNames.map(patient => patient.name).join(', ')}`
     : '';
 
-  const text = `${priorityEmoji(input.priority)} *${input.studentName}* · ${priorityLabel(input.priority)}${people}\n\n`
+  // Perfil por competencia: es lo que permite pasar de "hizo esto mal" a
+  // "esta habilidad no la tiene todavía".
+  const competencies = Array.isArray(input.analysis.competencies) && input.analysis.competencies.length > 0
+    ? `\n\n${input.analysis.competencies
+        .slice()
+        .sort((a: any, b: any) => LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level))
+        .map((item: any) => `${LEVEL_EMOJI[item.level as CompetencyLevel]} ${COMPETENCY_LABELS[item.competency as Competency]}`)
+        .join('\n')}`
+    : '';
+
+  const week = input.stage.currentWeek
+    ? ` · semana ${input.stage.currentWeek}${input.stage.totalWeeks ? ` de ${input.stage.totalWeeks}` : ''}`
+    : '';
+
+  const text = `${priorityEmoji(input.priority)} *${input.studentName}*${week}${people}\n\n`
     + `${input.analysis.observation}\n`
     + (coherence ? `\n${coherence}\n` : '')
-    + `\n_Le diría esto:_\n${input.analysis.draftFeedback}`;
+    + competencies
+    + `\n\n_Le diría esto:_\n${input.analysis.draftFeedback}`;
 
   const keyboard = token
     ? {
