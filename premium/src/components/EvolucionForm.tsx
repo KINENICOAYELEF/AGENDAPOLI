@@ -7,6 +7,7 @@ import { OutcomesService } from "@/services/outcomes";
 import { AgendaService } from "@/services/agenda";
 import { PersonasUsuariasService } from "@/services/personasUsuarias";
 import { AssignmentDecisionsService } from "@/services/assignmentDecisions";
+import { DictadoEvolucion } from "@/components/DictadoEvolucion";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { sanitizeForFirestoreDeep, resolveSafeAudit } from "@/lib/firebase-utils";
@@ -2219,6 +2220,52 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                 </div>
                             </div>
                         )}                        {/* --- FASE 2.1.29: REDISEÑO BANNER DE CONTINUIDAD --- */}
+                        {/* Dictado: la fricción de escribir es la causa real de los
+                            borradores sin firmar. Nada llega a la ficha sin que
+                            ella revise la propuesta. */}
+                        {!isClosedDynamic && (
+                            <DictadoEvolucion
+                                contexto={lastClosedEvol
+                                    ? `Sesión anterior — meta: ${(lastClosedEvol as any).sessionGoal || 'sin registro'}. Plan que dejó: ${(lastClosedEvol as any).nextPlan || 'sin registro'}.`
+                                    : undefined}
+                                onAplicar={(propuesta) => {
+                                    setFormData((prev: any) => ({
+                                        ...prev,
+                                        // Lo dictado no pisa lo que ella ya había escrito.
+                                        sessionGoal: prev.sessionGoal?.trim() || propuesta.sessionGoal,
+                                        nextPlan: prev.nextPlan?.trim() || propuesta.nextPlan,
+                                        educationNotes: prev.educationNotes?.trim() || propuesta.educationNotes,
+                                        responseTolerance: (prev as any).responseTolerance?.trim() || propuesta.responseTolerance,
+                                        pain: {
+                                            ...prev.pain,
+                                            evaStart: prev.pain?.evaStart !== '' && prev.pain?.evaStart !== undefined
+                                                ? prev.pain.evaStart
+                                                : propuesta.evaStart,
+                                            evaEnd: prev.pain?.evaEnd !== '' && prev.pain?.evaEnd !== undefined
+                                                ? prev.pain.evaEnd
+                                                : propuesta.evaEnd,
+                                        },
+                                        exercises: [
+                                            ...(prev.exercises || []),
+                                            ...propuesta.exercises.map(item => ({
+                                                id: generateId(),
+                                                name: item.name,
+                                                prescription: item.dose,
+                                            })),
+                                        ],
+                                        interventions: [
+                                            ...(Array.isArray(prev.interventions) ? prev.interventions : []),
+                                            ...propuesta.interventions.map(item => ({
+                                                id: generateId(),
+                                                category: item.category,
+                                                notes: item.detail,
+                                            })),
+                                        ],
+                                    }));
+                                }}
+                            />
+                        )}
+
                         {lastClosedEvol ? (
                             <div className="bg-white p-5 md:p-6 rounded-2xl border-l-[6px] border-l-indigo-500 border-y border-r border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-4 animate-in fade-in slide-in-from-top-4 relative overflow-hidden group">
                                 <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500 rounded-l-2xl"></div>
