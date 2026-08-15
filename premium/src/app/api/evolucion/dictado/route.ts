@@ -28,20 +28,23 @@ const INTERVENTION_CATEGORIES = [
 const SESSION_STATUSES = ['Realizada', 'No asiste', 'Cancelada', 'Suspendida por mal estado'] as const;
 
 /**
- * El dictado es guiado por pasos.
+ * El guion que la estudiante siguió en pantalla mientras dictaba.
  *
- * Decirle a alguien "dicta la evolución" es demasiado abierto: no sabe por
- * dónde empezar ni en qué orden, y termina escribiéndola igual. Una pregunta a
- * la vez le dice qué contar, y además hace la transcripción más fiable, porque
- * cada audio es corto y sobre una sola cosa.
+ * La grabación es UNA sola y continua: la pantalla solo le va indicando qué
+ * contar. Cortar en cinco audios habría costado cinco llamadas por evolución
+ * —210 al día para siete internas, sobre un modelo que rinde 200— y además
+ * obliga a parar y arrancar cinco veces por paciente.
+ *
+ * Conocer el orden en que se le pidió hablar permite separar bien las partes
+ * aunque venga todo en un mismo audio.
  */
-const PASO_PREGUNTAS = {
-  estado: '¿Con qué molestia llegó hoy y cuánto dolor tenía?',
-  intervenciones: '¿Qué le hiciste tú en la sesión? (terapia manual, educación, vendaje, etc.)',
-  ejercicios: '¿Qué ejercicios hizo y con qué dosis?',
-  cierre: '¿Cómo quedó al final y qué viene la próxima sesión?',
-  traspaso: '¿Algo que otro colega necesite saber para continuar?',
-} as const;
+const GUION_DICTADO = [
+  'Con qué molestia llegó y cuánto dolor tenía al empezar',
+  'Qué le hizo el profesional: terapia manual, educación, vendaje, modalidades',
+  'Qué ejercicios hizo y con qué dosis',
+  'Cómo quedó al final y qué viene la próxima sesión',
+  'Qué necesita saber otro colega para continuar el caso',
+];
 
 export async function POST(req: Request) {
   try {
@@ -57,7 +60,12 @@ export async function POST(req: Request) {
     const raw = await callGemini({
       systemInstruction: 'Eres un asistente de registro clínico kinesiológico en Chile. Transcribes lo que dicta el profesional y lo ordenas en los campos de una evolución. No agregas nada que no se haya dicho.',
       userPrompt: `Escucha el dictado de una sesión de kinesiología y ordénalo en los campos reales de la evolución.
-${paso ? `\nLa estudiante está respondiendo esta pregunta concreta: "${PASO_PREGUNTAS[paso as keyof typeof PASO_PREGUNTAS] || paso}". Llena solo los campos que correspondan a eso y deja el resto vacío.\n` : ''}
+
+La estudiante dictó de corrido siguiendo este guion en pantalla, en este orden:
+${GUION_DICTADO.map((tema, index) => `${index + 1}. ${tema}`).join('\n')}
+
+Puede haberse saltado partes, haberlas mezclado o haber vuelto atrás. Usa el guion como referencia, no como estructura rígida: lo que importa es lo que efectivamente dijo.
+
 
 ${contexto ? `Contexto de la sesión (por si menciona "lo mismo de la vez pasada"):\n${String(contexto).slice(0, 2000)}\n` : ''}
 Devuelve SOLO un JSON con esta forma exacta:
