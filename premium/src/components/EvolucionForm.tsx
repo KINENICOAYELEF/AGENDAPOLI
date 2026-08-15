@@ -2235,7 +2235,8 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         sessionGoal: prev.sessionGoal?.trim() || propuesta.sessionGoal,
                                         nextPlan: prev.nextPlan?.trim() || propuesta.nextPlan,
                                         educationNotes: prev.educationNotes?.trim() || propuesta.educationNotes,
-                                        responseTolerance: (prev as any).responseTolerance?.trim() || propuesta.responseTolerance,
+                                        handoffText: prev.handoffText?.trim() || propuesta.handoffText,
+                                        sessionStatus: prev.sessionStatus || propuesta.sessionStatus || 'Realizada',
                                         pain: {
                                             ...prev.pain,
                                             evaStart: prev.pain?.evaStart !== '' && prev.pain?.evaStart !== undefined
@@ -2245,12 +2246,18 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                 ? prev.pain.evaEnd
                                                 : propuesta.evaEnd,
                                         },
+                                        // Los ejercicios se guardan con la dosis desglosada:
+                                        // así los muestra y los edita la ficha.
                                         exercises: [
                                             ...(prev.exercises || []),
                                             ...propuesta.exercises.map(item => ({
                                                 id: generateId(),
                                                 name: item.name,
-                                                prescription: item.dose,
+                                                sets: item.sets,
+                                                repsOrTime: item.repsOrTime,
+                                                loadKg: item.loadKg || null,
+                                                rest: item.rest || null,
+                                                notes: item.notes,
                                             })),
                                         ],
                                         interventions: [
@@ -2258,7 +2265,9 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                             ...propuesta.interventions.map(item => ({
                                                 id: generateId(),
                                                 category: item.category,
-                                                notes: item.detail,
+                                                subType: item.subType,
+                                                dose: item.dose,
+                                                notes: item.notes,
                                             })),
                                         ],
                                     }));

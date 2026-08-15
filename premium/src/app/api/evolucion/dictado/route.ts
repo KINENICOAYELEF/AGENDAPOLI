@@ -19,6 +19,14 @@ import { jsonrepair } from 'jsonrepair';
  */
 export const maxDuration = 120;
 
+/** Valores exactos que acepta el modelo de datos; un texto libre rompe la ficha. */
+const INTERVENTION_CATEGORIES = [
+  'Educación', 'Terapia manual', 'Modalidades físicas', 'Vendaje/soporte',
+  'Exposición/retorno', 'Respiratorio/relajación', 'Otras',
+] as const;
+
+const SESSION_STATUSES = ['Realizada', 'No asiste', 'Cancelada', 'Suspendida por mal estado'] as const;
+
 export async function POST(req: Request) {
   try {
     await requireAuthenticated(req.headers.get('authorization'));
@@ -32,7 +40,7 @@ export async function POST(req: Request) {
 
     const raw = await callGemini({
       systemInstruction: 'Eres un asistente de registro clínico kinesiológico en Chile. Transcribes lo que dicta el profesional y lo ordenas en los campos de una evolución. No agregas nada que no se haya dicho.',
-      userPrompt: `Escucha el dictado de una sesión de kinesiología y ordénalo en los campos de la evolución.
+      userPrompt: `Escucha el dictado de una sesión de kinesiología y ordénalo en los campos reales de la evolución.
 
 ${contexto ? `Contexto de la sesión (por si menciona "lo mismo de la vez pasada"):\n${String(contexto).slice(0, 2000)}\n` : ''}
 Devuelve SOLO un JSON con esta forma exacta:
@@ -40,18 +48,33 @@ Devuelve SOLO un JSON con esta forma exacta:
   "sessionGoal": "molestia principal u objetivo de la sesión, tal como lo dijo",
   "evaStart": "número 0-10 o vacío",
   "evaEnd": "número 0-10 o vacío",
-  "interventions": [{"category":"tipo de intervención","detail":"lo que hizo"}],
-  "exercises": [{"name":"nombre del ejercicio","dose":"series, repeticiones, carga o tiempo tal como lo dijo"}],
+  "interventions": [{
+    "category": "Educación|Terapia manual|Modalidades físicas|Vendaje/soporte|Exposición/retorno|Respiratorio/relajación|Otras",
+    "subType": "qué técnica concreta",
+    "dose": "tiempo o repeticiones si lo dijo",
+    "notes": "detalle adicional si lo dijo"
+  }],
+  "exercises": [{
+    "name": "nombre del ejercicio",
+    "sets": "número de series si lo dijo",
+    "repsOrTime": "repeticiones o tiempo si lo dijo",
+    "loadKg": "carga en kilos si la dijo",
+    "rest": "descanso si lo dijo",
+    "notes": "aclaración si la dijo"
+  }],
   "educationNotes": "lo que le explicó o indicó, si lo mencionó",
-  "responseTolerance": "cómo toleró, si lo mencionó",
-  "nextPlan": "qué hará la próxima sesión, si lo mencionó",
+  "handoffText": "lo que otro colega necesitaría saber para continuar: implementos, adaptaciones, detalles prácticos",
+  "nextPlan": "qué hará la próxima sesión o el hito logrado, si lo mencionó",
+  "sessionStatus": "Realizada|No asiste|Cancelada|Suspendida por mal estado",
   "transcripcion": "la transcripción literal completa"
 }
 
 REGLAS ESTRICTAS:
 - NO inventes. Si algo no se dijo, deja el campo vacío o el arreglo vacío.
-- Las cifras van tal como se dictaron. No redondees ni completes una dosis a medias.
+- "category" debe ser EXACTAMENTE uno de los siete valores listados. Si no calza ninguno, usa "Otras".
+- Las cifras van tal como se dictaron, separadas: "tres por doce con ocho kilos" son sets 3, repsOrTime 12, loadKg 8. No las juntes en un solo texto ni completes una dosis a medias.
 - Si el dolor se menciona una sola vez sin decir si es de entrada o salida, ponlo en evaStart y deja evaEnd vacío.
+- "sessionStatus" es "Realizada" salvo que diga explícitamente que no asistió, se canceló o se suspendió.
 - Conserva el vocabulario clínico que usó; no lo "mejores".
 - La transcripción literal es obligatoria: permite revisar si algo se interpretó mal.`,
       audioData: { data: audioBase64, mimeType: mimeType || 'audio/webm' },
@@ -88,24 +111,41 @@ REGLAS ESTRICTAS:
         sessionGoal: asText(parsed.sessionGoal),
         evaStart: asScore(parsed.evaStart),
         evaEnd: asScore(parsed.evaEnd),
+        // La categoría es un enumerado cerrado en el modelo: un valor libre
+        // rompería el selector del formulario.
         interventions: Array.isArray(parsed.interventions)
           ? parsed.interventions
-              .filter((item: any) => asText(item?.detail) || asText(item?.category))
+              .filter((item: any) => asText(item?.subType) || asText(item?.notes))
               .slice(0, 12)
               .map((item: any) => ({
-                category: asText(item.category) || 'Intervención',
-                detail: asText(item.detail),
+                category: INTERVENTION_CATEGORIES.includes(asText(item.category) as any)
+                  ? asText(item.category)
+                  : 'Otras',
+                subType: asText(item.subType) || 'Sin especificar',
+                dose: asText(item.dose),
+                notes: asText(item.notes),
               }))
           : [],
+        // Las dosis van separadas porque así las guarda y las muestra la ficha.
         exercises: Array.isArray(parsed.exercises)
           ? parsed.exercises
               .filter((item: any) => asText(item?.name))
               .slice(0, 15)
-              .map((item: any) => ({ name: asText(item.name), dose: asText(item.dose) }))
+              .map((item: any) => ({
+                name: asText(item.name),
+                sets: asText(item.sets),
+                repsOrTime: asText(item.repsOrTime),
+                loadKg: asText(item.loadKg),
+                rest: asText(item.rest),
+                notes: asText(item.notes),
+              }))
           : [],
         educationNotes: asText(parsed.educationNotes),
-        responseTolerance: asText(parsed.responseTolerance),
+        handoffText: asText(parsed.handoffText),
         nextPlan: asText(parsed.nextPlan),
+        sessionStatus: SESSION_STATUSES.includes(asText(parsed.sessionStatus) as any)
+          ? asText(parsed.sessionStatus)
+          : 'Realizada',
       },
       transcripcion: asText(parsed.transcripcion),
     });

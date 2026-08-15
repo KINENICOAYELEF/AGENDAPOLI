@@ -19,15 +19,18 @@ import { auth } from "@/lib/firebase";
  * un detalle menor.
  */
 
+/** Refleja exactamente los campos del modelo de evolución, no una aproximación. */
 export type DictadoPropuesta = {
   sessionGoal: string;
   evaStart: string;
   evaEnd: string;
-  interventions: Array<{ category: string; detail: string }>;
-  exercises: Array<{ name: string; dose: string }>;
+  interventions: Array<{ category: string; subType: string; dose: string; notes: string }>;
+  exercises: Array<{ name: string; sets: string; repsOrTime: string; loadKg: string; rest: string; notes: string }>;
   educationNotes: string;
-  responseTolerance: string;
+  /** Traspaso inter-colegas: qué necesita saber quien continúe el caso. */
+  handoffText: string;
   nextPlan: string;
+  sessionStatus: string;
 };
 
 type Props = {
@@ -137,18 +140,33 @@ export function DictadoEvolucion({ contexto, onAplicar }: Props) {
           <Campo label="Dolor al inicio" valor={propuesta.evaStart} vacio={vacio(propuesta.evaStart)} />
           <Campo label="Dolor al final" valor={propuesta.evaEnd} vacio={vacio(propuesta.evaEnd)} />
           {propuesta.interventions.length > 0 && (
-            <Campo label="Intervenciones" valor={propuesta.interventions.map(item => item.detail || item.category).join(' · ')} vacio={false} />
+            <Campo
+              label="Intervenciones"
+              valor={propuesta.interventions.map(item =>
+                `${item.subType} (${item.category})${item.dose ? ` · ${item.dose}` : ''}`).join(' · ')}
+              vacio={false}
+            />
           )}
           {propuesta.exercises.length > 0 && (
             <Campo
               label="Ejercicios"
-              valor={propuesta.exercises.map(item => `${item.name}${item.dose ? ` (${item.dose})` : ''}`).join(' · ')}
+              valor={propuesta.exercises.map(item => {
+                const dosis = [
+                  item.sets && `${item.sets} series`,
+                  item.repsOrTime && item.repsOrTime,
+                  item.loadKg && `${item.loadKg} kg`,
+                ].filter(Boolean).join(' × ');
+                return `${item.name}${dosis ? ` (${dosis})` : ''}`;
+              }).join(' · ')}
               vacio={false}
             />
           )}
           <Campo label="Educación" valor={propuesta.educationNotes} vacio={vacio(propuesta.educationNotes)} />
-          <Campo label="Tolerancia" valor={propuesta.responseTolerance} vacio={vacio(propuesta.responseTolerance)} />
+          <Campo label="Traspaso a colegas" valor={propuesta.handoffText} vacio={vacio(propuesta.handoffText)} />
           <Campo label="Plan próxima sesión" valor={propuesta.nextPlan} vacio={vacio(propuesta.nextPlan)} />
+          {propuesta.sessionStatus && propuesta.sessionStatus !== 'Realizada' && (
+            <Campo label="Estado de la sesión" valor={propuesta.sessionStatus} vacio={false} />
+          )}
         </dl>
 
         {transcripcion && (
