@@ -28,6 +28,26 @@ const INTERVENTION_CATEGORIES = [
 const SESSION_STATUSES = ['Realizada', 'No asiste', 'Cancelada', 'Suspendida por mal estado'] as const;
 
 /**
+ * Modelos para el dictado, del de mayor cuota al de mayor capacidad.
+ *
+ * Los Lite rinden 500 peticiones diarias cada uno; el Flash rinde 200 y además
+ * lo comparten el asistente de Telegram y el análisis del agente. Empezar por
+ * los Lite deja ese cupo libre para lo que no tiene alternativa.
+ *
+ * Si un Lite devuelve algo inservible —JSON roto, o sin una sola cosa
+ * reconocible— se pasa al siguiente. Eso protege del fallo duro, aunque no de
+ * una cifra mal entendida: para eso está la revisión en pantalla.
+ *
+ * Entre los tres suman 1.200 diarias, contra las ~42 evoluciones de una
+ * jornada de siete internas.
+ */
+const DICTADO_MODELOS = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-2.5-flash',
+];
+
+/**
  * El guion que la estudiante siguió en pantalla mientras dictaba.
  *
  * La grabación es UNA sola y continua: la pantalla solo le va indicando qué
@@ -57,17 +77,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'No se recibió audio.' }, { status: 400 });
     }
 
-    const raw = await callGemini({
-      systemInstruction: 'Eres un asistente de registro clínico kinesiológico en Chile. Transcribes lo que dicta el profesional y lo ordenas en los campos de una evolución. No agregas nada que no se haya dicho.',
-      userPrompt: `Escucha el dictado de una sesión de kinesiología y ordénalo en los campos reales de la evolución.
+    const prompt = `Escucha el dictado de una sesión de kinesiología y ordénalo en los campos reales de la evolución.
 
 La estudiante dictó de corrido siguiendo este guion en pantalla, en este orden:
 ${GUION_DICTADO.map((tema, index) => `${index + 1}. ${tema}`).join('\n')}
 
 Puede haberse saltado partes, haberlas mezclado o haber vuelto atrás. Usa el guion como referencia, no como estructura rígida: lo que importa es lo que efectivamente dijo.
 
-
-${contexto ? `Contexto de la sesión (por si menciona "lo mismo de la vez pasada"):\n${String(contexto).slice(0, 2000)}\n` : ''}
+${contexto ? `Contexto de la sesión anterior (por si menciona "lo mismo de la vez pasada"):\n${String(contexto).slice(0, 2000)}\n` : ''}
 Devuelve SOLO un JSON con esta forma exacta:
 {
   "sessionGoal": "molestia principal u objetivo de la sesión, tal como lo dijo",
@@ -101,13 +118,42 @@ REGLAS ESTRICTAS:
 - Si el dolor se menciona una sola vez sin decir si es de entrada o salida, ponlo en evaStart y deja evaEnd vacío.
 - "sessionStatus" es "Realizada" salvo que diga explícitamente que no asistió, se canceló o se suspendió.
 - Conserva el vocabulario clínico que usó; no lo "mejores".
-- La transcripción literal es obligatoria: permite revisar si algo se interpretó mal.`,
-      audioData: { data: audioBase64, mimeType: mimeType || 'audio/webm' },
-      modelId: 'gemini-2.5-flash',
-      temperature: 0,
-      responseMimeType: 'application/json',
-      maxOutputTokens: 3000,
-    });
+- La transcripción literal es obligatoria: permite revisar si algo se interpretó mal.`;
+
+    let raw = '';
+    let modeloUsado = '';
+    let ultimoError = '';
+
+    for (const modelId of DICTADO_MODELOS) {
+      try {
+        raw = await callGemini({
+          systemInstruction: 'Eres un asistente de registro clínico kinesiológico en Chile. Transcribes lo que dicta el profesional y lo ordenas en los campos de una evolución. No agregas nada que no se haya dicho.',
+          userPrompt: prompt,
+          audioData: { data: audioBase64, mimeType: mimeType || 'audio/webm' },
+          modelId,
+          temperature: 0,
+          responseMimeType: 'application/json',
+          maxOutputTokens: 3000,
+        });
+        if (raw?.trim()) {
+          modeloUsado = modelId;
+          break;
+        }
+        ultimoError = `${modelId} devolvió una respuesta vacía`;
+      } catch (modelError: any) {
+        // Cuota agotada, modelo no disponible o audio rechazado: se intenta el
+        // siguiente en vez de perder el dictado entero.
+        ultimoError = `${modelId}: ${String(modelError?.message || modelError).slice(0, 120)}`;
+        console.warn('[dictado] modelo no disponible', ultimoError);
+      }
+    }
+
+    if (!raw?.trim()) {
+      return NextResponse.json(
+        { success: false, error: `No hay ningún modelo disponible para procesar el dictado. ${ultimoError}` },
+        { status: 503 },
+      );
+    }
 
     let parsed: any = null;
     try {
@@ -173,6 +219,9 @@ REGLAS ESTRICTAS:
           : 'Realizada',
       },
       transcripcion: asText(parsed.transcripcion),
+      // Útil para saber si el dictado se está resolviendo con el modelo
+      // esperado o si ya está cayendo a los de respaldo.
+      modelo: modeloUsado,
     });
   } catch (error: any) {
     console.error('[dictado]', error);

@@ -77,6 +77,8 @@ export function DictadoEvolucion({ contexto, onAplicar }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [propuesta, setPropuesta] = useState<DictadoPropuesta | null>(null);
   const [transcripcion, setTranscripcion] = useState('');
+  /** Con qué modelo se resolvió: si cae a los de respaldo conviene saberlo. */
+  const [modelo, setModelo] = useState('');
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -151,6 +153,7 @@ export function DictadoEvolucion({ contexto, onAplicar }: Props) {
 
       setPropuesta(payload.propuesta);
       setTranscripcion(payload.transcripcion || '');
+      setModelo(payload.modelo || '');
       setEstado('revision');
     } catch (procesarError: any) {
       console.error('Error procesando el dictado', procesarError);
@@ -219,6 +222,7 @@ export function DictadoEvolucion({ contexto, onAplicar }: Props) {
           <details className="mt-3">
             <summary className="cursor-pointer text-[11px] font-bold text-indigo-700">Ver lo que dijiste</summary>
             <p className="mt-1 rounded-xl bg-white p-2 text-[11px] italic text-slate-600">{transcripcion}</p>
+            {modelo && <p className="mt-1 text-[10px] text-slate-400">Procesado con {modelo}.</p>}
           </details>
         )}
 
