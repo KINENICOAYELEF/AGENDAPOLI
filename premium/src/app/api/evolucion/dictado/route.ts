@@ -27,12 +27,28 @@ const INTERVENTION_CATEGORIES = [
 
 const SESSION_STATUSES = ['Realizada', 'No asiste', 'Cancelada', 'Suspendida por mal estado'] as const;
 
+/**
+ * El dictado es guiado por pasos.
+ *
+ * Decirle a alguien "dicta la evolución" es demasiado abierto: no sabe por
+ * dónde empezar ni en qué orden, y termina escribiéndola igual. Una pregunta a
+ * la vez le dice qué contar, y además hace la transcripción más fiable, porque
+ * cada audio es corto y sobre una sola cosa.
+ */
+const PASO_PREGUNTAS = {
+  estado: '¿Con qué molestia llegó hoy y cuánto dolor tenía?',
+  intervenciones: '¿Qué le hiciste tú en la sesión? (terapia manual, educación, vendaje, etc.)',
+  ejercicios: '¿Qué ejercicios hizo y con qué dosis?',
+  cierre: '¿Cómo quedó al final y qué viene la próxima sesión?',
+  traspaso: '¿Algo que otro colega necesite saber para continuar?',
+} as const;
+
 export async function POST(req: Request) {
   try {
     await requireAuthenticated(req.headers.get('authorization'));
 
     const body = await req.json().catch(() => ({}));
-    const { audioBase64, mimeType, contexto } = body || {};
+    const { audioBase64, mimeType, contexto, paso } = body || {};
 
     if (!audioBase64) {
       return NextResponse.json({ success: false, error: 'No se recibió audio.' }, { status: 400 });
@@ -41,6 +57,7 @@ export async function POST(req: Request) {
     const raw = await callGemini({
       systemInstruction: 'Eres un asistente de registro clínico kinesiológico en Chile. Transcribes lo que dicta el profesional y lo ordenas en los campos de una evolución. No agregas nada que no se haya dicho.',
       userPrompt: `Escucha el dictado de una sesión de kinesiología y ordénalo en los campos reales de la evolución.
+${paso ? `\nLa estudiante está respondiendo esta pregunta concreta: "${PASO_PREGUNTAS[paso as keyof typeof PASO_PREGUNTAS] || paso}". Llena solo los campos que correspondan a eso y deja el resto vacío.\n` : ''}
 
 ${contexto ? `Contexto de la sesión (por si menciona "lo mismo de la vez pasada"):\n${String(contexto).slice(0, 2000)}\n` : ''}
 Devuelve SOLO un JSON con esta forma exacta:
