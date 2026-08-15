@@ -8,7 +8,12 @@ import { validateGuardrails } from './guardrails';
 // Expone un método genérico que implementa en un futuro caching y reparaciones.
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+
+// Modelo por defecto para quien llama sin declarar uno (hoy: la revisión de
+// pasantía y geminiClient.generateStructuredObject). Era gemini-2.5-flash, que
+// rinde 20 peticiones diarias en esta API key; el Lite rinde 500. Ver las
+// cuotas reales en src/lib/ai/modelQuotas.ts.
+const DEFAULT_MODEL = 'gemini-3.5-flash-lite';
 
 // CACHE EN MEMORIA (In-Memory Cache)
 // Para producción masiva se sugeriría Redis, pero para este requerimiento basta memoria.

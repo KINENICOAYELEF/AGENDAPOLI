@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { executeAIAction, callGemini } from '@/lib/ai/geminiClient';
+import { executeAIAction } from '@/lib/ai/geminiClient';
+import { callGeminiCascade } from '@/lib/ai/modelQuotas';
 import { SIM_GENERATE_PROMPT, SIM_INTERVIEW_PROMPT, SIM_INTERVIEW_FEEDBACK_PROMPT, SIM_EXAM_PROMPT, SIM_EVALUATE_PROMPT, SIM_COMMISSION_PROMPT, SIM_EVAL_DEFENSE_PROMPT, SIM_EVAL_TRAINING_PROMPT } from '@/lib/ai/simuladorPrompts';
 import { SimCaseSchema, SimInterviewSchema, SimInterviewFeedbackSchema, SimExamSchema, SimEvaluationSchema, SimCommissionSchema, SimDefenseEvaluationSchema, SimTrainingEvaluationSchema } from '@/lib/ai/simuladorSchemas';
 
@@ -23,46 +24,20 @@ Retorna ÚNICAMENTE la transcripción limpia en formato de texto simple, respeta
 
     const userPrompt = `Limpia, corrige y repara la siguiente transcripción de voz a texto:\n\n${rawTranscript}`;
 
+    // La cascada empieza por los dos modelos de 500 peticiones diarias; los de
+    // 20 quedan atrás como red de seguridad. Si ninguno responde se devuelve la
+    // transcripción cruda: sucia, pero nunca se pierde lo que la alumna dijo.
     try {
-        const cleanedText = await callGemini({
+        const { text } = await callGeminiCascade({
             systemInstruction,
             userPrompt,
-            modelId: 'gemini-3.1-flash-lite-preview', // Usar el modelo con 500 RPD por defecto para cuidar la cuota
             temperature: 0.1,
             responseMimeType: 'text/plain'
         });
-        return cleanedText || rawTranscript;
+        return text || rawTranscript;
     } catch (err) {
-        console.error("Error al limpiar transcripción con Gemini 3.1 Flash Lite:", err);
-        // Fallback resiliente 1: Intentar con gemini-2.5-flash-lite (20 RPD)
-        try {
-            console.log("Intentando fallback de limpieza con gemini-2.5-flash-lite...");
-            const fallbackText = await callGemini({
-                systemInstruction,
-                userPrompt,
-                modelId: 'gemini-2.5-flash-lite',
-                temperature: 0.1,
-                responseMimeType: 'text/plain'
-            });
-            return fallbackText || rawTranscript;
-        } catch (fallbackErr) {
-            console.error("Error en fallback de limpieza con Gemini 2.5 Flash Lite:", fallbackErr);
-            // Fallback resiliente 2: Intentar con gemini-2.5-flash (20 RPD)
-            try {
-                console.log("Intentando fallback de limpieza con gemini-2.5-flash...");
-                const fallbackText2 = await callGemini({
-                    systemInstruction,
-                    userPrompt,
-                    modelId: 'gemini-2.5-flash',
-                    temperature: 0.1,
-                    responseMimeType: 'text/plain'
-                });
-                return fallbackText2 || rawTranscript;
-            } catch (fallbackErr2) {
-                console.error("Error en fallback final de limpieza con Gemini 2.5 Flash:", fallbackErr2);
-                return rawTranscript; // Fallback final a la transcripción cruda
-            }
-        }
+        console.error("No se pudo limpiar la transcripción con ningún modelo:", err);
+        return rawTranscript;
     }
 }
 
@@ -238,10 +213,9 @@ Determina cuáles de los siguientes 8 módulos de examen clínico solicitó eval
 Retorna un objeto JSON con la llave "modulos_detectados", que contiene un arreglo con las keys de los módulos detectados (ej: ["palpacion", "pruebas_ortopedicas"]).
 `;
                     try {
-                        const detectionResult = await callGemini({
+                        const { text: detectionResult } = await callGeminiCascade({
                             systemInstruction: "Eres un asistente clínico que analiza transcripciones de examen físico de kinesiología y mapea los términos a categorías estructuradas.",
                             userPrompt: detectionPrompt,
-                            modelId: 'gemini-3.1-flash-lite-preview',
                             temperature: 0.1,
                             responseMimeType: 'application/json'
                         });
@@ -504,14 +478,16 @@ Paciente: [Texto]
 Si es un monólogo o exposición, simplemente transcribe el texto continuo.
 Retorna ÚNICAMENTE la transcripción limpia en texto plano, sin explicaciones, sin introducciones y sin resúmenes.
 `;
-                const text = await callGemini({
+                // Antes esto iba directo a gemini-3.5-flash, que rinde 20
+                // peticiones diarias y no tenía respaldo: la transcripción 21
+                // del día simplemente fallaba.
+                const { text } = await callGeminiCascade({
                     systemInstruction: "Eres un asistente experto en transcripción médica de kinesiología y rehabilitación física. Transcribes de audio a texto de forma impecable.",
                     userPrompt: transcriptionPrompt,
                     audioData: {
                         data: audioBase64,
                         mimeType: mimeType
                     },
-                    modelId: 'gemini-3.5-flash',
                     temperature: 0.1,
                     responseMimeType: 'text/plain'
                 });

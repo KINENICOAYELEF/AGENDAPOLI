@@ -60,32 +60,36 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
             { modelId: 'gemini-2.5-flash' }
         ];
     } 
+    // NOTA SOBRE EL ORDEN EN LAS PANTALLAS DE PLAN (P4 y Express):
+    // El plan de tratamiento es lo que más se beneficia de un modelo con
+    // razonamiento, así que gemini-3-flash-preview sigue yendo primero. Pero
+    // rinde 20 peticiones diarias, igual que gemini-2.5-flash, que antes iba
+    // segundo: agotado el primero se quemaba una llamada más antes de llegar a
+    // un modelo con cupo. Y como executeAIAction corta a los 3 intentos, el
+    // cuarto de la lista nunca se alcanzaba. Ahora el respaldo inmediato es un
+    // Lite de 500/día, que es el que de verdad va a responder el resto del día.
     else if (screen === 'P4' && aiAction === 'P4_BASE') {
         cacheBucket = 'p4_base_ai_cache';
         orderedModels = [
             { modelId: 'gemini-3-flash-preview', thinkingLevel: 'low' },
-            { modelId: 'gemini-2.5-flash' },
-            { modelId: 'gemini-3.1-flash-lite-preview' },
-            { modelId: 'gemini-3.5-flash-lite' }
+            { modelId: 'gemini-3.5-flash-lite' },
+            { modelId: 'gemini-3.1-flash-lite-preview' }
         ];
     }
     else if (screen === 'EXPRESS_V2' && aiAction === 'EXPRESS_PLAN') {
         cacheBucket = 'express_plan_cache';
-        // Most powerful model first for clinical planning quality
         orderedModels = [
             { modelId: 'gemini-3-flash-preview', thinkingLevel: 'medium' },
-            { modelId: 'gemini-2.5-flash' },
-            { modelId: 'gemini-3.1-flash-lite-preview' },
-            { modelId: 'gemini-3.5-flash-lite' }
+            { modelId: 'gemini-3.5-flash-lite' },
+            { modelId: 'gemini-3.1-flash-lite-preview' }
         ];
     }
     else if (screen === 'P4' && aiAction === 'P4_PREMIUM') {
         cacheBucket = 'p4_premium_ai_cache';
         orderedModels = [
             { modelId: 'gemini-3-flash-preview', thinkingLevel: 'medium' },
-            { modelId: 'gemini-2.5-flash' },
-            { modelId: 'gemini-3.1-flash-lite-preview' },
-            { modelId: 'gemini-3.5-flash-lite' }
+            { modelId: 'gemini-3.5-flash-lite' },
+            { modelId: 'gemini-3.1-flash-lite-preview' }
         ];
     }
     else if (screen === 'SIMULADOR') {

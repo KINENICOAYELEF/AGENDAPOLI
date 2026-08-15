@@ -354,7 +354,7 @@ Reglas:
 }
 
 const APP_BASE_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://agendapoli.vercel.app').replace(/\/$/, '');
-import { callGemini } from '@/lib/ai/geminiClient';
+import { callGeminiCascade } from '@/lib/ai/modelQuotas';
 import { runAgentInteraction } from '@/lib/agent/client';
 
 /**
@@ -462,15 +462,17 @@ export async function POST(req: Request) {
       after(async () => {
         try {
           const telegramFile = await downloadTelegramFile(fileId);
-          const transcript = (await callGemini({
+          // El docente puede mandar notas de voz todo el día. Antes esto usaba
+          // gemini-2.5-flash directo, que rinde 20 peticiones diarias y no
+          // tenía respaldo: a la nota 21 el bot dejaba de escuchar.
+          const transcript = (await callGeminiCascade({
             systemInstruction: 'Transcribe fielmente esta nota de voz en español chileno. Corrige solo puntuación; no agregues contenido. Devuelve únicamente la transcripción.',
             userPrompt: 'Transcribe la nota de voz del docente.',
             audioData: telegramFile,
             responseMimeType: 'text/plain',
-            modelId: 'gemini-2.5-flash',
             temperature: 0,
             maxOutputTokens: 1200,
-          })).trim();
+          })).text.trim();
           const inferredCommand = inferVoiceCommand(transcript);
           await intakeRef.update({ status: 'TRANSCRIBED', transcript, inferredCommand, processedAt: new Date().toISOString() });
           if (inferredCommand !== 'unknown') {

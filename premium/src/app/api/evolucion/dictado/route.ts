@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAuthenticated } from '@/lib/server/firebaseAdmin';
-import { callGemini } from '@/lib/ai/geminiClient';
+import { callGeminiCascade } from '@/lib/ai/modelQuotas';
 import { jsonrepair } from 'jsonrepair';
 
 /**
@@ -28,24 +28,16 @@ const INTERVENTION_CATEGORIES = [
 const SESSION_STATUSES = ['Realizada', 'No asiste', 'Cancelada', 'Suspendida por mal estado'] as const;
 
 /**
- * Modelos para el dictado, del de mayor cuota al de mayor capacidad.
+ * El dictado usa la cascada de alto volumen (ver modelQuotas.ts).
  *
- * Los Lite rinden 500 peticiones diarias cada uno; el Flash rinde 200 y además
- * lo comparten el asistente de Telegram y el análisis del agente. Empezar por
- * los Lite deja ese cupo libre para lo que no tiene alternativa.
+ * Los dos primeros modelos rinden 500 peticiones diarias cada uno; los otros
+ * dos, 20, y solo están como red de seguridad. Contra las ~42 evoluciones de
+ * una jornada de siete internas, sobra cupo de largo.
  *
- * Si un Lite devuelve algo inservible —JSON roto, o sin una sola cosa
- * reconocible— se pasa al siguiente. Eso protege del fallo duro, aunque no de
- * una cifra mal entendida: para eso está la revisión en pantalla.
- *
- * Entre los tres suman 1.200 diarias, contra las ~42 evoluciones de una
- * jornada de siete internas.
+ * Si un modelo devuelve algo inservible se pasa al siguiente. Eso protege del
+ * fallo duro, aunque no de una cifra mal entendida: para eso está la revisión
+ * en pantalla antes de aplicar la propuesta.
  */
-const DICTADO_MODELOS = [
-  'gemini-3.5-flash-lite',
-  'gemini-3.1-flash-lite',
-  'gemini-2.5-flash',
-];
 
 /**
  * El guion que la estudiante siguió en pantalla mientras dictaba.
@@ -122,35 +114,21 @@ REGLAS ESTRICTAS:
 
     let raw = '';
     let modeloUsado = '';
-    let ultimoError = '';
 
-    for (const modelId of DICTADO_MODELOS) {
-      try {
-        raw = await callGemini({
-          systemInstruction: 'Eres un asistente de registro clínico kinesiológico en Chile. Transcribes lo que dicta el profesional y lo ordenas en los campos de una evolución. No agregas nada que no se haya dicho.',
-          userPrompt: prompt,
-          audioData: { data: audioBase64, mimeType: mimeType || 'audio/webm' },
-          modelId,
-          temperature: 0,
-          responseMimeType: 'application/json',
-          maxOutputTokens: 3000,
-        });
-        if (raw?.trim()) {
-          modeloUsado = modelId;
-          break;
-        }
-        ultimoError = `${modelId} devolvió una respuesta vacía`;
-      } catch (modelError: any) {
-        // Cuota agotada, modelo no disponible o audio rechazado: se intenta el
-        // siguiente en vez de perder el dictado entero.
-        ultimoError = `${modelId}: ${String(modelError?.message || modelError).slice(0, 120)}`;
-        console.warn('[dictado] modelo no disponible', ultimoError);
-      }
-    }
-
-    if (!raw?.trim()) {
+    try {
+      const respuesta = await callGeminiCascade({
+        systemInstruction: 'Eres un asistente de registro clínico kinesiológico en Chile. Transcribes lo que dicta el profesional y lo ordenas en los campos de una evolución. No agregas nada que no se haya dicho.',
+        userPrompt: prompt,
+        audioData: { data: audioBase64, mimeType: mimeType || 'audio/webm' },
+        temperature: 0,
+        responseMimeType: 'application/json',
+        maxOutputTokens: 3000,
+      });
+      raw = respuesta.text;
+      modeloUsado = respuesta.modelo;
+    } catch (cascadaError: any) {
       return NextResponse.json(
-        { success: false, error: `No hay ningún modelo disponible para procesar el dictado. ${ultimoError}` },
+        { success: false, error: `No hay ningún modelo disponible para procesar el dictado. ${cascadaError?.message || ''}` },
         { status: 503 },
       );
     }

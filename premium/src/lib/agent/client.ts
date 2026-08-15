@@ -12,34 +12,35 @@ import { deidentifyText } from './deidentify';
 /**
  * Cascadas de respaldo según lo que exige cada tarea.
  *
- * Cuotas reales de la API gratuita (ago-2026), por DÍA:
- *   Antigravity ............ 100
- *   Gemini 3.6 / 3.5 / 3 Flash ... 20 cada uno
- *   Gemini 2.5 Flash ....... 200
- *   Gemini 3.5 / 3.1 Flash Lite .. 500 cada uno
- *   Gemini 2.5 Flash Lite ... 20   (inservible como respaldo)
+ * Las cuotas reales de esta API key están documentadas en un solo lugar:
+ * src/lib/ai/modelQuotas.ts. Lo único que hay que recordar aquí es que SOLO
+ * los dos Flash Lite rinden 500 peticiones diarias; todo el resto rinde 20.
  *
- * La lección es que los modelos "buenos" alcanzan para 20 peticiones diarias,
- * no más. Usar una sola cascada global los gastaba en tareas triviales —como
- * elegir qué consulta ejecutar— y dejaba sin cupo al análisis clínico, que es
- * lo único que de verdad necesita capacidad de razonamiento.
+ * Usar una sola cascada global gastaba los modelos buenos en tareas triviales
+ * —como elegir qué consulta ejecutar— y dejaba sin cupo al análisis clínico,
+ * que es lo único que de verdad necesita capacidad de razonamiento.
  */
 export type AgentTaskKind = 'deep' | 'routing' | 'conversational' | 'short';
 
 const FALLBACK_BY_TASK: Record<AgentTaskKind, string[]> = {
-  // Análisis longitudinal y coherencia clínica: pocas llamadas al día, cada una
-  // vale mucho. Aquí sí corresponde gastar los modelos de mayor capacidad.
+  // Análisis longitudinal y coherencia clínica: son tres o cuatro llamadas al
+  // día y cada una vale mucho. Aquí sí corresponde gastar los modelos de mayor
+  // capacidad, que entre los cuatro suman 80 intentos diarios.
   deep: ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3-flash', 'gemini-2.5-flash', 'gemini-3.5-flash-lite'],
 
   // Elegir el nombre de una consulta no requiere razonamiento clínico. Va
   // directo a los modelos de 500/día para no tocar la cuota escasa.
   routing: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'],
 
-  // Responder al docente con datos ya consultados: volumen alto durante el día.
-  conversational: ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
+  // Responder al docente con datos ya consultados: es la tarea de mayor volumen
+  // del día. Antes encabezaba gemini-2.5-flash creyendo que rendía 200 diarias;
+  // rinde 20. Después de la respuesta número 20 el bot pagaba una llamada
+  // fallida antes de cada contestación. Ahora encabeza un Lite de 500.
+  conversational: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'],
 
-  // Comentarios de una sección: texto corto y acotado.
-  short: ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
+  // Comentarios de una sección: texto corto y acotado, pero se escriben muchos
+  // en una misma sesión de revisión. Misma lógica que el conversacional.
+  short: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'],
 };
 
 // El identificador enviado a Google debe ser el agente publicado, no un alias
