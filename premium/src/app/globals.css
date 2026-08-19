@@ -116,3 +116,25 @@ body {
   background-color: var(--background);
   color: var(--foreground);
 }
+
+@media print {
+  body.am-printing * {
+    visibility: hidden !important;
+  }
+
+  body.am-printing [data-adulto-mayor-report],
+  body.am-printing [data-adulto-mayor-report] * {
+    visibility: visible !important;
+  }
+
+  body.am-printing [data-adulto-mayor-report] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    background: white;
+  }
+
+  body.am-printing [data-no-print] {
+    display: none !important;
+  }
+}
