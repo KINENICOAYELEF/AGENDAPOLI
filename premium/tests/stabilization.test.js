@@ -305,6 +305,7 @@ describe('Módulo Taller de Adulto Mayor', () => {
     assert.match(portal, /current\.status === 'SUBMITTED'/);
     assert.match(portal, /httpOnly: true/);
     assert.match(portal, /maxAge: 60 \* 60 \* 24 \* 180/);
+    assert.match(portal, /path: '\/api\/adulto-mayor\/portal'/);
   });
 
   test('el panel interno permite asistencia binaria, audio y reevaluación a 4–6 semanas', () => {

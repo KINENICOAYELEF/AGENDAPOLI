@@ -43,7 +43,9 @@ const portalCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
-  path: '/evaluacion-adulto-mayor',
+  // El navegador debe reenviarla al endpoint que carga y registra el portal.
+  // Limitarla a la página pública impedía que /api recibiera la sesión.
+  path: '/api/adulto-mayor/portal',
   maxAge: 60 * 60 * 24 * 30,
 };
 
