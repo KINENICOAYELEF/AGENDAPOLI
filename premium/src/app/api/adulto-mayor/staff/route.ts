@@ -96,6 +96,7 @@ async function loadStaffDashboard(req: Request) {
       email: data.email || '',
       university: data.university || '',
       active: data.active === true,
+      testRecord: data.testRecord === true,
       createdAt: data.createdAt || '',
       lastAccessAt: data.lastAccessAt || '',
       evaluationCount: evaluations.filter(item => item.evaluatorId === doc.id).length,
