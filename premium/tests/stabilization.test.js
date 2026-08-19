@@ -283,3 +283,39 @@ describe('Circuito de reevaluación y avisos docentes', () => {
     assert.match(taskClient, /student-clinical-tasks-changed/);
   });
 });
+
+describe('Módulo Taller de Adulto Mayor', () => {
+  test('la evaluación funcional incluye las pruebas obligatorias y cálculo no diagnóstico', () => {
+    const calculations = readFileSync(new URL('../src/lib/adultoMayor/calculations.ts', import.meta.url), 'utf8');
+    const wizard = readFileSync(new URL('../src/components/adulto-mayor/EvaluationWizard.tsx', import.meta.url), 'utf8');
+    assert.match(calculations, /gripCutoff/);
+    assert.match(calculations, /probableSarcopenia/);
+    assert.match(calculations, /estimatedRelativePower/);
+    assert.match(calculations, /Cribado compatible con sarcopenia probable/);
+    assert.match(wizard, /Prensión manual/);
+    assert.match(wizard, /SPPB/);
+    assert.match(wizard, /Timed Up and Go/);
+    assert.match(wizard, /STS30 · Levantarse durante 30 segundos/);
+  });
+
+  test('el portal externo limita cada alumno a sus propias evaluaciones', () => {
+    const portal = readFileSync(new URL('../src/app/api/adulto-mayor/portal/route.ts', import.meta.url), 'utf8');
+    assert.match(portal, /where\('evaluatorId', '==', evaluator\.id\)/);
+    assert.match(portal, /current\.evaluatorId !== evaluator\.id/);
+    assert.match(portal, /current\.status === 'SUBMITTED'/);
+    assert.match(portal, /httpOnly: true/);
+    assert.match(portal, /maxAge: 60 \* 60 \* 24 \* 180/);
+  });
+
+  test('el panel interno permite asistencia binaria, audio y reevaluación a 4–6 semanas', () => {
+    const staffApi = readFileSync(new URL('../src/app/api/adulto-mayor/staff/route.ts', import.meta.url), 'utf8');
+    const staffPage = readFileSync(new URL('../src/app/app/taller-adulto-mayor/page.tsx', import.meta.url), 'utf8');
+    const transcribe = readFileSync(new URL('../src/app/api/adulto-mayor/staff/transcribe/route.ts', import.meta.url), 'utf8');
+    assert.match(staffApi, /\['PRESENTE', 'AUSENTE'\]/);
+    assert.match(staffApi, /daysSince >= 42/);
+    assert.match(staffApi, /daysSince >= 28/);
+    assert.match(staffPage, /WorkshopEvolutionRecorder/);
+    assert.match(staffPage, /renewEvaluatorAccess/);
+    assert.match(transcribe, /No inventes dosis, incidentes ni respuestas/);
+  });
+});

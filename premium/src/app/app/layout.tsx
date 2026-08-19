@@ -24,7 +24,8 @@ import {
     Calendar,
     Sparkles,
     BookOpen,
-    Activity
+    Activity,
+    HeartPulse
 } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -151,6 +152,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         >
                             <Users className="w-4 h-4 shrink-0" />
                             <span>Personas Usuarias</span>
+                        </Link>
+
+                        <Link
+                            href="/app/taller-adulto-mayor"
+                            onClick={() => setIsSidebarOpen(false)}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                                isActive('/app/taller-adulto-mayor')
+                                    ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20'
+                                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900'
+                            }`}
+                        >
+                            <HeartPulse className="w-4 h-4 shrink-0 text-teal-300" />
+                            <span>Taller Adulto Mayor</span>
                         </Link>
                     </div>
 
