@@ -55,6 +55,7 @@ const asEnum = <T extends string>(value: unknown, allowed: readonly T[], fallbac
 
 const literacyValues = ['SI', 'CON_DIFICULTAD', 'NO'] as const;
 const sexValues = ['MUJER', 'HOMBRE', 'NO_ESPECIFICA'] as const;
+const isTestLabel = (value: string) => /^\[PRUEBA E2E\]/i.test(value.trim());
 
 function sanitizeParticipant(input: any, evaluatorId: string): Omit<OlderAdultParticipant, 'id'> {
   const fullName = asText(input?.fullName, 120).replace(/\s+/g, ' ');
@@ -83,6 +84,7 @@ function sanitizeParticipant(input: any, evaluatorId: string): Omit<OlderAdultPa
     createdByType: 'EXTERNAL_EVALUATOR',
     createdById: evaluatorId,
     active: true,
+    testRecord: isTestLabel(fullName),
   };
 }
 
@@ -189,6 +191,7 @@ export async function POST(req: Request) {
         university,
         tokenHash: hashToken(token),
         active: true,
+        testRecord: isTestLabel(fullName) && email.endsWith('@example.com'),
         createdAt: now,
         lastAccessAt: now,
       });

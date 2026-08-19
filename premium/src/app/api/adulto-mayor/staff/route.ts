@@ -29,6 +29,7 @@ export const maxDuration = 30;
 const asText = (value: unknown, max = 1000) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 const asEnum = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
   allowed.includes(value as T) ? value as T : fallback;
+const isTestLabel = (value: string) => /^\[PRUEBA E2E\]/i.test(value.trim());
 
 function staffName(user: any): string {
   return String(user?.displayName || user?.name || user?.email || 'Equipo del taller');
@@ -74,8 +75,12 @@ async function loadStaffDashboard(req: Request) {
     db.collection(AM_COLLECTIONS.workshopEvolutions).get(),
     db.collection(AM_COLLECTIONS.evaluators).get(),
   ]);
-  const participants = serializeDocs<OlderAdultParticipant>(participantsSnap)
+  const allParticipants = serializeDocs<OlderAdultParticipant>(participantsSnap);
+  const participants = allParticipants
     .filter(item => item.active !== false)
+    .sort((a, b) => a.fullName.localeCompare(b.fullName, 'es'));
+  const archivedParticipants = allParticipants
+    .filter(item => item.active === false)
     .sort((a, b) => a.fullName.localeCompare(b.fullName, 'es'));
   const evaluations = serializeDocs<OlderAdultEvaluation>(evaluationsSnap)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -99,6 +104,7 @@ async function loadStaffDashboard(req: Request) {
 
   return {
     participants,
+    archivedParticipants,
     evaluations,
     attendance,
     workshopEvolutions,
@@ -136,6 +142,9 @@ function participantPayload(input: any, staffId: string, existing?: OlderAdultPa
     createdByType: existing?.createdByType || 'STAFF',
     createdById: existing?.createdById || staffId,
     active: input?.active !== false,
+    testRecord: existing?.testRecord === true || isTestLabel(fullName),
+    archivedAt: existing?.archivedAt || null,
+    archivedByUid: existing?.archivedByUid || null,
   };
 }
 
@@ -182,6 +191,47 @@ export async function POST(req: Request) {
         updatedByUid: staff.uid,
       }, { merge: true });
       return NextResponse.json({ ok: true, data: { participant } });
+    }
+
+    if (action === 'setParticipantActive') {
+      const participantId = asText(body?.participantId, 100);
+      const active = body?.active === true;
+      const ref = db.collection(AM_COLLECTIONS.participants).doc(participantId);
+      const snapshot = await ref.get();
+      if (!snapshot.exists) throw new Error('No se encontró la persona.');
+      const now = new Date().toISOString();
+      await ref.update({
+        active,
+        archivedAt: active ? null : now,
+        archivedByUid: active ? null : staff.uid,
+        updatedAt: now,
+        updatedByUid: staff.uid,
+      });
+      return NextResponse.json({ ok: true, data: { participantId, active } });
+    }
+
+    if (action === 'deleteTestParticipant') {
+      const participantId = asText(body?.participantId, 100);
+      const ref = db.collection(AM_COLLECTIONS.participants).doc(participantId);
+      const snapshot = await ref.get();
+      if (!snapshot.exists) throw new Error('No se encontró la persona de prueba.');
+      const participant = snapshot.data() || {};
+      if (participant.testRecord !== true && !isTestLabel(String(participant.fullName || ''))) {
+        return NextResponse.json({ ok: false, error: 'Solo se permite eliminar definitivamente registros marcados como [PRUEBA E2E].' }, { status: 403 });
+      }
+      const [evaluationsSnap, attendanceSnap] = await Promise.all([
+        db.collection(AM_COLLECTIONS.evaluations).where('participantId', '==', participantId).get(),
+        db.collection(AM_COLLECTIONS.attendance).where('participantId', '==', participantId).get(),
+      ]);
+      await Promise.all([
+        ...evaluationsSnap.docs.map((doc: any) => doc.ref.delete()),
+        ...attendanceSnap.docs.map((doc: any) => doc.ref.delete()),
+        ref.delete(),
+      ]);
+      return NextResponse.json({
+        ok: true,
+        data: { participantId, deletedEvaluations: evaluationsSnap.size, deletedAttendance: attendanceSnap.size },
+      });
     }
 
     if (action === 'setAttendance') {
@@ -280,6 +330,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, data: { evaluation: { ...current, ...patch } } });
     }
 
+    if (action === 'deleteDraftEvaluation') {
+      const evaluationId = asText(body?.evaluationId, 100);
+      const ref = db.collection(AM_COLLECTIONS.evaluations).doc(evaluationId);
+      const snapshot = await ref.get();
+      if (!snapshot.exists) throw new Error('No se encontró el borrador.');
+      const evaluation = snapshot.data() || {};
+      if (evaluation.status !== 'DRAFT') {
+        return NextResponse.json({ ok: false, error: 'Las evaluaciones entregadas no se eliminan.' }, { status: 409 });
+      }
+      const isTeacher = String(staff.user?.role || '') === 'DOCENTE';
+      if (evaluation.evaluatorId !== staff.uid && !isTeacher) {
+        return NextResponse.json({ ok: false, error: 'Solo el autor o un docente puede descartar este borrador.' }, { status: 403 });
+      }
+      await ref.delete();
+      return NextResponse.json({ ok: true, data: { evaluationId } });
+    }
+
     if (action === 'saveWorkshopEvolution') {
       const input = body?.evolution || {};
       const id = asText(input?.id, 100) || randomUUID();
@@ -300,11 +367,25 @@ export async function POST(req: Request) {
         createdByUid: staff.uid,
         createdByName: staffName(staff.user),
         createdAt: asText(input?.createdAt, 40) || new Date().toISOString(),
+        testRecord: isTestLabel(asText(input?.summary, 2500)),
       };
       if (!/^\d{4}-\d{2}-\d{2}$/.test(evolution.date)) throw new Error('Selecciona la fecha del taller.');
       if (!evolution.summary && !evolution.activities) throw new Error('Registra al menos un resumen o las actividades realizadas.');
       await db.collection(AM_COLLECTIONS.workshopEvolutions).doc(id).set(evolution, { merge: true });
       return NextResponse.json({ ok: true, data: { evolution } });
+    }
+
+    if (action === 'deleteTestWorkshopEvolution') {
+      const evolutionId = asText(body?.evolutionId, 100);
+      const ref = db.collection(AM_COLLECTIONS.workshopEvolutions).doc(evolutionId);
+      const snapshot = await ref.get();
+      if (!snapshot.exists) throw new Error('No se encontró la sesión de prueba.');
+      const evolution = snapshot.data() || {};
+      if (evolution.testRecord !== true && !isTestLabel(String(evolution.summary || ''))) {
+        return NextResponse.json({ ok: false, error: 'Solo se pueden eliminar definitivamente sesiones marcadas como [PRUEBA E2E].' }, { status: 403 });
+      }
+      await ref.delete();
+      return NextResponse.json({ ok: true, data: { evolutionId } });
     }
 
     if (action === 'rotatePortal') {
@@ -341,6 +422,27 @@ export async function POST(req: Request) {
           recoveryUrl: `${publicBaseUrl(req)}/evaluacion-adulto-mayor?acceso=${encodeURIComponent(accessToken)}`,
         },
       });
+    }
+
+    if (action === 'deleteTestEvaluator') {
+      const evaluatorId = asText(body?.evaluatorId, 100);
+      const ref = db.collection(AM_COLLECTIONS.evaluators).doc(evaluatorId);
+      const snapshot = await ref.get();
+      if (!snapshot.exists) throw new Error('No se encontró al evaluador de prueba.');
+      const evaluator = snapshot.data() || {};
+      const testIdentity = isTestLabel(String(evaluator.fullName || ''))
+        && String(evaluator.email || '').toLowerCase().endsWith('@example.com');
+      if (evaluator.testRecord !== true && !testIdentity) {
+        return NextResponse.json({ ok: false, error: 'Solo se pueden eliminar definitivamente evaluadores marcados como [PRUEBA E2E].' }, { status: 403 });
+      }
+      const evaluationsSnap = await db.collection(AM_COLLECTIONS.evaluations)
+        .where('evaluatorId', '==', evaluatorId)
+        .get();
+      await Promise.all([
+        ...evaluationsSnap.docs.map((doc: any) => doc.ref.delete()),
+        ref.delete(),
+      ]);
+      return NextResponse.json({ ok: true, data: { evaluatorId, deletedEvaluations: evaluationsSnap.size } });
     }
 
     return NextResponse.json({ ok: false, error: 'Acción no reconocida.' }, { status: 400 });

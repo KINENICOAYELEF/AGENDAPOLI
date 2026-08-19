@@ -319,4 +319,17 @@ describe('Módulo Taller de Adulto Mayor', () => {
     assert.match(staffPage, /renewEvaluatorAccess/);
     assert.match(transcribe, /No inventes dosis, incidentes ni respuestas/);
   });
+
+  test('la limpieza E2E no puede eliminar registros clínicos reales', () => {
+    const staffApi = readFileSync(new URL('../src/app/api/adulto-mayor/staff/route.ts', import.meta.url), 'utf8');
+    const staffPage = readFileSync(new URL('../src/app/app/taller-adulto-mayor/page.tsx', import.meta.url), 'utf8');
+    assert.match(staffApi, /action === 'deleteTestParticipant'/);
+    assert.match(staffApi, /Solo se permite eliminar definitivamente registros marcados como \[PRUEBA E2E\]/);
+    assert.match(staffApi, /action === 'deleteTestWorkshopEvolution'/);
+    assert.match(staffApi, /action === 'deleteTestEvaluator'/);
+    assert.match(staffApi, /action === 'deleteDraftEvaluation'/);
+    assert.match(staffApi, /Las evaluaciones entregadas no se eliminan/);
+    assert.match(staffPage, /Personas archivadas/);
+    assert.match(staffPage, /Eliminar prueba/);
+  });
 });

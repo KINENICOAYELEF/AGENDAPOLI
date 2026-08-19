@@ -27,6 +27,9 @@ export interface OlderAdultParticipant {
   createdByType: 'STAFF' | 'EXTERNAL_EVALUATOR';
   createdById: string;
   active: boolean;
+  testRecord?: boolean;
+  archivedAt?: string | null;
+  archivedByUid?: string | null;
 }
 
 export interface ExternalEvaluator {
@@ -38,6 +41,7 @@ export interface ExternalEvaluator {
   active: boolean;
   createdAt: string;
   lastAccessAt: string;
+  testRecord?: boolean;
 }
 
 export interface FrailScreen {
@@ -217,6 +221,7 @@ export interface WorkshopEvolution {
   createdByUid: string;
   createdByName: string;
   createdAt: string;
+  testRecord?: boolean;
 }
 
 export interface PublicPortalPayload {
