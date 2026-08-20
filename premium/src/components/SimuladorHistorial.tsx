@@ -15,6 +15,15 @@ const SCORECARD_LABELS: Record<string, string> = {
     objetivos: 'Objetivos',
     plan_fases: 'Plan por Fases',
     reevaluacion: 'Reevaluación',
+    anamnesisProxima: 'Anamnesis próxima',
+    anamnesisRemota: 'Anamnesis remota',
+    examenFisico: 'Evaluación física',
+    intervenciones: 'Intervenciones',
+    planificacionEscrita: 'Planificación escrita',
+    presentacionFormal: 'Presentación formal',
+    defensa: 'Defensa',
+    seguridadProfesional: 'Seguridad profesional',
+    coherenciaLongitudinal: 'Coherencia longitudinal',
     // Legacy
     intervencion: 'Intervención (legado)',
 };
@@ -24,10 +33,16 @@ function formatTime(s: number) {
 }
 
 function getNivelColor(nivel: string) {
-    if (nivel?.includes('Distinción')) return 'text-emerald-700 bg-emerald-50 border-emerald-200';
-    if (nivel === 'Aprobado') return 'text-blue-700 bg-blue-50 border-blue-200';
-    if (nivel?.includes('Recuperable')) return 'text-amber-700 bg-amber-50 border-amber-200';
+    const normalized = String(nivel || '').toUpperCase().replaceAll('_', ' ');
+    if (normalized.includes('DESTACADO') || normalized.includes('DISTINCIÓN')) return 'text-emerald-700 bg-emerald-50 border-emerald-200';
+    if (normalized === 'APROBADO') return 'text-blue-700 bg-blue-50 border-blue-200';
+    if (normalized.includes('RECUPERABLE')) return 'text-amber-700 bg-amber-50 border-amber-200';
     return 'text-red-700 bg-red-50 border-red-200';
+}
+
+function scoreValue(value: unknown) {
+    const item = value as { puntaje?: number; score?: number };
+    return Number(item?.puntaje ?? item?.score ?? 0);
 }
 
 export function SimuladorHistorial({ onClose }: { onClose: () => void }) {
@@ -62,7 +77,9 @@ export function SimuladorHistorial({ onClose }: { onClose: () => void }) {
                     {intentos.map((int) => {
                         const fecha = int.fecha ? int.fecha.toDate() : new Date();
                         const isExpanded = expandedId === int.id;
-                        const notaFinal = int.notaComision
+                        const notaFinal = int.practiceMode === 'ESTACIONES_VOZ_60'
+                            ? int.notaChilena?.toFixed(1)
+                            : int.notaComision
                             ? (int.notaChilena * 0.7 + int.notaComision * 0.3).toFixed(1)
                             : int.notaChilena?.toFixed(1);
 
@@ -95,8 +112,8 @@ export function SimuladorHistorial({ onClose }: { onClose: () => void }) {
                                             {Object.entries(int.scorecard).map(([k, v]) => (
                                                 <div key={k} className="bg-white rounded-lg p-2 border border-slate-200">
                                                     <div className="text-[10px] text-slate-500 font-semibold">{SCORECARD_LABELS[k] || k}</div>
-                                                    <div className={`text-lg font-black ${(v as any).puntaje >= 60 ? 'text-emerald-600' : 'text-red-500'}`}>
-                                                        {(v as any).puntaje}
+                                                    <div className={`text-lg font-black ${scoreValue(v) >= 60 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                                        {scoreValue(v)}
                                                     </div>
                                                 </div>
                                             ))}

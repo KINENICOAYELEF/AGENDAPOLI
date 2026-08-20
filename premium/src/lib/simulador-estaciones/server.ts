@@ -1,6 +1,6 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { jsonrepair } from 'jsonrepair';
-import { callGeminiCascade } from '@/lib/ai/modelQuotas';
+import { HIGH_VOLUME_CASCADE, callGeminiCascade } from '@/lib/ai/modelQuotas';
 import { SimCaseSchema, type SimCaseType } from '@/lib/ai/simuladorSchemas';
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import {
@@ -23,7 +23,11 @@ import {
 } from './prompts';
 
 export const STATION_SESSION_COLLECTION = 'voice_station_sessions';
-export const STATION_LIVE_MODEL = 'gemini-3.1-flash-live-preview';
+export const STATION_LIVE_MODELS = [
+  'gemini-3.1-flash-live-preview',
+  'gemini-2.5-flash-native-audio-preview-12-2025',
+] as const;
+export const STATION_LIVE_MODEL = STATION_LIVE_MODELS[0];
 
 type StoredSession = {
   ownerId: string;
@@ -41,6 +45,7 @@ type StoredSession = {
   visibleCase: Record<string, unknown>;
   fullCase: SimCaseType;
   liveResumeHandles?: Partial<Record<StationKey, string>>;
+  modelTrace?: PublicStationSession['modelTrace'];
   evaluation?: StationSimulationEvaluation;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -59,24 +64,43 @@ function parseJsonObject(raw: string): unknown {
   return JSON.parse(jsonrepair(match[0]));
 }
 
+async function callStructuredWithFallback<T>(
+  params: Parameters<typeof callGeminiCascade>[0],
+  parse: (raw: unknown) => T,
+): Promise<{ value: T; model: string }> {
+  let lastError = '';
+  for (const model of HIGH_VOLUME_CASCADE) {
+    try {
+      const result = await callGeminiCascade(params, [model]);
+      return { value: parse(parseJsonObject(result.text)), model: result.modelo };
+    } catch (error) {
+      lastError = `${model}: ${String((error as Error)?.message || error).slice(0, 300)}`;
+      console.warn('[simulador-estaciones] respuesta estructurada inválida; probando respaldo', lastError);
+    }
+  }
+  throw new Error(`Ningún modelo devolvió JSON clínico válido. ${lastError}`);
+}
+
 export async function generateStationCase(params: {
   region: string;
   difficulty: string;
   startingNotes: string;
   seed: string;
-}): Promise<SimCaseType> {
-  const { text } = await callGeminiCascade({
+}): Promise<{ caseData: SimCaseType; model: string }> {
+  const result = await callStructuredWithFallback({
     systemInstruction: STATION_SIMULATOR_CASE_PROMPT,
     userPrompt: buildCaseGenerationPrompt(params),
     temperature: 0.75,
     responseMimeType: 'application/json',
     maxOutputTokens: 14000,
+  }, (parsed) => {
+    const raw = parsed as Record<string, unknown>;
+    const candidate = raw.ficha_visible
+      ? raw
+      : (raw.caso || raw.case || raw.data || raw.resultado || raw.respuesta || raw);
+    return SimCaseSchema.parse(candidate);
   });
-  const raw = parseJsonObject(text) as Record<string, unknown>;
-  const candidate = raw.ficha_visible
-    ? raw
-    : (raw.caso || raw.case || raw.data || raw.resultado || raw.respuesta || raw);
-  return SimCaseSchema.parse(candidate);
+  return { caseData: result.value, model: result.model };
 }
 
 export async function createStationSession(params: {
@@ -106,7 +130,7 @@ export async function createStationSession(params: {
   });
 
   try {
-    const fullCase = await generateStationCase({
+    const generated = await generateStationCase({
       region: params.region,
       difficulty: params.difficulty,
       startingNotes: params.startingNotes,
@@ -114,8 +138,9 @@ export async function createStationSession(params: {
     });
     await ref.update({
       status: 'READY',
-      fullCase,
-      visibleCase: fullCase.ficha_visible,
+      fullCase: generated.caseData,
+      visibleCase: generated.caseData.ficha_visible,
+      modelTrace: { caseGeneration: generated.model },
       updatedAt: Timestamp.now(),
     });
   } catch (error) {
@@ -143,11 +168,20 @@ export async function getStationSessionForOwner(sessionId: string, ownerId: stri
 }
 
 export async function getLatestStationSessions(ownerId: string, maxResults = 8) {
-  const snap = await getAdminDb()
-    .collection(STATION_SESSION_COLLECTION)
-    .where('ownerId', '==', ownerId)
-    .limit(30)
-    .get();
+  const collection = getAdminDb().collection(STATION_SESSION_COLLECTION);
+  let snap;
+  try {
+    snap = await collection
+      .where('ownerId', '==', ownerId)
+      .orderBy('updatedAt', 'desc')
+      .limit(Math.max(1, Math.min(50, maxResults)))
+      .get();
+  } catch (error) {
+    // Mantiene el historial disponible mientras el índice compuesto termina de
+    // construirse en un proyecto nuevo. La ruta principal sí devuelve lo último.
+    console.warn('[simulador-estaciones] índice de historial no disponible; usando respaldo acotado', error);
+    snap = await collection.where('ownerId', '==', ownerId).limit(100).get();
+  }
 
   return snap.docs
     .map((doc: { id: string; data: () => unknown }) => ({ id: doc.id, ...(doc.data() as StoredSession) }))
@@ -179,6 +213,7 @@ export function toPublicSession(session: StoredSession & { id: string }): Public
     updatedAt: timestampToIso(session.updatedAt) || new Date().toISOString(),
     completedAt: timestampToIso(session.completedAt),
     evaluation: session.evaluation,
+    modelTrace: session.modelTrace,
     errorMessage: String((session as StoredSession & { errorMessage?: string }).errorMessage || ''),
   };
 }
@@ -186,7 +221,10 @@ export function toPublicSession(session: StoredSession & { id: string }): Public
 export function buildStationInstruction(session: StoredSession, station: StationKey) {
   const currentIndex = STATION_KEYS.indexOf(station);
   const priorProgress = Object.fromEntries(
-    STATION_KEYS.slice(0, Math.max(0, currentIndex)).map((key) => [key, session.stations[key]]),
+    // Incluye también el avance de la estación actual. Si el handle de Google
+    // expira o se cambia al modelo Live de respaldo, la conversación puede
+    // reconstruirse desde el checkpoint sin inventar un caso nuevo.
+    STATION_KEYS.slice(0, Math.max(0, currentIndex + 1)).map((key) => [key, session.stations[key]]),
   );
   return buildLiveStationPrompt({
     station,
@@ -210,7 +248,7 @@ export async function evaluateStationSession(sessionId: string, ownerId: string)
   await ref.update({ status: 'EVALUATING', updatedAt: Timestamp.now() });
 
   try {
-    const { text } = await callGeminiCascade({
+    const result = await callStructuredWithFallback({
       systemInstruction: 'Evalúas desempeño clínico de estudiantes con rigor, trazabilidad y separación explícita entre evidencia e inferencia. No inventes hechos.',
       userPrompt: buildFinalEvaluationPrompt({
         caseData: session.fullCase,
@@ -220,20 +258,30 @@ export async function evaluateStationSession(sessionId: string, ownerId: string)
       temperature: 0.15,
       responseMimeType: 'application/json',
       maxOutputTokens: 16000,
-    });
+    }, (raw) => StationSimulationEvaluationSchema.parse(raw));
 
-    const parsed = StationSimulationEvaluationSchema.parse(parseJsonObject(text));
-    const evaluation = normalizeEvaluation(parsed);
+    const parsed = result.value;
+    const modelo = result.model;
+    const evaluation = verifyEvaluationEvidence(
+      normalizeEvaluation(parsed),
+      session.stations,
+      session.planningDraft,
+    );
     const completedAt = Timestamp.now();
 
     await ref.update({
       evaluation,
+      'modelTrace.finalEvaluation': modelo,
       status: 'COMPLETED',
       completedAt,
       updatedAt: completedAt,
     });
 
-    await saveCountableAttempt({ ...session, evaluation }, sessionId, completedAt);
+    await saveCountableAttempt({
+      ...session,
+      evaluation,
+      modelTrace: { ...(session.modelTrace || {}), finalEvaluation: modelo },
+    }, sessionId, completedAt);
     return getStationSessionForOwner(sessionId, ownerId);
   } catch (error) {
     await ref.update({
@@ -278,6 +326,64 @@ function normalizeEvaluation(input: StationSimulationEvaluation): StationSimulat
   return { ...input, stationScores, totalScore: total, grade, outcome };
 }
 
+function normalizeEvidenceText(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function evidenceMatchesSource(evidence: string, source: string) {
+  const normalizedEvidence = normalizeEvidenceText(evidence);
+  const normalizedSource = normalizeEvidenceText(source);
+  if (!normalizedEvidence || !normalizedSource) return false;
+  if (normalizedSource.includes(normalizedEvidence)) return true;
+  const evidenceTokens = [...new Set(normalizedEvidence.split(' ').filter((token) => token.length > 3))];
+  if (evidenceTokens.length < 2) return false;
+  const sourceTokens = new Set(normalizedSource.split(' '));
+  const overlap = evidenceTokens.filter((token) => sourceTokens.has(token)).length / evidenceTokens.length;
+  return overlap >= 0.6;
+}
+
+export function verifyEvaluationEvidence(
+  input: StationSimulationEvaluation,
+  stations: Record<StationKey, StationProgress>,
+  planningDraft: PlanningDraft,
+): StationSimulationEvaluation {
+  const stationSources = Object.fromEntries(STATION_KEYS.map((key) => {
+    const progress = stations[key];
+    const text = [
+      progress?.semanticConfirmation?.summary,
+      ...(progress?.semanticConfirmation?.studentCorrections || []),
+      progress?.semanticSummary,
+      ...(progress?.transcript || []).map((turn) => turn.text),
+      key === 'PLANIFICACION_ESCRITA' ? JSON.stringify(planningDraft) : '',
+    ].filter(Boolean).join('\n');
+    return [key, text];
+  })) as Record<StationKey, string>;
+
+  const stationScores = { ...input.stationScores };
+  for (const key of Object.keys(stationScores) as Array<keyof typeof stationScores>) {
+    stationScores[key] = {
+      ...stationScores[key],
+      evidence: stationScores[key].evidence.map((item) => {
+        const verified = evidenceMatchesSource(item.evidence, stationSources[item.station] || '');
+        return {
+          ...item,
+          verified,
+          interpretation: verified
+            ? item.interpretation
+            : `Inferencia docente sin cita textual verificable: ${item.interpretation}`.slice(0, 1800),
+        };
+      }),
+    };
+  }
+  return { ...input, stationScores };
+}
+
 export function scoreToChileanGrade(score: number) {
   const bounded = Math.max(0, Math.min(100, score));
   const grade = bounded < 70
@@ -296,6 +402,16 @@ async function saveCountableAttempt(session: StoredSession & { evaluation: Stati
   if (existing.exists) return;
 
   const elapsed = Object.values(session.stations).reduce((sum, station) => sum + (station.elapsedSeconds || 0), 0);
+  const voiceStations = STATION_KEYS.filter((key) => key !== 'PLANIFICACION_ESCRITA');
+  const voiceEvidenceComplete = voiceStations.every((key) => {
+    const station = session.stations[key];
+    const studentWords = station.transcript
+      .filter((turn) => turn.role === 'STUDENT')
+      .reduce((count, turn) => count + turn.text.trim().split(/\s+/).filter(Boolean).length, 0);
+    return studentWords >= 5 || station.elapsedSeconds >= 60;
+  });
+  const planningLength = Object.values(session.planningDraft).join(' ').trim().length;
+  const countableForMinimum = voiceEvidenceComplete && (planningLength >= 80 || session.stations.PLANIFICACION_ESCRITA.elapsedSeconds >= 120);
   await attemptRef.set({
     userId: session.ownerId,
     userEmail: session.ownerEmail,
@@ -303,7 +419,7 @@ async function saveCountableAttempt(session: StoredSession & { evaluation: Stati
     area: session.region,
     dificultad: session.difficulty,
     practiceMode: 'ESTACIONES_VOZ_60',
-    version: 'stations_voice_v1',
+    version: 'stations_voice_v2',
     modalidad: 'VOZ',
     pacienteNombre: String((session.visibleCase as { nombre?: string })?.nombre || 'Caso simulado'),
     motivoConsulta: String((session.visibleCase as { motivo_consulta?: string })?.motivo_consulta || ''),
@@ -312,14 +428,26 @@ async function saveCountableAttempt(session: StoredSession & { evaluation: Stati
     nivel: session.evaluation.outcome,
     puntajeComision: session.evaluation.stationScores.defensa.score,
     notaComision: scoreToChileanGrade(session.evaluation.stationScores.defensa.score),
-    scorecard: session.evaluation.stationScores,
+    scorecard: Object.fromEntries(Object.entries(session.evaluation.stationScores).map(([key, value]) => [
+      key,
+      {
+        ...value,
+        // Doble forma temporal para no romper el historial antiguo.
+        puntaje: value.score,
+        comentario: value.comment,
+      },
+    ])),
     tiempoSegundos: elapsed,
+    countableForMinimum,
+    integrityStatus: countableForMinimum ? 'VALID' : 'INSUFFICIENT_EVIDENCE',
     fecha: completedAt,
     resumenTrabajo: session.evaluation.feedbackSummary,
     erroresCriticos: session.evaluation.criticalSafetyErrors,
     aciertosDestacados: session.evaluation.strengths,
     areasMejora: session.evaluation.priorities,
     perlaDocente: session.evaluation.nextPractice,
+    notaGlobalIncluyeDefensa: true,
+    modelTrace: session.modelTrace,
     fullSessionData: {
       stationSessionId: sessionId,
       planningDraft: session.planningDraft,

@@ -95,7 +95,7 @@ export function buildLiveStationPrompt(params: {
   planningDraft?: PlanningDraft;
 }) {
   const prior = Object.entries(params.priorProgress)
-    .map(([key, value]) => `${key}: ${value?.semanticSummary || transcriptToText(value?.transcript || [])}`)
+    .map(([key, value]) => `${key}: ${value?.semanticConfirmation?.summary || value?.semanticSummary || transcriptToText(value?.transcript || [])}`)
     .join('\n');
 
   const base = `${COMMON_LIVE_RULES}\n${caseContext(params.caseData)}\nCONTEXTO YA REGISTRADO EN ESTACIONES PREVIAS:\n${prior || 'Ninguno.'}`;
@@ -135,7 +135,7 @@ export function buildFinalEvaluationPrompt(params: {
   planningDraft: PlanningDraft;
 }) {
   const evidence = Object.values(params.stations)
-    .map((station) => `\n### ${station.station}\nResumen semántico: ${station.semanticSummary || 'No disponible'}\nTranscripción:\n${transcriptToText(station.transcript)}\nLimitaciones de audio: ${station.audioUncertainties.join(' | ') || 'Ninguna registrada'}`)
+    .map((station) => `\n### ${station.station}\nEstado del cierre de escucha: ${station.semanticConfirmation?.status || 'Sin registro'}\nResumen confirmado: ${station.semanticConfirmation?.summary || station.semanticSummary || 'No disponible'}\nCorrecciones del estudiante: ${station.semanticConfirmation?.studentCorrections?.join(' | ') || 'Ninguna'}\nTranscripción:\n${transcriptToText(station.transcript)}\nLimitaciones de audio: ${(station.semanticConfirmation?.unresolvedAudio || station.audioUncertainties).join(' | ') || 'Ninguna registrada'}`)
     .join('\n');
 
   return `
@@ -170,5 +170,43 @@ CRITERIOS DE EVALUACIÓN:
 7. No premies mencionar muchas pruebas o técnicas. Premia elegir lo relevante y justificar cómo cambia la probabilidad, la hipótesis o la decisión.
 8. La nota se recalculará por código con exigencia de 70%; entrega igualmente una estimación coherente.
 
-Devuelve exclusivamente JSON compatible con el esquema solicitado.`;
+ESTRUCTURA JSON EXACTA OBLIGATORIA:
+{
+  "totalScore": 0,
+  "grade": 1,
+  "outcome": "APROBADO_DESTACADO|APROBADO|REPROBADO_RECUPERABLE|REPROBADO",
+  "stationScores": {
+    "anamnesisProxima": SCORE,
+    "anamnesisRemota": SCORE,
+    "examenFisico": SCORE,
+    "intervenciones": SCORE,
+    "planificacionEscrita": SCORE,
+    "presentacionFormal": SCORE,
+    "defensa": SCORE,
+    "seguridadProfesional": SCORE,
+    "coherenciaLongitudinal": SCORE
+  },
+  "criticalSafetyErrors": [{ "station": "ANAMNESIS_PROXIMA", "error": "string", "evidence": "cita breve" }],
+  "audioLimitations": [{ "station": "ANAMNESIS_PROXIMA", "segment": "string", "consequence": "string" }],
+  "strengths": ["mínimo 2"],
+  "priorities": ["mínimo 2"],
+  "coherenceAnalysis": "string",
+  "feedbackSummary": "string",
+  "detailedFeedback": "string",
+  "nextPractice": "string"
+}
+
+Donde cada SCORE tiene exactamente esta forma:
+{
+  "score": 0,
+  "weightedPoints": 0,
+  "comment": "string",
+  "evidence": [{
+    "station": "ANAMNESIS_PROXIMA|ANAMNESIS_REMOTA|EXAMEN_FISICO|INTERVENCIONES|PLANIFICACION_ESCRITA|PRESENTACION_FORMAL|DEFENSA",
+    "evidence": "cita o dato breve realmente presente",
+    "interpretation": "por qué sustenta el juicio"
+  }]
+}
+
+Usa arreglos vacíos si no hay errores críticos o limitaciones de audio. No agregues claves distintas. Devuelve exclusivamente el objeto JSON, sin Markdown.`;
 }
