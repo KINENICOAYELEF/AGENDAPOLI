@@ -57,7 +57,9 @@ export async function POST(request: Request, context: RouteContext) {
             systemInstruction,
             inputAudioTranscription: {},
             outputAudioTranscription: {},
-            sessionResumption: resumeHandle ? { handle: resumeHandle, transparent: true } : { transparent: true },
+            // `transparent` no está disponible en la API gratuita de Gemini.
+            // La reanudación se habilita con un objeto vacío o con el `handle` previo.
+            sessionResumption: resumeHandle ? { handle: resumeHandle } : {},
             contextWindowCompression: {
               triggerTokens: '12000',
               slidingWindow: { targetTokens: '8000' },

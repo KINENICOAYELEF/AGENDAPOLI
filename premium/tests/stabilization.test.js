@@ -425,6 +425,7 @@ describe('Simulador clínico por estaciones de voz — beta docente', () => {
     const hook = readFileSync(new URL('../src/hooks/useResumableGeminiLive.ts', import.meta.url), 'utf8');
     assert.match(tokenRoute, /authTokens\.create/);
     assert.match(tokenRoute, /sessionResumption/);
+    assert.doesNotMatch(tokenRoute, /transparent\s*:/);
     assert.match(tokenRoute, /contextWindowCompression/);
     assert.match(tokenRoute, /lockAdditionalFields: \[\]/);
     assert.doesNotMatch(hook, /GEMINI_API_KEY/);
