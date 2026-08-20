@@ -28,6 +28,18 @@ const dateLabel = (value?: string) => value
   ? new Intl.DateTimeFormat('es-CL', { dateStyle: 'long' }).format(new Date(value))
   : 'Sin fecha';
 
+const fileDateLabel = (value?: string) => {
+  if (!value) return 'sin-fecha';
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'America/Santiago',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(value));
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(item => item.type === type)?.value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
+};
+
 const fileSafe = (value: string) => value
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
@@ -340,7 +352,7 @@ export async function createOlderAdultEvaluationPdf(
     doc.text(`${page}/${pageCount}`, pageWidth - margin, 287, { align: 'right' });
   }
 
-  const date = (evaluation.submittedAt || evaluation.updatedAt || '').slice(0, 10) || 'sin-fecha';
+  const date = fileDateLabel(evaluation.submittedAt || evaluation.updatedAt);
   const filename = `informe-funcional-${fileSafe(evaluation.participantSnapshot.fullName) || 'persona'}-${date}.pdf`;
   return { doc, filename };
 }
