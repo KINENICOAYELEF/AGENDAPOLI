@@ -380,3 +380,76 @@ describe('Módulo Taller de Adulto Mayor', () => {
     assert.match(publicPage, /Reintentar/);
   });
 });
+
+describe('Simulador clínico por estaciones de voz — beta docente', () => {
+  test('mantiene exactamente 60 minutos y separa la planificación escrita', () => {
+    const source = readFileSync(new URL('../src/lib/simulador-estaciones/types.ts', import.meta.url), 'utf8');
+    assert.match(source, /durationSeconds: 5 \* 60/);
+    assert.match(source, /durationSeconds: 9 \* 60/);
+    assert.match(source, /durationSeconds: 6 \* 60/);
+    assert.match(source, /durationSeconds: 10 \* 60/);
+    assert.match(source, /durationSeconds: 15 \* 60/);
+    assert.match(source, /PLANIFICACION_ESCRITA/);
+    assert.match(source, /kind: 'WRITTEN'/);
+    assert.match(source, /TOTAL_EXAM_SECONDS/);
+  });
+
+  test('la beta está oculta a internos en UI y protegida como docente en cada API', () => {
+    const page = readFileSync(new URL('../src/app/app/simulador-estaciones/page.tsx', import.meta.url), 'utf8');
+    const layout = readFileSync(new URL('../src/app/app/layout.tsx', import.meta.url), 'utf8');
+    const routes = [
+      '../src/app/api/simulador-estaciones/sessions/route.ts',
+      '../src/app/api/simulador-estaciones/sessions/[sessionId]/route.ts',
+      '../src/app/api/simulador-estaciones/sessions/[sessionId]/evaluate/route.ts',
+      '../src/app/api/simulador-estaciones/sessions/[sessionId]/live-token/route.ts',
+    ];
+    assert.match(page, /user\.role !== 'DOCENTE'/);
+    assert.match(layout, /user\.role === 'DOCENTE'/);
+    assert.match(layout, /\/app\/simulador-estaciones/);
+    for (const route of routes) {
+      const source = readFileSync(new URL(route, import.meta.url), 'utf8');
+      assert.match(source, /requireTeacher/);
+    }
+  });
+
+  test('el caso secreto nunca forma parte de la respuesta pública', () => {
+    const server = readFileSync(new URL('../src/lib/simulador-estaciones/server.ts', import.meta.url), 'utf8');
+    const publicProjection = server.slice(server.indexOf('export function toPublicSession'), server.indexOf('export function buildStationInstruction'));
+    assert.doesNotMatch(publicProjection, /fullCase:/);
+    assert.doesNotMatch(publicProjection, /liveResumeHandles:/);
+    assert.match(publicProjection, /visibleCase:/);
+  });
+
+  test('usa token efímero, reanudación y compresión sin exponer la API key al navegador', () => {
+    const tokenRoute = readFileSync(new URL('../src/app/api/simulador-estaciones/sessions/[sessionId]/live-token/route.ts', import.meta.url), 'utf8');
+    const hook = readFileSync(new URL('../src/hooks/useResumableGeminiLive.ts', import.meta.url), 'utf8');
+    assert.match(tokenRoute, /authTokens\.create/);
+    assert.match(tokenRoute, /sessionResumption/);
+    assert.match(tokenRoute, /contextWindowCompression/);
+    assert.match(tokenRoute, /lockAdditionalFields: \[\]/);
+    assert.doesNotMatch(hook, /GEMINI_API_KEY/);
+    assert.doesNotMatch(hook, /NEXT_PUBLIC_GEMINI_API_KEY/);
+    assert.match(hook, /sessionResumptionUpdate/);
+    assert.match(hook, /message\.goAway/);
+  });
+
+  test('guarda en servidor, respaldo local y bloquea una estación completada', () => {
+    const api = readFileSync(new URL('../src/app/api/simulador-estaciones/sessions/[sessionId]/route.ts', import.meta.url), 'utf8');
+    const ui = readFileSync(new URL('../src/components/simulador-estaciones/SimuladorEstacionesBeta.tsx', import.meta.url), 'utf8');
+    assert.match(api, /Una estación completada queda bloqueada/);
+    assert.match(api, /COMPLETE_STATION/);
+    assert.match(ui, /localStorage\.setItem/);
+    assert.match(ui, /readLocalBackup/);
+    assert.match(ui, /setInterval\(\(\) => \{ void patch\('CHECKPOINT'\); \}, 10000\)/);
+  });
+
+  test('el feedback contrasta evidencia oral, escrita y errores de audio', () => {
+    const prompts = readFileSync(new URL('../src/lib/simulador-estaciones/prompts.ts', import.meta.url), 'utf8');
+    const server = readFileSync(new URL('../src/lib/simulador-estaciones/server.ts', import.meta.url), 'utf8');
+    assert.match(prompts, /Contrasta lo oral, lo escrito y la verdad del caso/);
+    assert.match(prompts, /Distingue siempre evidencia observable de inferencia docente/);
+    assert.match(prompts, /no evaluable por audio/);
+    assert.match(server, /practiceMode: 'ESTACIONES_VOZ_60'/);
+    assert.match(server, /modalidad: 'VOZ'/);
+  });
+});
