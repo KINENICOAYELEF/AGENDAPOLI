@@ -452,4 +452,13 @@ describe('Simulador clínico por estaciones de voz — beta docente', () => {
     assert.match(server, /practiceMode: 'ESTACIONES_VOZ_60'/);
     assert.match(server, /modalidad: 'VOZ'/);
   });
+
+  test('la generación exige la forma JSON y permite limpiar solo sesiones incompletas', () => {
+    const prompts = readFileSync(new URL('../src/lib/simulador-estaciones/prompts.ts', import.meta.url), 'utf8');
+    const route = readFileSync(new URL('../src/app/api/simulador-estaciones/sessions/[sessionId]/route.ts', import.meta.url), 'utf8');
+    assert.match(prompts, /ESTRUCTURA JSON EXACTA OBLIGATORIA/);
+    assert.match(prompts, /No envuelvas este objeto/);
+    assert.match(route, /export async function DELETE/);
+    assert.match(route, /Una simulación completada forma parte del historial y no se elimina/);
+  });
 });

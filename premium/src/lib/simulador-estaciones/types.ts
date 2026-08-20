@@ -177,6 +177,7 @@ export interface PublicStationSession {
   updatedAt: string;
   completedAt?: string;
   evaluation?: StationSimulationEvaluation;
+  errorMessage?: string;
 }
 
 export const EvidenceItemSchema = z.object({

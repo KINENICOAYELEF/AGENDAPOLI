@@ -21,6 +21,7 @@ import {
   Save,
   ShieldCheck,
   Sparkles,
+  Trash2,
   WifiOff,
 } from 'lucide-react';
 import { auth } from '@/lib/firebase';
@@ -114,6 +115,16 @@ export function SimuladorEstacionesBeta() {
     }
   };
 
+  const deleteSession = async (sessionId: string) => {
+    setGlobalError('');
+    try {
+      await apiRequest<{ deleted: boolean }>(`/api/simulador-estaciones/sessions/${sessionId}`, { method: 'DELETE' });
+      setSessions((current) => current.filter((session) => session.id !== sessionId));
+    } catch (error) {
+      setGlobalError(String((error as Error)?.message || error));
+    }
+  };
+
   if (activeSession) {
     return (
       <SessionShell
@@ -167,20 +178,23 @@ export function SimuladorEstacionesBeta() {
               {loading ? <LoadingLine label="Buscando sesiones..." /> : sessions.length === 0 ? (
                 <div className="rounded-2xl bg-slate-50 p-6 text-center text-sm text-slate-500">Todavía no hay sesiones beta.</div>
               ) : sessions.map((session) => (
-                <button
-                  key={session.id}
-                  onClick={() => setActiveSession(session)}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 p-4 text-left transition hover:border-indigo-300 hover:bg-indigo-50/30"
-                >
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${session.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
-                    {session.status === 'COMPLETED' ? <Check className="h-5 w-5" /> : <RotateCcw className="h-5 w-5" />}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-extrabold text-slate-900">{regionLabel(session.region)} · {String(session.visibleCase?.nombre || 'Caso preparado')}</p>
-                    <p className="mt-1 text-xs text-slate-500">{session.status === 'COMPLETED' ? `Resultado ${session.evaluation?.totalScore ?? '—'}%` : `Continuar en ${STATION_DEFINITIONS[session.currentStationIndex]?.shortTitle}`}</p>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-slate-300" />
-                </button>
+                <div key={session.id} className="flex items-stretch gap-2">
+                  <button
+                    onClick={() => setActiveSession(session)}
+                    disabled={session.status === 'ERROR'}
+                    className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-slate-200 p-4 text-left transition hover:border-indigo-300 hover:bg-indigo-50/30 disabled:cursor-default disabled:bg-rose-50"
+                  >
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${session.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : session.status === 'ERROR' ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                      {session.status === 'COMPLETED' ? <Check className="h-5 w-5" /> : session.status === 'ERROR' ? <AlertTriangle className="h-5 w-5" /> : <RotateCcw className="h-5 w-5" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-extrabold text-slate-900">{regionLabel(session.region)} · {String(session.visibleCase?.nombre || (session.status === 'ERROR' ? 'Caso no generado' : 'Caso preparado'))}</p>
+                      <p className="mt-1 text-xs text-slate-500">{session.status === 'COMPLETED' ? `Resultado ${session.evaluation?.totalScore ?? '—'}%` : session.status === 'ERROR' ? 'Falló antes de iniciar; puedes eliminarlo' : `Continuar en ${STATION_DEFINITIONS[session.currentStationIndex]?.shortTitle}`}</p>
+                    </div>
+                    {session.status !== 'ERROR' && <ChevronRight className="h-5 w-5 text-slate-300" />}
+                  </button>
+                  {session.status !== 'COMPLETED' && <button onClick={() => void deleteSession(session.id)} className="rounded-2xl border border-slate-200 px-3 text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600" aria-label="Eliminar sesión incompleta"><Trash2 className="h-4 w-4" /></button>}
+                </div>
               ))}
             </div>
           </section>

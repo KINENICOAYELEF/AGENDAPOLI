@@ -108,3 +108,19 @@ export async function PATCH(request: Request, context: RouteContext) {
     return stationApiError(error);
   }
 }
+
+export async function DELETE(request: Request, context: RouteContext) {
+  try {
+    const auth = await requireTeacher(request.headers.get('authorization'));
+    const { sessionId } = await context.params;
+    const existing = await getStoredStationSession(sessionId);
+    if (existing.ownerId !== auth.uid) throw new Error('FORBIDDEN: Esta sesión pertenece a otra cuenta');
+    if (existing.status === 'COMPLETED') {
+      throw new Error('INCOMPLETE: Una simulación completada forma parte del historial y no se elimina');
+    }
+    await getAdminDb().collection(STATION_SESSION_COLLECTION).doc(sessionId).delete();
+    return stationApiSuccess({ deleted: true, sessionId });
+  } catch (error) {
+    return stationApiError(error);
+  }
+}

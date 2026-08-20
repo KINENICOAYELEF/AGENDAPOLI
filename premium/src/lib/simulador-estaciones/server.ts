@@ -72,7 +72,11 @@ export async function generateStationCase(params: {
     responseMimeType: 'application/json',
     maxOutputTokens: 14000,
   });
-  return SimCaseSchema.parse(parseJsonObject(text));
+  const raw = parseJsonObject(text) as Record<string, unknown>;
+  const candidate = raw.ficha_visible
+    ? raw
+    : (raw.caso || raw.case || raw.data || raw.resultado || raw.respuesta || raw);
+  return SimCaseSchema.parse(candidate);
 }
 
 export async function createStationSession(params: {
@@ -175,6 +179,7 @@ export function toPublicSession(session: StoredSession & { id: string }): Public
     updatedAt: timestampToIso(session.updatedAt) || new Date().toISOString(),
     completedAt: timestampToIso(session.completedAt),
     evaluation: session.evaluation,
+    errorMessage: String((session as StoredSession & { errorMessage?: string }).errorMessage || ''),
   };
 }
 

@@ -17,6 +17,37 @@ REQUISITOS CLÍNICOS:
 - El paciente responde solo lo preguntado, en lenguaje natural, y no regala el diagnóstico.
 - Mantén nombres ficticios y no uses datos identificatorios reales.
 
+ESTRUCTURA JSON EXACTA OBLIGATORIA:
+{
+  "ficha_visible": {
+    "nombre": "string", "edad": "string", "sexo": "string", "ocupacion": "string",
+    "deporte_actividad": "string", "motivo_consulta": "string", "derivacion": "string", "tiempo_evolucion": "string"
+  },
+  "perfil_secreto": {
+    "historia_completa": "string extenso con la verdad completa del caso",
+    "personalidad": "string",
+    "datos_ocultos": [{ "dato": "string", "solo_si_preguntan": "string" }],
+    "antecedentes_relevantes": ["string"],
+    "medicamentos": ["string"],
+    "bps_oculto": { "sueno": "string", "estres": "string", "miedos": "string", "expectativa_real": "string" }
+  },
+  "hallazgos_todos_modulos": {
+    "observacion_movimiento_inicial": "string", "rango_movimiento_analitico": "string",
+    "fuerza_tolerancia_carga": "string", "palpacion": "string", "neuro_vascular": "string",
+    "control_motor_sensoriomotor": "string", "pruebas_ortopedicas": "string", "pruebas_funcionales_reintegro": "string"
+  },
+  "rubrica_ideal": {
+    "hipotesis_esperadas": [{ "titulo": "string", "probabilidad": "string" }],
+    "clasificacion_dolor_esperada": "string", "irritabilidad_esperada": "string",
+    "banderas_rojas_presentes": ["string"], "banderas_amarillas_presentes": ["string"],
+    "modulos_examen_obligatorios": ["string"], "diagnostico_ideal_resumido": "string",
+    "errores_disenados": ["string"], "objetivos_smart_esperados_count": 5,
+    "pilares_intervencion_esperados": ["string"]
+  }
+}
+
+No envuelvas este objeto en claves como "caso", "data", "respuesta" o "resultado".
+
 Devuelve exclusivamente JSON compatible con el esquema solicitado.`;
 
 export function buildCaseGenerationPrompt(params: {
