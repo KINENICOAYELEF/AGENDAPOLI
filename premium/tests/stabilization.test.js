@@ -507,4 +507,22 @@ describe('Simulador clínico por estaciones de voz — beta docente', () => {
     assert.match(profile, /data\.puntajeGlobal/);
     assert.match(profile, /countableForMinimum !== false/);
   });
+
+  test('dispone de una prueba E2E aislada, docente, verificable y autolimpiable', () => {
+    const fixture = readFileSync(new URL('../src/lib/simulador-estaciones/qaFixture.ts', import.meta.url), 'utf8');
+    const page = readFileSync(new URL('../src/app/app/simulador-estaciones/qa/page.tsx', import.meta.url), 'utf8');
+    const route = readFileSync(new URL('../src/app/api/simulador-estaciones/qa/route.ts', import.meta.url), 'utf8');
+    const layout = readFileSync(new URL('../src/app/app/layout.tsx', import.meta.url), 'utf8');
+    assert.match(fixture, /STATION_QA_PREFIX/);
+    assert.match(fixture, /for|STATION_KEYS/);
+    assert.match(fixture, /reconnectCount: station === 'EXAMEN_FISICO' \? 2 : 0/);
+    assert.match(fixture, /status: hasAudioUncertainty \? 'PARTIAL'/);
+    assert.match(page, /user\.role !== 'DOCENTE'/);
+    assert.match(page, /getIntentosEstudiante/);
+    assert.match(page, /exportarIntentoPDF/);
+    assert.match(route, /requireTeacher/);
+    assert.match(route, /attempt\.fullSessionData\?\.stationSessionId === sessionId/);
+    assert.match(route, /batch\.delete/);
+    assert.doesNotMatch(layout, /simulador-estaciones\/qa/);
+  });
 });
