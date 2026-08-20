@@ -325,7 +325,7 @@ export function EvaluationWizard({ evaluation, previous, onUpdated, onClose, sco
         <button type="button" onClick={onClose} className="am-no-print mb-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700">
           <ArrowLeft className="h-4 w-4" /> Volver a mis evaluaciones
         </button>
-        <EvaluationReport evaluation={evaluation} previous={previous} />
+        <EvaluationReport evaluation={evaluation} previous={previous} mode={scope === 'PORTAL' ? 'RAW' : 'INTERPRETED'} />
       </div>
     );
   }
@@ -546,15 +546,15 @@ export function EvaluationWizard({ evaluation, previous, onUpdated, onClose, sco
 
         {step === 5 && (
           <div className="space-y-6">
-            <div><h2 className="text-xl font-black text-slate-900">Revisa antes de entregar</h2><p className="mt-1 text-sm text-slate-500">Las categorías son cribados y resultados funcionales. Comprueba especialmente cifras, ayudas y pruebas modificadas.</p></div>
+            <div><h2 className="text-xl font-black text-slate-900">Revisa antes de entregar</h2><p className="mt-1 text-sm text-slate-500">{scope === 'PORTAL' ? 'Comprueba que los valores, ayudas técnicas y pruebas modificadas estén correctamente registrados.' : 'Las categorías son cribados y resultados funcionales. Comprueba especialmente cifras, ayudas y pruebas modificadas.'}</p></div>
             {!completeness.complete && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                 <strong className="block">Aún faltan datos necesarios</strong>
                 <p className="mt-1">{completeness.missing.join(', ')}.</p>
               </div>
             )}
-            <EvaluationReport evaluation={{ ...evaluation, data, results: liveResults }} previous={previous} />
-            <Field label="Observaciones finales del evaluador" help="Describe calidad de ejecución, síntomas, apoyos o hechos que ayuden a interpretar los resultados."><TextArea value={data.clinicalObservations} onChange={value => update(draft => { draft.clinicalObservations = value; })} rows={4} /></Field>
+            <EvaluationReport evaluation={{ ...evaluation, data, results: liveResults }} previous={previous} mode={scope === 'PORTAL' ? 'RAW' : 'INTERPRETED'} />
+            {scope === 'STAFF' && <Field label="Observaciones finales del evaluador" help="Describe calidad de ejecución, síntomas, apoyos o hechos que ayuden a interpretar los resultados."><TextArea value={data.clinicalObservations} onChange={value => update(draft => { draft.clinicalObservations = value; })} rows={4} /></Field>}
             <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4">
               <div className="flex gap-3">
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-700" />

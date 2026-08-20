@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, AlertTriangle, CheckCircle2, Activity, Brain, LoaderCircle, PersonStanding, Zap } from 'lucide-react';
+import { Download, AlertTriangle, CheckCircle2, Activity, Brain, ClipboardList, LoaderCircle, PersonStanding, Zap } from 'lucide-react';
 import { OlderAdultEvaluation } from '@/lib/adultoMayor/types';
 import { FunctionalRadar } from './FunctionalRadar';
 
@@ -31,7 +31,26 @@ function ResultCard({ icon, title, value, detail, tone = 'teal' }: {
   );
 }
 
-export function EvaluationReport({ evaluation, previous }: { evaluation: OlderAdultEvaluation; previous?: OlderAdultEvaluation }) {
+const rawValue = (value: unknown, fallback = 'No registrado') => {
+  if (value === true) return 'Sí';
+  if (value === false) return 'No';
+  if (value == null || String(value).trim() === '') return fallback;
+  return String(value).replaceAll('_', ' ').toLowerCase().replace(/^./, letter => letter.toUpperCase());
+};
+
+function RawRow({ label, value }: { label: string; value: unknown }) {
+  return <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5"><dt className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</dt><dd className="mt-1 whitespace-pre-wrap text-sm font-bold leading-relaxed text-slate-800">{rawValue(value)}</dd></div>;
+}
+
+function RawSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return <section><h3 className="mb-3 text-sm font-black text-slate-900">{title}</h3><dl className="grid gap-2 sm:grid-cols-2">{children}</dl></section>;
+}
+
+export function EvaluationReport({ evaluation, previous, mode = 'INTERPRETED' }: {
+  evaluation: OlderAdultEvaluation;
+  previous?: OlderAdultEvaluation;
+  mode?: 'INTERPRETED' | 'RAW';
+}) {
   const result = evaluation.results;
   const tests = evaluation.data.tests;
   const [exporting, setExporting] = useState(false);
@@ -40,8 +59,9 @@ export function EvaluationReport({ evaluation, previous }: { evaluation: OlderAd
     setExporting(true);
     setExportError('');
     try {
-      const { downloadOlderAdultEvaluationPdf } = await import('@/lib/adultoMayor/pdf');
-      await downloadOlderAdultEvaluationPdf(evaluation, previous);
+      const pdf = await import('@/lib/adultoMayor/pdf');
+      if (mode === 'RAW') await pdf.downloadRawOlderAdultEvaluationPdf(evaluation);
+      else await pdf.downloadOlderAdultEvaluationPdf(evaluation, previous);
     } catch (error) {
       console.error('[adulto-mayor/pdf]', error);
       setExportError('No se pudo crear el PDF. Intenta nuevamente.');
@@ -49,6 +69,86 @@ export function EvaluationReport({ evaluation, previous }: { evaluation: OlderAd
       setExporting(false);
     }
   };
+
+  if (mode === 'RAW') {
+    const context = evaluation.data.participantContext;
+    const grip = tests.grip;
+    const balance = tests.sppb.balance;
+    const gait = tests.sppb.gait4m;
+    const chair = tests.sppb.chair5;
+    return (
+      <section data-adulto-mayor-raw-report className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+        <header className="bg-gradient-to-br from-slate-950 via-slate-900 to-teal-950 px-5 py-6 text-white sm:px-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[.22em] text-teal-200">Taller de Adulto Mayor</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight">Registro de evaluación</h2>
+              <p className="mt-1 text-sm text-slate-300">{evaluation.participantSnapshot.fullName}</p>
+            </div>
+            <button type="button" onClick={exportPdf} disabled={exporting} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-black text-slate-900 shadow-lg shadow-black/10 transition hover:bg-teal-50 disabled:cursor-wait disabled:opacity-70">
+              {exporting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} {exporting ? 'Creando PDF…' : 'Descargar registro PDF'}
+            </button>
+          </div>
+          {exportError && <p className="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-800">{exportError}</p>}
+          <div className="mt-5 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+            <div><span className="block text-slate-400">Edad</span><strong>{evaluation.participantSnapshot.age ?? 'No registrada'}</strong></div>
+            <div><span className="block text-slate-400">Sexo</span><strong>{rawValue(evaluation.participantSnapshot.sex)}</strong></div>
+            <div><span className="block text-slate-400">Evaluador/a</span><strong>{evaluation.evaluatorName}</strong></div>
+            <div><span className="block text-slate-400">Fecha</span><strong>{dateLabel(evaluation.submittedAt || evaluation.updatedAt)}</strong></div>
+          </div>
+        </header>
+
+        <div className="space-y-6 p-5 sm:p-8">
+          <div className="flex gap-3 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sky-950"><ClipboardList className="mt-0.5 h-5 w-5 shrink-0" /><p className="text-sm leading-relaxed"><strong>Datos registrados sin interpretación.</strong> Este documento no incluye puntajes calculados, categorías, radar, conclusiones ni observaciones.</p></div>
+          <RawSection title="Contexto registrado">
+            <RawRow label="Enfermedades crónicas" value={context.chronicConditions} />
+            <RawRow label="Control referido" value={context.chronicConditionsControlled} />
+            <RawRow label="Medicamentos" value={context.medications} />
+            <RawRow label="Lesiones, cirugías u hospitalizaciones" value={[context.injuries, context.surgeries, context.hospitalizationsLastYear].filter(Boolean).join('\n')} />
+            <RawRow label="Ayudas técnicas o discapacidad" value={[context.assistiveDevices, context.disability].filter(Boolean).join('\n')} />
+            <RawRow label="Actividad física" value={context.physicalActivity} />
+            <RawRow label="Hábitos nutricionales" value={context.nutritionalHabits} />
+            <RawRow label="Objetivos declarados" value={context.goals.join(', ')} />
+            <RawRow label="Lectura" value={evaluation.data.readingAbility} />
+            <RawRow label="Escritura" value={evaluation.data.writingAbility} />
+          </RawSection>
+          <RawSection title="Respuestas de cribado">
+            <RawRow label="Caídas últimos 12 meses" value={evaluation.data.falls.fallsLastYear} />
+            <RawRow label="Caída con lesión" value={evaluation.data.falls.fallWithInjury} />
+            <RawRow label="Refiere inestabilidad" value={evaluation.data.falls.feelsUnsteady} />
+            <RawRow label="Preocupación por caer" value={evaluation.data.falls.worriesAboutFalling} />
+            <RawRow label="Fatiga frecuente" value={evaluation.data.frail.fatigue} />
+            <RawRow label="Dificultad para subir un piso" value={evaluation.data.frail.resistanceDifficulty} />
+            <RawRow label="Dificultad para caminar una cuadra" value={evaluation.data.frail.ambulationDifficulty} />
+            <RawRow label="Cinco o más enfermedades" value={evaluation.data.frail.fiveOrMoreIllnesses} />
+            <RawRow label="Pérdida de peso involuntaria" value={evaluation.data.frail.weightLoss} />
+            <RawRow label="Preocupación de memoria referida" value={evaluation.data.cognition.memoryConcern} />
+            <RawRow label="Orientación en fecha" value={evaluation.data.cognition.orientedInDate} />
+            <RawRow label="Orientación en lugar" value={evaluation.data.cognition.orientedInPlace} />
+            <RawRow label="Palabras recordadas" value={evaluation.data.cognition.recalledWords} />
+          </RawSection>
+          <RawSection title="Mediciones físicas registradas">
+            <RawRow label="Talla" value={tests.heightCm == null ? '' : `${tests.heightCm} cm`} />
+            <RawRow label="Peso" value={tests.weightKg == null ? '' : `${tests.weightKg} kg`} />
+            <RawRow label="Altura de silla" value={tests.chairHeightCm == null ? '' : `${tests.chairHeightCm} cm`} />
+            <RawRow label="Mano dominante" value={grip.dominantHand} />
+            <RawRow label="Prensión derecha - 3 intentos" value={grip.right.map(item => item == null ? '—' : `${item} kg`).join(' / ')} />
+            <RawRow label="Prensión izquierda - 3 intentos" value={grip.left.map(item => item == null ? '—' : `${item} kg`).join(' / ')} />
+            <RawRow label="Equilibrio: pies juntos / semitándem / tándem" value={balance.unable ? 'No pudo iniciar con seguridad' : `${rawValue(balance.feetTogetherSeconds)} / ${rawValue(balance.semiTandemSeconds)} / ${rawValue(balance.tandemSeconds)} s`} />
+            <RawRow label="Marcha 4 m - intentos" value={gait.unable ? 'No realizada' : `${rawValue(gait.attempt1Seconds)} / ${rawValue(gait.attempt2Seconds)} s`} />
+            <RawRow label="Ayuda en marcha" value={gait.assistiveDevice} />
+            <RawRow label="Cinco levantadas" value={chair.unableWithoutArms ? 'No completó sin usar brazos' : chair.seconds == null ? '' : `${chair.seconds} s`} />
+            <RawRow label="Timed Up and Go" value={tests.tugUnable ? 'No realizado con seguridad' : tests.tugSeconds == null ? '' : `${tests.tugSeconds} s`} />
+            <RawRow label="Ayuda en TUG" value={tests.tugAssistiveDevice} />
+            <RawRow label="STS30" value={tests.sts30Repetitions == null ? '' : `${tests.sts30Repetitions} repeticiones`} />
+            <RawRow label="STS30 modificado o con brazos" value={tests.sts30UsedArms} />
+            {tests.sts30UsedArms && <RawRow label="Motivo de modificación" value={tests.testModifiedReason} />}
+          </RawSection>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section data-adulto-mayor-report className="am-print-report overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
       <header className="bg-gradient-to-br from-teal-950 via-teal-900 to-emerald-800 px-5 py-6 text-white sm:px-8">

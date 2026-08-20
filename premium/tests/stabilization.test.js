@@ -360,6 +360,7 @@ describe('Módulo Taller de Adulto Mayor', () => {
 
   test('el informe se descarga como PDF diseñado y el portal puede recuperarse de cargas lentas', () => {
     const report = readFileSync(new URL('../src/components/adulto-mayor/EvaluationReport.tsx', import.meta.url), 'utf8');
+    const wizard = readFileSync(new URL('../src/components/adulto-mayor/EvaluationWizard.tsx', import.meta.url), 'utf8');
     const pdf = readFileSync(new URL('../src/lib/adultoMayor/pdf.ts', import.meta.url), 'utf8');
     const publicPage = readFileSync(new URL('../src/app/evaluacion-adulto-mayor/page.tsx', import.meta.url), 'utf8');
     assert.match(report, /downloadOlderAdultEvaluationPdf/);
@@ -368,6 +369,13 @@ describe('Módulo Taller de Adulto Mayor', () => {
     assert.match(pdf, /new jsPDF/);
     assert.match(pdf, /drawRadar/);
     assert.match(pdf, /doc\.save\(filename\)/);
+    assert.match(report, /downloadRawOlderAdultEvaluationPdf/);
+    assert.match(report, /data-adulto-mayor-raw-report/);
+    assert.match(report, /sin interpretación/i);
+    assert.match(wizard, /mode=\{scope === 'PORTAL' \? 'RAW' : 'INTERPRETED'\}/);
+    assert.match(wizard, /scope === 'STAFF' && <Field label="Observaciones finales del evaluador"/);
+    const rawPdf = pdf.slice(pdf.indexOf('export async function createRawOlderAdultEvaluationPdf'), pdf.indexOf('export async function downloadOlderAdultEvaluationPdf'));
+    assert.doesNotMatch(rawPdf, /evaluation\.results|drawRadar\(|clinicalObservations|\.warnings/);
     assert.match(publicPage, /controller\.abort\(\), 20_000/);
     assert.match(publicPage, /Reintentar/);
   });

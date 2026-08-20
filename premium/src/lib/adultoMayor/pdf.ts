@@ -357,11 +357,201 @@ export async function createOlderAdultEvaluationPdf(
   return { doc, filename };
 }
 
+const rawAnswer = (value: unknown, fallback = 'No registrado') => {
+  if (value === true) return 'Si';
+  if (value === false) return 'No';
+  if (value == null || String(value).trim() === '') return fallback;
+  const normalized = String(value).replaceAll('_', ' ').toLowerCase();
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+};
+
+export async function createRawOlderAdultEvaluationPdf(evaluation: OlderAdultEvaluation) {
+  const { jsPDF } = await import('jspdf');
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
+  const data = evaluation.data;
+  const tests = data.tests;
+  const pageWidth = 210;
+  const margin = 16;
+  const contentWidth = pageWidth - margin * 2;
+  let y = 0;
+
+  doc.setProperties({
+    title: `Registro de evaluacion - ${evaluation.participantSnapshot.fullName}`,
+    subject: 'Datos registrados en la evaluacion funcional del Taller de Adulto Mayor',
+    author: evaluation.evaluatorName,
+    creator: 'Agenda Poli',
+  });
+
+  const addPageHeader = (continued = false) => {
+    setFillColor(doc, COLORS.tealDark);
+    doc.rect(0, 0, pageWidth, 38, 'F');
+    setFillColor(doc, COLORS.teal);
+    doc.circle(196, 3, 28, 'F');
+    setTextColor(doc, COLORS.white);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.text('POLIDEPORTIVO - TALLER DE ADULTO MAYOR', margin, 11);
+    doc.setFontSize(19);
+    doc.text(continued ? 'Registro de evaluacion - continuacion' : 'Registro de evaluacion', margin, 23);
+    doc.setFontSize(9.5);
+    doc.text(clean(evaluation.participantSnapshot.fullName), margin, 31);
+    y = 46;
+  };
+
+  const ensureSpace = (height: number) => {
+    if (y + height <= 276) return false;
+    doc.addPage();
+    addPageHeader(true);
+    return true;
+  };
+
+  const addSection = (title: string, rows: Array<[string, unknown]>) => {
+    ensureSpace(15);
+    setFillColor(doc, COLORS.tealSoft);
+    doc.roundedRect(margin, y, contentWidth, 9, 2, 2, 'F');
+    setTextColor(doc, COLORS.tealDark);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(title.toUpperCase(), margin + 4, y + 6);
+    y += 12;
+    rows.forEach(([label, raw], index) => {
+      const value = rawAnswer(raw);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.2);
+      const labelLines = doc.splitTextToSize(label, 70) as string[];
+      const valueLines = doc.splitTextToSize(value, 92) as string[];
+      const rowHeight = Math.max(10, 5 + Math.max(labelLines.length, valueLines.length) * 4);
+      if (ensureSpace(rowHeight + 12)) {
+        setFillColor(doc, COLORS.tealSoft);
+        doc.roundedRect(margin, y, contentWidth, 9, 2, 2, 'F');
+        setTextColor(doc, COLORS.tealDark);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.text(`${title.toUpperCase()} - CONTINUACION`, margin + 4, y + 6);
+        y += 12;
+      }
+      if (index % 2 === 0) {
+        setFillColor(doc, [248, 250, 252]);
+        doc.roundedRect(margin, y, contentWidth, rowHeight, 1.5, 1.5, 'F');
+      }
+      setTextColor(doc, COLORS.muted);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.text(labelLines, margin + 4, y + 5.7);
+      setTextColor(doc, COLORS.ink);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.2);
+      doc.text(valueLines, margin + 82, y + 5.7);
+      y += rowHeight;
+    });
+    y += 5;
+  };
+
+  addPageHeader();
+  setFillColor(doc, COLORS.indigoSoft);
+  setDrawColor(doc, [199, 210, 254]);
+  doc.roundedRect(margin, y, contentWidth, 14, 2.5, 2.5, 'FD');
+  setTextColor(doc, COLORS.indigo);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.2);
+  doc.text('DATOS EN BRUTO - SIN PUNTAJES, CLASIFICACIONES, RADAR, CONCLUSIONES NI OBSERVACIONES', margin + 4, y + 8.5);
+  y += 19;
+
+  addSection('Identificacion', [
+    ['Persona', evaluation.participantSnapshot.fullName],
+    ['Edad', evaluation.participantSnapshot.age == null ? 'No registrada' : `${evaluation.participantSnapshot.age} anos`],
+    ['Sexo registrado', evaluation.participantSnapshot.sex],
+    ['Comuna', evaluation.participantSnapshot.commune],
+    ['Evaluador/a', evaluation.evaluatorName],
+    ['Fecha', dateLabel(evaluation.submittedAt || evaluation.updatedAt)],
+  ]);
+
+  addSection('Contexto registrado', [
+    ['Consentimiento confirmado', data.participantContext.consentConfirmed],
+    ['Enfermedades cronicas', data.participantContext.chronicConditions],
+    ['Control referido', data.participantContext.chronicConditionsControlled],
+    ['Medicamentos', data.participantContext.medications],
+    ['Lesiones, cirugias u hospitalizaciones', [data.participantContext.injuries, data.participantContext.surgeries, data.participantContext.hospitalizationsLastYear].filter(Boolean).join('\n')],
+    ['Ayudas tecnicas o discapacidad', [data.participantContext.assistiveDevices, data.participantContext.disability].filter(Boolean).join('\n')],
+    ['Actividad fisica', data.participantContext.physicalActivity],
+    ['Habitos nutricionales', data.participantContext.nutritionalHabits],
+    ['Objetivos declarados', data.participantContext.goals.join(', ')],
+    ['Musica preferida', data.participantContext.preferredMusic],
+    ['Lectura', data.readingAbility],
+    ['Escritura', data.writingAbility],
+  ]);
+
+  addSection('Respuestas de cribado', [
+    ['Caidas ultimos 12 meses', data.falls.fallsLastYear],
+    ['Caida con lesion', data.falls.fallWithInjury],
+    ['Refiere inestabilidad', data.falls.feelsUnsteady],
+    ['Preocupacion por caer', data.falls.worriesAboutFalling],
+    ['Fatiga frecuente', data.frail.fatigue],
+    ['Dificultad para subir un piso', data.frail.resistanceDifficulty],
+    ['Dificultad para caminar una cuadra', data.frail.ambulationDifficulty],
+    ['Cinco o mas enfermedades', data.frail.fiveOrMoreIllnesses],
+    ['Perdida de peso involuntaria', data.frail.weightLoss],
+    ['Preocupacion de memoria referida', data.cognition.memoryConcern],
+    ['Orientacion en fecha', data.cognition.orientedInDate],
+    ['Orientacion en lugar', data.cognition.orientedInPlace],
+    ['Palabras recordadas', data.cognition.recalledWords],
+  ]);
+
+  addSection('Movilidad de extremidad superior', [
+    ['Flexion de hombro', data.upperLimbMobility.shoulderFlexion],
+    ['Abduccion de hombro', data.upperLimbMobility.shoulderAbduction],
+    ['Rotacion externa de hombro', data.upperLimbMobility.shoulderExternalRotation],
+    ['Flexo-extension de codo', data.upperLimbMobility.elbowFlexionExtension],
+    ['Prono-supinacion', data.upperLimbMobility.forearmPronationSupination],
+    ['Flexo-extension de muneca', data.upperLimbMobility.wristFlexionExtension],
+  ]);
+
+  addSection('Mediciones y pruebas funcionales', [
+    ['Talla', tests.heightCm == null ? '' : `${tests.heightCm} cm`],
+    ['Peso', tests.weightKg == null ? '' : `${tests.weightKg} kg`],
+    ['Altura de silla', tests.chairHeightCm == null ? '' : `${tests.chairHeightCm} cm`],
+    ['Mano dominante', tests.grip.dominantHand],
+    ['Prension derecha - intentos 1 / 2 / 3', tests.grip.right.map(item => item == null ? '-' : `${item} kg`).join(' / ')],
+    ['Prension izquierda - intentos 1 / 2 / 3', tests.grip.left.map(item => item == null ? '-' : `${item} kg`).join(' / ')],
+    ['Equilibrio - pies juntos / semitandem / tandem', tests.sppb.balance.unable ? 'No pudo iniciar con seguridad' : `${rawAnswer(tests.sppb.balance.feetTogetherSeconds)} / ${rawAnswer(tests.sppb.balance.semiTandemSeconds)} / ${rawAnswer(tests.sppb.balance.tandemSeconds)} s`],
+    ['Marcha 4 m - intentos 1 / 2', tests.sppb.gait4m.unable ? 'No realizada' : `${rawAnswer(tests.sppb.gait4m.attempt1Seconds)} / ${rawAnswer(tests.sppb.gait4m.attempt2Seconds)} s`],
+    ['Ayuda tecnica en marcha', tests.sppb.gait4m.assistiveDevice],
+    ['Cinco levantadas', tests.sppb.chair5.unableWithoutArms ? 'No completo sin usar brazos' : tests.sppb.chair5.seconds == null ? '' : `${tests.sppb.chair5.seconds} s`],
+    ['Timed Up and Go', tests.tugUnable ? 'No realizado con seguridad' : tests.tugSeconds == null ? '' : `${tests.tugSeconds} s`],
+    ['Ayuda tecnica en TUG', tests.tugAssistiveDevice],
+    ['STS30', tests.sts30Repetitions == null ? '' : `${tests.sts30Repetitions} repeticiones`],
+    ['STS30 modificado o con brazos', tests.sts30UsedArms],
+    ...(tests.sts30UsedArms ? [['Motivo de modificacion', tests.testModifiedReason] as [string, unknown]] : []),
+  ]);
+
+  const pageCount = doc.getNumberOfPages();
+  for (let page = 1; page <= pageCount; page += 1) {
+    doc.setPage(page);
+    setDrawColor(doc, COLORS.line);
+    doc.line(margin, 282, pageWidth - margin, 282);
+    setTextColor(doc, COLORS.muted);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.2);
+    doc.text('Registro de datos obtenidos durante la evaluacion. No contiene interpretacion clinica.', margin, 287);
+    doc.text(`${page}/${pageCount}`, pageWidth - margin, 287, { align: 'right' });
+  }
+
+  const date = fileDateLabel(evaluation.submittedAt || evaluation.updatedAt);
+  const filename = `registro-evaluacion-${fileSafe(evaluation.participantSnapshot.fullName) || 'persona'}-${date}.pdf`;
+  return { doc, filename };
+}
+
 export async function downloadOlderAdultEvaluationPdf(
   evaluation: OlderAdultEvaluation,
   previous?: OlderAdultEvaluation,
 ) {
   const { doc, filename } = await createOlderAdultEvaluationPdf(evaluation, previous);
+  doc.save(filename);
+  return filename;
+}
+
+export async function downloadRawOlderAdultEvaluationPdf(evaluation: OlderAdultEvaluation) {
+  const { doc, filename } = await createRawOlderAdultEvaluationPdf(evaluation);
   doc.save(filename);
   return filename;
 }

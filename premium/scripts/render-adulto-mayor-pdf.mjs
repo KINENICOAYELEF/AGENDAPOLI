@@ -5,7 +5,9 @@ import ts from 'typescript';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(here, '..');
-const outputPath = resolve(process.argv[2] || `${projectRoot}/.artifacts/adulto-mayor/informe-funcional-verificacion.pdf`);
+const rawMode = process.argv.includes('--raw');
+const outputArgument = process.argv.slice(2).find(value => value !== '--raw');
+const outputPath = resolve(outputArgument || `${projectRoot}/.artifacts/adulto-mayor/${rawMode ? 'registro-bruto-verificacion.pdf' : 'informe-funcional-verificacion.pdf'}`);
 const sourcePath = resolve(projectRoot, 'src/lib/adultoMayor/pdf.ts');
 const compiledPath = resolve(projectRoot, '.artifacts/adulto-mayor/pdf-generator.mjs');
 
@@ -19,7 +21,7 @@ const compiled = ts.transpileModule(source, {
 }).outputText;
 await writeFile(compiledPath, compiled, 'utf8');
 
-const { createOlderAdultEvaluationPdf } = await import(`${pathToFileURL(compiledPath).href}?v=${Date.now()}`);
+const { createOlderAdultEvaluationPdf, createRawOlderAdultEvaluationPdf } = await import(`${pathToFileURL(compiledPath).href}?v=${Date.now()}`);
 const evaluation = {
   id: 'verificacion-pdf',
   participantId: 'persona-verificacion',
@@ -35,14 +37,49 @@ const evaluation = {
   status: 'SUBMITTED',
   step: 5,
   data: {
+    participantContext: {
+      chronicConditions: 'Hipertensión arterial controlada.',
+      chronicConditionsControlled: 'SI',
+      medications: 'Antihipertensivo de uso habitual.',
+      injuries: 'Sin lesiones recientes.',
+      disability: '',
+      hospitalizationsLastYear: 'Ninguna.',
+      assistiveDevices: 'No utiliza.',
+      surgeries: 'Artroplastia de rodilla hace cinco años.',
+      physicalActivity: 'Caminata tres veces por semana durante 30 minutos.',
+      nutritionalHabits: 'Alimentación variada e hidratación habitual.',
+      goals: ['Fuerza', 'Equilibrio', 'Autonomía'],
+      preferredMusic: 'Boleros y música chilena.',
+      consentConfirmed: true,
+    },
+    readingAbility: 'SI',
+    writingAbility: 'SI',
+    frail: { fatigue: false, resistanceDifficulty: true, ambulationDifficulty: false, fiveOrMoreIllnesses: false, weightLoss: false },
+    falls: { fallsLastYear: 'UNA', fallWithInjury: false, feelsUnsteady: true, worriesAboutFalling: false },
+    cognition: { memoryConcern: false, orientedInDate: true, orientedInPlace: true, recalledWords: 3 },
+    upperLimbMobility: {
+      shoulderFlexion: 'SIN_LIMITACION',
+      shoulderAbduction: 'SIN_LIMITACION',
+      shoulderExternalRotation: 'LIMITADO',
+      elbowFlexionExtension: 'SIN_LIMITACION',
+      forearmPronationSupination: 'SIN_LIMITACION',
+      wristFlexionExtension: 'SIN_LIMITACION',
+      notes: 'Dato de prueba que no debe aparecer en el registro externo.',
+    },
     tests: {
+      heightCm: 160,
+      weightKg: 65,
+      chairHeightCm: 45,
       tugSeconds: 12.8,
       tugUnable: false,
+      tugAssistiveDevice: '',
       sts30Repetitions: 11,
+      sts30UsedArms: false,
+      testModifiedReason: '',
       grip: { right: [18, 19, 18], left: [17, 18, 17], dominantHand: 'DERECHA', unit: 'KG' },
       sppb: {
         balance: { feetTogetherSeconds: 10, semiTandemSeconds: 10, tandemSeconds: 7, unable: false },
-        gait4m: { attempt1Seconds: 5.2, attempt2Seconds: 5.0, unable: false },
+        gait4m: { attempt1Seconds: 5.2, attempt2Seconds: 5.0, unable: false, assistiveDevice: '' },
         chair5: { seconds: 14.1, unableWithoutArms: false },
       },
     },
@@ -83,6 +120,8 @@ const evaluation = {
   submittedAt: '2026-08-19T15:20:00.000Z',
 };
 
-const { doc } = await createOlderAdultEvaluationPdf(evaluation);
+const { doc } = rawMode
+  ? await createRawOlderAdultEvaluationPdf(evaluation)
+  : await createOlderAdultEvaluationPdf(evaluation);
 await writeFile(outputPath, Buffer.from(doc.output('arraybuffer')));
 process.stdout.write(`${outputPath}\n`);
