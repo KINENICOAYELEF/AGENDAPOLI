@@ -34,6 +34,7 @@ import {
   createEmptyPlanningDraft,
   type PlanningDraft,
   type PublicStationSession,
+  type SemanticConfirmation,
   type TranscriptTurn,
   type VoiceStationKey,
 } from '@/lib/simulador-estaciones/types';
@@ -116,6 +117,7 @@ export function SimuladorEstacionesBeta() {
   };
 
   const deleteSession = async (sessionId: string) => {
+    if (!window.confirm('¿Eliminar esta sesión incompleta? Esta acción no afecta otras simulaciones ni fichas clínicas.')) return;
     setGlobalError('');
     try {
       await apiRequest<{ deleted: boolean }>(`/api/simulador-estaciones/sessions/${sessionId}`, { method: 'DELETE' });
@@ -258,6 +260,7 @@ function SessionShell({ session, onBack, onSessionChange }: {
           <EvaluationPending session={session} onSessionChange={onSessionChange} />
         ) : (
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
+            <div className="xl:hidden"><CaseSidebar session={session} /></div>
             <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-100 px-4 py-5 sm:px-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -271,7 +274,7 @@ function SessionShell({ session, onBack, onSessionChange }: {
                 <VoiceWorkspace key={session.currentStation} session={session} station={session.currentStation as VoiceStationKey} onSessionChange={onSessionChange} />
               )}
             </section>
-            <CaseSidebar session={session} />
+            <div className="hidden xl:block"><CaseSidebar session={session} /></div>
           </div>
         )}
       </div>
@@ -332,6 +335,8 @@ function StationStepper({ session }: { session: PublicStationSession }) {
 
 function CaseSidebar({ session }: { session: PublicStationSession }) {
   const visible = session.visibleCase as Record<string, string>;
+  const priorKeys = STATION_KEYS.slice(0, session.currentStationIndex);
+  const hasPlanning = session.stations.PLANIFICACION_ESCRITA?.status === 'COMPLETED';
   return (
     <aside className="space-y-4">
       <div className="rounded-[24px] bg-slate-950 p-5 text-white shadow-lg">
@@ -344,6 +349,35 @@ function CaseSidebar({ session }: { session: PublicStationSession }) {
           <div><dt className="text-xs font-bold uppercase text-slate-500">Evolución</dt><dd className="mt-1 leading-6 text-slate-100">{visible.tiempo_evolucion}</dd></div>
         </dl>
       </div>
+      {priorKeys.length > 0 && (
+        <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="flex items-center gap-2 font-black text-slate-950"><BookOpenCheck className="h-4 w-4 text-indigo-600" /> Antecedentes reunidos</h2>
+          <p className="mt-1 text-xs leading-5 text-slate-500">Consulta lo que obtuviste antes. La plataforma no agrega respuestas nuevas.</p>
+          <div className="mt-3 space-y-2">
+            {priorKeys.filter((key) => key !== 'PLANIFICACION_ESCRITA').map((key) => {
+              const progress = session.stations[key];
+              const label = STATION_DEFINITIONS.find((item) => item.key === key)?.title || key;
+              const content = progress.semanticConfirmation?.summary
+                || progress.semanticSummary
+                || progress.transcript.map((turn) => `${turn.role === 'STUDENT' ? 'Estudiante' : turn.role === 'PATIENT' ? 'Paciente' : 'Comisión'}: ${turn.text}`).join('\n');
+              return (
+                <details key={key} className="group rounded-xl border border-slate-200 bg-slate-50 open:bg-white">
+                  <summary className="cursor-pointer list-none px-3 py-3 text-xs font-black text-slate-800">{label}</summary>
+                  <div className="border-t border-slate-200 px-3 py-3 text-xs leading-5 text-slate-600 whitespace-pre-wrap">{content || 'No quedó contenido recuperable.'}</div>
+                </details>
+              );
+            })}
+            {hasPlanning && session.currentStationIndex > STATION_KEYS.indexOf('PLANIFICACION_ESCRITA') && (
+              <details className="rounded-xl border border-indigo-200 bg-indigo-50 open:bg-white" open={session.currentStation === 'PRESENTACION_FORMAL'}>
+                <summary className="cursor-pointer list-none px-3 py-3 text-xs font-black text-indigo-900">Tu planificación escrita</summary>
+                <div className="space-y-3 border-t border-indigo-100 px-3 py-3">
+                  {PLANNING_FIELDS.map((field) => <div key={field.key}><p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{field.label}</p><p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-slate-700">{session.planningDraft[field.key] || 'Sin respuesta'}</p></div>)}
+                </div>
+              </details>
+            )}
+          </div>
+        </div>
+      )}
       <div className="rounded-[24px] border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950"><strong className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> El caso no cambia</strong><p className="mt-2">Cerrar la pestaña, cambiar de dispositivo o reconectar la voz no genera un paciente nuevo.</p></div>
     </aside>
   );
@@ -355,11 +389,13 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
   onSessionChange: (session: PublicStationSession) => void;
 }) {
   const progress = session.stations[station];
-  const backup = useMemo(() => readLocalBackup<{ remaining?: number; elapsed?: number; transcript?: TranscriptTurn[] }>(`station-beta:${session.id}:${station}`), [session.id, station]);
-  const restoredTranscript = backup?.transcript && backup.transcript.length >= (progress.transcript?.length || 0) ? backup.transcript : progress.transcript;
-  const [remaining, setRemaining] = useState(() => Math.max(0, Math.min(STATION_DEFINITIONS[session.currentStationIndex].durationSeconds, Number(backup?.remaining ?? progress.remainingSeconds))));
-  const [elapsed, setElapsed] = useState(() => Math.max(progress.elapsedSeconds, Number(backup?.elapsed || 0)));
+  const backup = useMemo(() => readLocalBackup<{ remaining?: number; elapsed?: number; transcript?: TranscriptTurn[]; savedAt?: number }>(`station-beta:${session.id}:${station}`), [session.id, station]);
+  const useLocalBackup = Boolean(backup?.savedAt && backup.savedAt > Date.parse(session.updatedAt));
+  const restoredTranscript = useLocalBackup && backup?.transcript && backup.transcript.length >= (progress.transcript?.length || 0) ? backup.transcript : progress.transcript;
+  const [remaining, setRemaining] = useState(() => Math.max(0, Math.min(STATION_DEFINITIONS[session.currentStationIndex].durationSeconds, Number(useLocalBackup ? backup?.remaining ?? progress.remainingSeconds : progress.remainingSeconds))));
+  const [elapsed, setElapsed] = useState(() => Math.max(progress.elapsedSeconds, Number(useLocalBackup ? backup?.elapsed || 0 : 0)));
   const [closing, setClosing] = useState(false);
+  const [closingReady, setClosingReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [localError, setLocalError] = useState('');
   const resumeHandleRef = useRef('');
@@ -368,6 +404,14 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
   const elapsedRef = useRef(progress.elapsedSeconds);
   const reconnectCountRef = useRef(progress.reconnectCount || 0);
   const saveInFlightRef = useRef(false);
+  const closingStartIndexRef = useRef<number | null>(null);
+  const closingBaselineRef = useRef<TranscriptTurn[]>([]);
+  const semanticConfirmationRef = useRef<SemanticConfirmation>(progress.semanticConfirmation || {
+    status: 'PENDING',
+    summary: '',
+    studentCorrections: [],
+    unresolvedAudio: [],
+  });
 
   const patch = useCallback(async (action: 'START' | 'CHECKPOINT' | 'PAUSE' | 'COMPLETE_STATION', extra: Record<string, unknown> = {}) => {
     if (saveInFlightRef.current && action === 'CHECKPOINT') return null;
@@ -381,7 +425,10 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
           remainingSeconds: remainingRef.current,
           elapsedSeconds: elapsedRef.current,
           transcript: transcriptRef.current,
-          semanticSummary: transcriptRef.current.map((turn) => `${turn.role}: ${turn.text}`).join('\n').slice(-12000),
+          semanticSummary: semanticConfirmationRef.current.summary
+            || transcriptRef.current.map((turn) => `${turn.role}: ${turn.text}`).join('\n').slice(-12000),
+          semanticConfirmation: semanticConfirmationRef.current,
+          audioUncertainties: semanticConfirmationRef.current.unresolvedAudio,
           reconnectCount: reconnectCountRef.current,
           ...(resumeHandleRef.current ? { resumeHandle: resumeHandleRef.current } : {}),
           ...extra,
@@ -397,8 +444,22 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
     sessionId: session.id,
     station,
     initialTranscript: restoredTranscript,
-    onResumeHandle: (handle) => { resumeHandleRef.current = handle; },
+    onResumeHandle: (handle) => {
+      if (!handle || resumeHandleRef.current === handle) return;
+      resumeHandleRef.current = handle;
+      // El handle se guarda al recibirlo, sin esperar el checkpoint periódico.
+      const persist = async (attempt = 0): Promise<void> => {
+        try {
+          const saved = await patch('CHECKPOINT', { resumeHandle: handle });
+          if (!saved && attempt < 3) window.setTimeout(() => { void persist(attempt + 1); }, 350);
+        } catch {
+          if (attempt < 3) window.setTimeout(() => { void persist(attempt + 1); }, 500);
+        }
+      };
+      window.setTimeout(() => { void persist(); }, 0);
+    },
     onReconnectCount: (count) => { reconnectCountRef.current = (progress.reconnectCount || 0) + count; },
+    onBeforeReconnect: async () => { await patch('CHECKPOINT'); },
   });
   const sendControlText = live.sendText;
   transcriptRef.current = live.transcript;
@@ -429,9 +490,51 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
 
   useEffect(() => {
     if (remaining !== 0 || closing) return;
+    closingStartIndexRef.current = live.transcript.length;
+    closingBaselineRef.current = live.transcript;
     setClosing(true);
-    sendControlText('[CONTROL DEL EXAMEN] El tiempo terminó. Realiza ahora el único cierre de confirmación semántica de datos críticos. No permitas agregar contenido nuevo ni entregues feedback.');
-  }, [closing, remaining, sendControlText]);
+    const sent = sendControlText('[CONTROL DEL EXAMEN] El tiempo terminó. Realiza ahora el único cierre de confirmación semántica de datos críticos. No permitas agregar contenido nuevo ni entregues feedback.');
+    if (!sent) setClosingReady(true);
+  }, [closing, live.transcript, remaining, sendControlText]);
+
+  useEffect(() => {
+    if (!closing) return;
+    const startIndex = closingStartIndexRef.current ?? live.transcript.length;
+    const appendedTurns = live.transcript.slice(startIndex);
+    const extendedTurns = live.transcript.slice(0, startIndex).flatMap((turn, index) => {
+      const previous = closingBaselineRef.current[index];
+      if (!previous || turn.text === previous.text || !turn.text.startsWith(previous.text)) return [];
+      return [{ ...turn, text: turn.text.slice(previous.text.length).trim() }];
+    }).filter((turn) => turn.text);
+    const closingTurns = [...extendedTurns, ...appendedTurns];
+    const summary = closingTurns.filter((turn) => turn.role !== 'STUDENT').map((turn) => turn.text).join(' ').trim();
+    const corrections = closingTurns.filter((turn) => turn.role === 'STUDENT').map((turn) => turn.text.trim()).filter(Boolean);
+    if (summary) {
+      semanticConfirmationRef.current = {
+        status: 'CONFIRMED',
+        summary: summary.slice(0, 5000),
+        studentCorrections: corrections.slice(0, 12),
+        unresolvedAudio: [],
+        capturedAtMs: elapsedRef.current * 1000,
+      };
+      setClosingReady(true);
+    }
+  }, [closing, live.transcript]);
+
+  useEffect(() => {
+    if (!closing || closingReady) return;
+    const timer = window.setTimeout(() => {
+      semanticConfirmationRef.current = {
+        status: 'UNAVAILABLE',
+        summary: '',
+        studentCorrections: [],
+        unresolvedAudio: ['El cierre semántico no pudo obtenerse de forma verificable. La evaluación debe usar la transcripción con cautela.'],
+        capturedAtMs: elapsedRef.current * 1000,
+      };
+      setClosingReady(true);
+    }, 15000);
+    return () => window.clearTimeout(timer);
+  }, [closing, closingReady]);
 
   useEffect(() => {
     if (live.state !== 'CONNECTED') return;
@@ -450,14 +553,40 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
   };
 
   const askToClose = () => {
+    closingStartIndexRef.current = live.transcript.length;
+    closingBaselineRef.current = live.transcript;
+    semanticConfirmationRef.current = { status: 'PENDING', summary: '', studentCorrections: [], unresolvedAudio: [] };
+    setClosingReady(false);
     setClosing(true);
-    live.sendText('[CONTROL DEL EXAMEN] El estudiante solicita cerrar la estación. Haz el único resumen de 3 a 6 datos críticos entendidos. Solo acepta correcciones de escucha; no aceptes contenido clínico nuevo ni entregues feedback.');
+    const sent = live.sendText('[CONTROL DEL EXAMEN] El estudiante solicita cerrar la estación. Haz el único resumen de 3 a 6 datos críticos entendidos. Solo acepta correcciones de escucha; no aceptes contenido clínico nuevo ni entregues feedback.');
+    if (!sent) setClosingReady(true);
+  };
+
+  const retryVoice = async () => {
+    setLocalError('');
+    try {
+      await patch('CHECKPOINT');
+      await live.retry();
+    } catch (error) {
+      setLocalError(String((error as Error)?.message || error));
+    }
   };
 
   const finish = async () => {
     setSaving(true);
     setLocalError('');
     try {
+      const startIndex = closingStartIndexRef.current ?? transcriptRef.current.length;
+      transcriptRef.current = transcriptRef.current.map((turn, index) => index >= startIndex ? { ...turn, confirmed: true } : turn);
+      if (!semanticConfirmationRef.current.summary && semanticConfirmationRef.current.status === 'PENDING') {
+        semanticConfirmationRef.current = {
+          status: 'UNAVAILABLE',
+          summary: '',
+          studentCorrections: [],
+          unresolvedAudio: ['No se obtuvo un cierre semántico verificable.'],
+          capturedAtMs: elapsedRef.current * 1000,
+        };
+      }
       live.disconnect(true);
       const updated = await patch('COMPLETE_STATION');
       if (updated) onSessionChange(updated);
@@ -487,7 +616,7 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
 
       <div className="mt-5 flex flex-wrap gap-2">
         {!connected && !reconnecting && !closing && <button onClick={() => void start()} className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3.5 text-sm font-black text-white sm:flex-none"><Play className="h-4 w-4" /> {progress.elapsedSeconds > 0 ? 'Reanudar estación' : 'Comenzar estación'}</button>}
-        {live.state === 'ERROR' && <button onClick={() => void live.retry()} className="flex items-center gap-2 rounded-2xl bg-amber-500 px-5 py-3.5 text-sm font-black text-white"><RefreshCcw className="h-4 w-4" /> Reintentar voz</button>}
+        {live.state === 'ERROR' && <button onClick={() => void retryVoice()} className="flex items-center gap-2 rounded-2xl bg-amber-500 px-5 py-3.5 text-sm font-black text-white"><RefreshCcw className="h-4 w-4" /> Reintentar voz</button>}
         {connected && <button onClick={live.toggleMic} className="flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700">{live.isMicOpen ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}{live.isMicOpen ? 'Silenciar' : 'Activar'}</button>}
         {connected && !closing && <button onClick={askToClose} className="ml-auto flex items-center gap-2 rounded-2xl border border-slate-300 px-4 py-3 text-sm font-black text-slate-800"><CirclePause className="h-4 w-4" /> Terminar etapa</button>}
       </div>
@@ -498,18 +627,21 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
         <div className="mt-5 rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
           <p className="font-black text-indigo-950">Cierre de escucha</p>
           <p className="mt-1 text-sm leading-6 text-indigo-800">La voz resumirá únicamente lo que entendió. Corrige solo un error de escucha y luego cierra la etapa.</p>
-          <button disabled={saving} onClick={() => void finish()} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-3 text-sm font-black text-white disabled:opacity-60">{saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Confirmar y pasar a la siguiente</button>
+          {!closingReady && <div className="mt-3 flex items-center gap-2 text-xs font-bold text-indigo-700"><LoaderCircle className="h-4 w-4 animate-spin" /> Esperando el resumen de la voz…</div>}
+          {semanticConfirmationRef.current.summary && <p className="mt-3 rounded-xl bg-white p-3 text-sm leading-6 text-slate-700">{semanticConfirmationRef.current.summary}</p>}
+          <button disabled={saving || !closingReady} onClick={() => void finish()} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">{saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Confirmar escucha y pasar a la siguiente</button>
         </div>
       )}
 
       <TranscriptView transcript={live.transcript} />
+      {live.activeModel && <p className="mt-3 text-right text-[10px] text-slate-400">Canal de voz: {live.activeModel}</p>}
     </div>
   );
 }
 
-function TranscriptView({ transcript }: { transcript: TranscriptTurn[] }) {
+function TranscriptView({ transcript, compact = false }: { transcript: TranscriptTurn[]; compact?: boolean }) {
   return (
-    <div className="mt-6 border-t border-slate-100 pt-5">
+    <div className={compact ? '' : 'mt-6 border-t border-slate-100 pt-5'}>
       <div className="flex items-center justify-between"><h3 className="text-sm font-black text-slate-900">Registro recuperable</h3><span className="text-xs text-slate-400">{transcript.length} turnos</span></div>
       <div className="mt-3 max-h-80 space-y-2 overflow-y-auto rounded-2xl bg-slate-50 p-3">
         {transcript.length === 0 ? <p className="py-8 text-center text-sm text-slate-400">La transcripción aparecerá aquí al comenzar.</p> : transcript.map((turn) => <div key={turn.id} className={`rounded-xl p-3 text-sm leading-6 ${turn.role === 'STUDENT' ? 'ml-4 bg-indigo-600 text-white' : 'mr-4 border border-slate-200 bg-white text-slate-700'}`}><span className={`mb-1 block text-[10px] font-black uppercase tracking-widest ${turn.role === 'STUDENT' ? 'text-indigo-200' : 'text-slate-400'}`}>{turn.role === 'STUDENT' ? 'Estudiante' : turn.role === 'PATIENT' ? 'Paciente' : 'Comisión'}</span>{turn.text}</div>)}
@@ -531,10 +663,11 @@ const PLANNING_FIELDS: Array<{ key: keyof PlanningDraft; label: string; guide: s
 
 function WrittenWorkspace({ session, onSessionChange }: { session: PublicStationSession; onSessionChange: (session: PublicStationSession) => void }) {
   const progress = session.stations.PLANIFICACION_ESCRITA;
-  const backup = useMemo(() => readLocalBackup<{ draft?: PlanningDraft; remaining?: number; elapsed?: number }>(`station-beta:${session.id}:PLANIFICACION_ESCRITA`), [session.id]);
-  const [draft, setDraft] = useState<PlanningDraft>(backup?.draft || session.planningDraft || createEmptyPlanningDraft());
-  const [remaining, setRemaining] = useState(() => Math.max(0, Math.min(10 * 60, Number(backup?.remaining ?? progress.remainingSeconds))));
-  const [elapsed, setElapsed] = useState(() => Math.max(progress.elapsedSeconds, Number(backup?.elapsed || 0)));
+  const backup = useMemo(() => readLocalBackup<{ draft?: PlanningDraft; remaining?: number; elapsed?: number; savedAt?: number }>(`station-beta:${session.id}:PLANIFICACION_ESCRITA`), [session.id]);
+  const useLocalBackup = Boolean(backup?.savedAt && backup.savedAt > Date.parse(session.updatedAt));
+  const [draft, setDraft] = useState<PlanningDraft>((useLocalBackup ? backup?.draft : null) || session.planningDraft || createEmptyPlanningDraft());
+  const [remaining, setRemaining] = useState(() => Math.max(0, Math.min(10 * 60, Number(useLocalBackup ? backup?.remaining ?? progress.remainingSeconds : progress.remainingSeconds))));
+  const [elapsed, setElapsed] = useState(() => Math.max(progress.elapsedSeconds, Number(useLocalBackup ? backup?.elapsed || 0 : 0)));
   const [running, setRunning] = useState(progress.status === 'IN_PROGRESS');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -599,10 +732,32 @@ function ResultsView({ session }: { session: PublicStationSession }) {
         <div className="flex h-40 w-40 flex-col items-center justify-center rounded-full border-[10px] border-indigo-500 bg-white/5"><strong className="text-4xl font-black">{evaluation.totalScore}%</strong><span className="mt-1 text-sm text-slate-300">Nota {evaluation.grade}</span></div>
         <div><p className="text-xs font-black uppercase tracking-widest text-cyan-300">Evaluación final trazable</p><h1 className="mt-2 text-3xl font-black">{evaluation.outcome.replaceAll('_', ' ')}</h1><p className="mt-3 max-w-3xl leading-7 text-slate-300">{evaluation.feedbackSummary}</p></div>
       </section>
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{scoreEntries.map(([key, value]) => <article key={key} className="rounded-2xl border border-slate-200 bg-white p-4"><div className="flex items-center justify-between gap-2"><h2 className="text-sm font-black text-slate-900">{labels[key] || key}</h2><span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black">{value.score}%</span></div><p className="mt-3 text-sm leading-6 text-slate-600">{value.comment}</p><div className="mt-3 space-y-2">{value.evidence.slice(0, 2).map((item, index) => <p key={index} className="rounded-xl bg-slate-50 p-2.5 text-xs leading-5 text-slate-600"><strong>{item.station}:</strong> {item.evidence}</p>)}</div></article>)}</section>
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{scoreEntries.map(([key, value]) => <article key={key} className="rounded-2xl border border-slate-200 bg-white p-4"><div className="flex items-center justify-between gap-2"><h2 className="text-sm font-black text-slate-900">{labels[key] || key}</h2><span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black">{value.score}%</span></div><p className="mt-3 text-sm leading-6 text-slate-600">{value.comment}</p><details className="mt-3 rounded-xl bg-slate-50"><summary className="cursor-pointer list-none p-3 text-xs font-black text-slate-700">Ver toda la evidencia ({value.evidence.length})</summary><div className="space-y-2 border-t border-slate-200 p-3">{value.evidence.map((item, index) => <div key={index} className="rounded-lg bg-white p-2.5 text-xs leading-5 text-slate-600"><div className="flex items-center justify-between gap-2"><strong>{item.station}</strong><span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${item.verified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{item.verified ? 'Cita verificada' : 'Inferencia'}</span></div><p className="mt-1">{item.evidence}</p><p className="mt-1 text-slate-500">{item.interpretation}</p></div>)}</div></details></article>)}</section>
       <section className="grid gap-5 lg:grid-cols-2"><FeedbackList title="Fortalezas" icon={<Check className="h-5 w-5" />} items={evaluation.strengths} tone="emerald" /><FeedbackList title="Prioridades" icon={<BookOpenCheck className="h-5 w-5" />} items={evaluation.priorities} tone="amber" /></section>
       {evaluation.criticalSafetyErrors.length > 0 && <FeedbackList title="Errores críticos de seguridad" icon={<AlertTriangle className="h-5 w-5" />} items={evaluation.criticalSafetyErrors.map((item) => `${item.station}: ${item.error} — ${item.evidence}`)} tone="rose" />}
-      <section className="rounded-[24px] border border-slate-200 bg-white p-6"><h2 className="flex items-center gap-2 text-xl font-black text-slate-950"><Sparkles className="h-5 w-5 text-indigo-500" /> Coherencia del razonamiento</h2><p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">{evaluation.coherenceAnalysis}</p><h3 className="mt-6 font-black text-slate-900">Próxima práctica recomendada</h3><p className="mt-2 text-sm leading-6 text-slate-600">{evaluation.nextPractice}</p></section>
+      {evaluation.audioLimitations.length > 0 && <FeedbackList title="Segmentos no evaluables por audio" icon={<WifiOff className="h-5 w-5" />} items={evaluation.audioLimitations.map((item) => `${item.station}: ${item.segment} — ${item.consequence}`)} tone="amber" />}
+      <section className="rounded-[24px] border border-slate-200 bg-white p-5 sm:p-6"><h2 className="flex items-center gap-2 text-xl font-black text-slate-950"><Sparkles className="h-5 w-5 text-indigo-500" /> Coherencia del razonamiento</h2><p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">{evaluation.coherenceAnalysis}</p><h3 className="mt-6 font-black text-slate-900">Próxima práctica recomendada</h3><p className="mt-2 text-sm leading-6 text-slate-600">{evaluation.nextPractice}</p></section>
+
+      <section className="rounded-[24px] border border-slate-200 bg-white p-5 sm:p-6">
+        <h2 className="text-xl font-black text-slate-950">Retroalimentación completa</h2>
+        <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-600">{evaluation.detailedFeedback}</p>
+      </section>
+
+      <section className="rounded-[24px] border border-slate-200 bg-white p-5 sm:p-6">
+        <h2 className="text-xl font-black text-slate-950">Plan escrito registrado</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">{PLANNING_FIELDS.map((field) => <div key={field.key} className="rounded-xl bg-slate-50 p-3"><p className="text-xs font-black uppercase tracking-wide text-slate-400">{field.label}</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{session.planningDraft[field.key] || 'Sin respuesta'}</p></div>)}</div>
+      </section>
+
+      <section className="rounded-[24px] border border-slate-200 bg-white p-5 sm:p-6">
+        <h2 className="text-xl font-black text-slate-950">Transcripción y cierres semánticos</h2>
+        <p className="mt-1 text-sm text-slate-500">Registro completo de lo que la plataforma pudo escuchar. Los segmentos ambiguos no se califican como error clínico.</p>
+        <div className="mt-4 space-y-3">{STATION_KEYS.filter((key) => key !== 'PLANIFICACION_ESCRITA').map((key) => {
+          const progress = session.stations[key];
+          const definition = STATION_DEFINITIONS.find((item) => item.key === key)!;
+          return <details key={key} className="rounded-xl border border-slate-200 bg-slate-50"><summary className="cursor-pointer list-none px-4 py-3 text-sm font-black text-slate-800">{definition.title} · {progress.transcript.length} turnos</summary><div className="space-y-3 border-t border-slate-200 p-4"><div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3"><p className="text-xs font-black uppercase tracking-wide text-indigo-700">Confirmación de escucha · {progress.semanticConfirmation?.status || 'Sin registro'}</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-indigo-950">{progress.semanticConfirmation?.summary || 'No se obtuvo un cierre semántico verificable.'}</p>{(progress.semanticConfirmation?.studentCorrections?.length || 0) > 0 && <p className="mt-2 text-xs leading-5 text-indigo-800"><strong>Correcciones:</strong> {progress.semanticConfirmation?.studentCorrections.join(' · ')}</p>}</div><TranscriptView transcript={progress.transcript} compact /></div></details>;
+        })}</div>
+      </section>
+      {session.modelTrace && <p className="text-center text-[10px] text-slate-400">Trazabilidad técnica: caso {session.modelTrace.caseGeneration || '—'} · evaluación {session.modelTrace.finalEvaluation || '—'}</p>}
     </div>
   );
 }

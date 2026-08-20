@@ -29,7 +29,14 @@ export interface SimuladorIntento {
     puntajeComision: number;
     notaComision: number;
     // Scorecard detail
-    scorecard: Record<string, { puntaje: number; comentario: string }>;
+    scorecard: Record<string, {
+        puntaje: number;
+        comentario: string;
+        score?: number;
+        weightedPoints?: number;
+        comment?: string;
+        evidence?: Array<{ station: string; evidence: string; interpretation: string; verified?: boolean }>;
+    }>;
     // Time
     tiempoSegundos: number;
     // Timestamp
@@ -45,6 +52,11 @@ export interface SimuladorIntento {
     preguntasComision?: any[];
     fullSessionData?: any;
     interviewFeedbackData?: any;
+    version?: string;
+    notaGlobalIncluyeDefensa?: boolean;
+    modelTrace?: any;
+    countableForMinimum?: boolean;
+    integrityStatus?: 'VALID' | 'INSUFFICIENT_EVIDENCE';
 }
 
 export interface SimuladorTareaConfig {
@@ -330,9 +342,20 @@ export async function verificarCumplimiento(
 export function exportarIntentoPDF(int: SimuladorIntento) {
     if (typeof window === 'undefined') return;
 
-    const notaFinal = int.notaComision
+    const notaFinal = int.practiceMode === 'ESTACIONES_VOZ_60'
+        ? int.notaChilena?.toFixed(1)
+        : int.notaComision
         ? ((int.notaChilena * 0.7) + (int.notaComision * 0.3)).toFixed(1)
         : int.notaChilena?.toFixed(1);
+
+    const escapeHtml = (value: unknown) => String(value ?? '—')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    const scoreOf = (value: any) => Number(value?.puntaje ?? value?.score ?? 0);
+    const commentOf = (value: any) => String(value?.comentario ?? value?.comment ?? '—');
 
     const formatTimeHelper = (s: number) => 
         `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
@@ -347,33 +370,41 @@ export function exportarIntentoPDF(int: SimuladorIntento) {
         objetivos: 'Objetivos',
         plan_fases: 'Plan por Fases',
         reevaluacion: 'Reevaluación',
+        anamnesisProxima: 'Anamnesis próxima',
+        anamnesisRemota: 'Anamnesis remota',
+        examenFisico: 'Evaluación física',
+        intervenciones: 'Intervenciones',
+        planificacionEscrita: 'Planificación escrita',
+        presentacionFormal: 'Presentación formal',
+        defensa: 'Defensa',
+        seguridadProfesional: 'Seguridad profesional',
+        coherenciaLongitudinal: 'Coherencia longitudinal',
         intervencion: 'Intervención (legado)',
     };
 
     const scorecardRows = Object.entries(int.scorecard || {}).map(([k, v]) =>
         `<tr>
-            <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;">${labels[k] || k.replace(/_/g, ' ').toUpperCase()}</td>
-            <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:center;font-weight:800;font-size:14px;color:${(v as any).puntaje >= 60 ? '#059669' : '#dc2626'}">${(v as any).puntaje}/100</td>
-            <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#475569;font-style:italic;">${(v as any).comentario || '—'}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;">${escapeHtml(labels[k] || k.replace(/_/g, ' ').toUpperCase())}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:center;font-weight:800;font-size:14px;color:${scoreOf(v) >= 60 ? '#059669' : '#dc2626'}">${scoreOf(v)}/100</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#475569;font-style:italic;">${escapeHtml(commentOf(v))}</td>
         </tr>`
     ).join('');
 
     const erroresHTML = (int.erroresCriticos || []).map((e: any) =>
         `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-bottom:6px;font-size:13px;">
-            <strong style="color:#991b1b;">[${e.fase}]</strong> ${e.error}<br/>
-            <span style="font-size:12px;color:#64748b;">→ ${e.explicacion_docente}</span>
+            <strong style="color:#991b1b;">[${escapeHtml(e.fase || e.station || 'Seguridad')}]</strong> ${escapeHtml(e.error)}<br/>
+            <span style="font-size:12px;color:#64748b;">→ ${escapeHtml(e.explicacion_docente || e.evidence || '')}</span>
         </div>`
     ).join('');
 
     const aciertosHTML = (int.aciertosDestacados || []).map((a: any) =>
         `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:6px;font-size:13px;">
-            <strong style="color:#166534;">[${a.fase}]</strong> ${a.acierto}<br/>
-            <span style="font-size:12px;color:#64748b;">→ ${a.por_que_importa}</span>
+            ${typeof a === 'string' ? escapeHtml(a) : `<strong style="color:#166534;">[${escapeHtml(a.fase || 'Fortaleza')}]</strong> ${escapeHtml(a.acierto)}<br/><span style="font-size:12px;color:#64748b;">→ ${escapeHtml(a.por_que_importa || '')}</span>`}
         </div>`
     ).join('');
 
     const areasHTML = (int.areasMejora || []).map((a: string) =>
-        `<li style="font-size:13px;margin-bottom:4px;color:#334155;">${a}</li>`
+        `<li style="font-size:13px;margin-bottom:4px;color:#334155;">${escapeHtml(a)}</li>`
     ).join('');
 
     const comisionHTML = int.notaComision && int.preguntasComision ? int.preguntasComision.map((q: any, i: number) => {
@@ -390,7 +421,56 @@ export function exportarIntentoPDF(int: SimuladorIntento) {
     let interactiveHTML = '';
     if (int.fullSessionData) {
         const sd = int.fullSessionData;
-        
+        if (sd.stationSessionId && sd.stations) {
+            const stationLabels: Record<string, string> = {
+                ANAMNESIS_PROXIMA: 'Anamnesis próxima',
+                ANAMNESIS_REMOTA: 'Anamnesis remota',
+                EXAMEN_FISICO: 'Evaluación física',
+                INTERVENCIONES: 'Intervenciones',
+                PLANIFICACION_ESCRITA: 'Planificación escrita',
+                PRESENTACION_FORMAL: 'Presentación formal',
+                DEFENSA: 'Defensa',
+            };
+            const planningLabels: Record<string, string> = {
+                diagnosticoKinesiologico: 'Diagnóstico kinesiológico',
+                problemaPrincipal: 'Problema principal',
+                objetivoGeneral: 'Objetivo general',
+                objetivosEspecificos: 'Objetivos específicos',
+                objetivosOperacionales: 'Objetivos operacionales e intervenciones',
+                planTratamiento: 'Plan de tratamiento',
+                reevaluacion: 'Reevaluación',
+                pronostico: 'Pronóstico',
+            };
+            const planningHTML = Object.entries(sd.planningDraft || {}).map(([key, value]) => `
+                <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-bottom:8px;">
+                    <strong style="font-size:11px;color:#475569;text-transform:uppercase;">${escapeHtml(planningLabels[key] || key)}</strong>
+                    <p style="white-space:pre-wrap;margin:5px 0 0;font-size:12px;color:#1e293b;">${escapeHtml(value)}</p>
+                </div>`).join('');
+            const transcriptsHTML = Object.entries(sd.stations as Record<string, any>)
+                .filter(([key]) => key !== 'PLANIFICACION_ESCRITA')
+                .map(([key, station]) => {
+                    const turns = (station.transcript || []).map((turn: any) => `
+                        <div style="border-left:3px solid ${turn.role === 'STUDENT' ? '#4f46e5' : '#0f766e'};padding:6px 10px;margin-bottom:6px;background:white;">
+                            <strong style="font-size:10px;color:#64748b;">${escapeHtml(turn.role === 'STUDENT' ? 'ESTUDIANTE' : turn.role === 'PATIENT' ? 'PACIENTE' : 'COMISIÓN')}</strong>
+                            <p style="margin:2px 0 0;white-space:pre-wrap;font-size:12px;color:#334155;">${escapeHtml(turn.text)}</p>
+                        </div>`).join('');
+                    const semantic = station.semanticConfirmation || {};
+                    return `
+                        <div style="page-break-inside:avoid;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:14px;">
+                            <h4 style="margin:0 0 8px;color:#1e3a8a;font-size:14px;">${escapeHtml(stationLabels[key] || key)}</h4>
+                            <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:9px;margin-bottom:10px;font-size:12px;color:#3730a3;"><strong>Cierre de escucha (${escapeHtml(semantic.status || 'sin registro')}):</strong> ${escapeHtml(semantic.summary || 'No disponible')}</div>
+                            ${turns || '<p style="font-size:12px;color:#94a3b8;">Sin transcripción disponible.</p>'}
+                        </div>`;
+                }).join('');
+            interactiveHTML = `
+                <div style="page-break-before:always;height:1px;"></div>
+                <h2 style="font-size:18px;color:#1e3a8a;border-bottom:3px solid #3b82f6;padding-bottom:6px;margin-top:40px;">Planificación escrita completa</h2>
+                ${planningHTML || '<p>Sin planificación registrada.</p>'}
+                <h2 style="font-size:18px;color:#1e3a8a;border-bottom:3px solid #3b82f6;padding-bottom:6px;margin-top:30px;">Transcripción completa por estación</h2>
+                ${transcriptsHTML}
+                ${sd.evaluation?.detailedFeedback ? `<h2>Retroalimentación docente completa</h2><p style="white-space:pre-wrap;font-size:13px;color:#334155;">${escapeHtml(sd.evaluation.detailedFeedback)}</p>` : ''}
+            `;
+        } else {
         // Anamnesis / Entrevista
         let entrevistaSection = '';
         if (sd.studentQuestions || sd.respuestasPaciente) {
@@ -545,6 +625,7 @@ export function exportarIntentoPDF(int: SimuladorIntento) {
             ${intervencionesSection}
             ${construccionSection}
         `;
+        }
     }
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reporte Simulador - ${int.userName}</title>
@@ -595,9 +676,9 @@ export function exportarIntentoPDF(int: SimuladorIntento) {
     <div class="grid2" style="margin-top:20px;">
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;text-align:center;">
             <div style="font-size:24px;font-weight:900;color:#1e293b;">${int.puntajeGlobal}/100</div>
-            <div style="font-size:11px;color:#64748b;">Puntaje Evaluación (70%)</div>
+            <div style="font-size:11px;color:#64748b;">${int.practiceMode === 'ESTACIONES_VOZ_60' ? 'Puntaje integral del examen' : 'Puntaje Evaluación (70%)'}</div>
         </div>
-        ${int.notaComision ? `
+        ${int.notaComision && int.practiceMode !== 'ESTACIONES_VOZ_60' ? `
         <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;text-align:center;">
             <div style="font-size:24px;font-weight:900;color:#1e293b;">${int.puntajeComision}/100</div>
             <div style="font-size:11px;color:#64748b;">Puntaje Comisión (30%)</div>

@@ -21,13 +21,14 @@ type Props = {
   initialTranscript?: TranscriptTurn[];
   onResumeHandle?: (handle: string) => Promise<void> | void;
   onReconnectCount?: (count: number) => void;
+  onBeforeReconnect?: () => Promise<void> | void;
 };
 
-function joinFragment(turns: TranscriptTurn[], role: TranscriptTurn['role'], text: string, startedAt: number) {
+function joinFragment(turns: TranscriptTurn[], role: TranscriptTurn['role'], text: string, startedAt: number, forceNew = false) {
   const normalized = text.replace(/\s+/g, ' ');
   if (!normalized.trim()) return turns;
   const previous = turns.at(-1);
-  if (previous?.role === role) {
+  if (!forceNew && previous?.role === role) {
     const updated = [...turns];
     updated[updated.length - 1] = {
       ...previous,
@@ -67,6 +68,7 @@ export function useResumableGeminiLive({
   initialTranscript = [],
   onResumeHandle,
   onReconnectCount,
+  onBeforeReconnect,
 }: Props) {
   const [state, setState] = useState<LiveState>('IDLE');
   const [transcript, setTranscript] = useState<TranscriptTurn[]>(initialTranscript);
@@ -75,6 +77,7 @@ export function useResumableGeminiLive({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState('');
   const [reconnectCount, setReconnectCount] = useState(0);
+  const [activeModel, setActiveModel] = useState('');
 
   const liveSessionRef = useRef<Session | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -91,6 +94,11 @@ export function useResumableGeminiLive({
   const micOpenRef = useRef(true);
   const startedAtRef = useRef(Date.now());
   const openingSentRef = useRef(false);
+  const inputNeedsNewTurnRef = useRef(true);
+  const outputNeedsNewTurnRef = useRef(true);
+  const currentModelRef = useRef('');
+  const failedModelsRef = useRef<Set<string>>(new Set());
+  const gracefulGoAwayRef = useRef(false);
 
   useEffect(() => {
     micOpenRef.current = isMicOpen;
@@ -109,7 +117,7 @@ export function useResumableGeminiLive({
         'Content-Type': 'application/json',
         Authorization: `Bearer ${idToken}`,
       },
-      body: JSON.stringify({ station }),
+      body: JSON.stringify({ station, excludeModels: [...failedModelsRef.current] }),
     });
     const payload = await response.json();
     if (!response.ok || !payload.ok) throw new Error(payload.error || 'No se pudo abrir el canal de voz.');
@@ -145,20 +153,29 @@ export function useResumableGeminiLive({
     if (message.data) playAudio(message.data);
     const content = message.serverContent;
     if (content?.inputTranscription?.text) {
-      setTranscript((current) => joinFragment(current, 'STUDENT', content.inputTranscription!.text!, startedAtRef.current));
+      setTranscript((current) => joinFragment(current, 'STUDENT', content.inputTranscription!.text!, startedAtRef.current, inputNeedsNewTurnRef.current));
+      inputNeedsNewTurnRef.current = false;
     }
     if (content?.outputTranscription?.text) {
       const role: TranscriptTurn['role'] = station === 'DEFENSA' || station === 'INTERVENCIONES'
         ? 'EXAMINER'
         : 'PATIENT';
-      setTranscript((current) => joinFragment(current, role, content.outputTranscription!.text!, startedAtRef.current));
+      setTranscript((current) => joinFragment(current, role, content.outputTranscription!.text!, startedAtRef.current, outputNeedsNewTurnRef.current));
+      outputNeedsNewTurnRef.current = false;
     }
-    if (content?.turnComplete && activeAudioRef.current === 0) setIsSpeaking(false);
+    if (content?.turnComplete) {
+      inputNeedsNewTurnRef.current = true;
+      outputNeedsNewTurnRef.current = true;
+      if (activeAudioRef.current === 0) setIsSpeaking(false);
+    }
     const handle = message.sessionResumptionUpdate?.newHandle;
     if (handle && message.sessionResumptionUpdate?.resumable !== false) {
       void onResumeHandle?.(handle);
     }
-    if (message.goAway) setState('RECONNECTING');
+    if (message.goAway) {
+      gracefulGoAwayRef.current = true;
+      setState('RECONNECTING');
+    }
   }, [onResumeHandle, playAudio, station]);
 
   const openLiveSession = useCallback(async (isReconnect: boolean) => {
@@ -168,6 +185,8 @@ export function useResumableGeminiLive({
     setState(isReconnect ? 'RECONNECTING' : 'CONNECTING');
     try {
       const token = await getToken();
+      currentModelRef.current = token.model;
+      setActiveModel(token.model);
       const ai = new GoogleGenAI({
         apiKey: token.token,
         httpOptions: { apiVersion: 'v1alpha' },
@@ -183,6 +202,13 @@ export function useResumableGeminiLive({
           onclose: () => {
             liveSessionRef.current = null;
             if (manualCloseRef.current) return;
+            if (!gracefulGoAwayRef.current && currentModelRef.current) {
+              failedModelsRef.current.add(currentModelRef.current);
+              // Solo existen dos modelos Live verificados. Tras probar ambos se
+              // reinicia el ciclo para tolerar fallos de red transitorios.
+              if (failedModelsRef.current.size >= 2) failedModelsRef.current.clear();
+            }
+            gracefulGoAwayRef.current = false;
             reconnectAttemptRef.current += 1;
             const attempt = reconnectAttemptRef.current;
             if (attempt > 5) {
@@ -197,7 +223,7 @@ export function useResumableGeminiLive({
             });
             setState('RECONNECTING');
             reconnectTimerRef.current = setTimeout(
-              () => void openLiveSession(true),
+              () => void Promise.resolve(onBeforeReconnect?.()).catch(() => undefined).then(() => openLiveSession(true)),
               Math.min(8000, 500 * (2 ** (attempt - 1))),
             );
           },
@@ -212,10 +238,14 @@ export function useResumableGeminiLive({
       }
     } catch (reason) {
       const message = String((reason as Error)?.message || reason);
+      if (currentModelRef.current) {
+        failedModelsRef.current.add(currentModelRef.current);
+        if (failedModelsRef.current.size >= 2) failedModelsRef.current.clear();
+      }
       if (isReconnect && reconnectAttemptRef.current < 5) {
         reconnectAttemptRef.current += 1;
         reconnectTimerRef.current = setTimeout(
-          () => void openLiveSession(true),
+          () => void Promise.resolve(onBeforeReconnect?.()).catch(() => undefined).then(() => openLiveSession(true)),
           Math.min(8000, 500 * (2 ** reconnectAttemptRef.current)),
         );
       } else {
@@ -225,7 +255,7 @@ export function useResumableGeminiLive({
     } finally {
       connectingRef.current = false;
     }
-  }, [getToken, handleMessage, onReconnectCount]);
+  }, [getToken, handleMessage, onBeforeReconnect, onReconnectCount]);
 
   const ensureMicrophone = useCallback(async () => {
     if (streamRef.current?.active) return;
@@ -274,6 +304,7 @@ export function useResumableGeminiLive({
   const connect = useCallback(async () => {
     manualCloseRef.current = false;
     startedAtRef.current = Date.now();
+    failedModelsRef.current.clear();
     try {
       await ensureMicrophone();
       await openLiveSession(false);
@@ -333,6 +364,7 @@ export function useResumableGeminiLive({
     isSpeaking,
     error,
     reconnectCount,
+    activeModel,
     connect,
     retry,
     disconnect,

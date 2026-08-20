@@ -1,8 +1,10 @@
 import { GoogleGenAI, Modality } from '@google/genai';
-import { requireTeacher } from '@/lib/server/firebaseAdmin';
+import { FieldValue } from 'firebase-admin/firestore';
+import { getAdminDb, requireTeacher } from '@/lib/server/firebaseAdmin';
 import { stationApiError, stationApiSuccess } from '@/lib/simulador-estaciones/api';
 import {
-  STATION_LIVE_MODEL,
+  STATION_LIVE_MODELS,
+  STATION_SESSION_COLLECTION,
   buildStationInstruction,
   getStoredStationSession,
 } from '@/lib/simulador-estaciones/server';
@@ -23,6 +25,11 @@ export async function POST(request: Request, context: RouteContext) {
       throw new Error('validation: Esta estación no admite conexión de voz');
     }
     const station = requestedStation as VoiceStationKey;
+    const excludedModels = new Set(
+      Array.isArray(body.excludeModels)
+        ? body.excludeModels.map(String).filter((model: string) => STATION_LIVE_MODELS.includes(model as (typeof STATION_LIVE_MODELS)[number]))
+        : [],
+    );
 
     const session = await getStoredStationSession(sessionId);
     if (session.ownerId !== auth.uid) throw new Error('FORBIDDEN: Esta sesión pertenece a otra cuenta');
@@ -41,41 +48,58 @@ export async function POST(request: Request, context: RouteContext) {
       apiKey,
       httpOptions: { apiVersion: 'v1alpha' },
     });
-    const token = await ai.authTokens.create({
-      config: {
-        uses: 1,
-        expireTime,
-        newSessionExpireTime,
-        liveConnectConstraints: {
-          model: STATION_LIVE_MODEL,
+    const preferred = STATION_LIVE_MODELS.filter((model) => !excludedModels.has(model));
+    const candidates = preferred.length > 0 ? preferred : [...STATION_LIVE_MODELS];
+    let token: Awaited<ReturnType<typeof ai.authTokens.create>> | null = null;
+    let selectedModel = candidates[0];
+    let lastError: unknown;
+    for (const model of candidates) {
+      try {
+        token = await ai.authTokens.create({
           config: {
-            responseModalities: [Modality.AUDIO],
-            temperature: 0.35,
-            speechConfig: {
-              voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } },
+            uses: 1,
+            expireTime,
+            newSessionExpireTime,
+            liveConnectConstraints: {
+              model,
+              config: {
+                responseModalities: [Modality.AUDIO],
+                temperature: 0.35,
+                speechConfig: {
+                  voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } },
+                },
+                systemInstruction,
+                inputAudioTranscription: {},
+                outputAudioTranscription: {},
+                // Un handle pertenece a la sesión/modelo que lo emitió. Si el
+                // cliente pidió cambiar de modelo por falla, reconstruimos el
+                // contexto desde el checkpoint en vez de reutilizarlo.
+                sessionResumption: resumeHandle && excludedModels.size === 0 ? { handle: resumeHandle } : {},
+                contextWindowCompression: {
+                  triggerTokens: '12000',
+                  slidingWindow: { targetTokens: '8000' },
+                },
+              },
             },
-            systemInstruction,
-            inputAudioTranscription: {},
-            outputAudioTranscription: {},
-            // `transparent` no está disponible en la API gratuita de Gemini.
-            // La reanudación se habilita con un objeto vacío o con el `handle` previo.
-            sessionResumption: resumeHandle ? { handle: resumeHandle } : {},
-            contextWindowCompression: {
-              triggerTokens: '12000',
-              slidingWindow: { targetTokens: '8000' },
-            },
+            lockAdditionalFields: [],
           },
-        },
-        lockAdditionalFields: [],
-      },
-    });
+        });
+        selectedModel = model;
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
 
-    if (!token.name) throw new Error('Gemini no devolvió un token efímero');
+    if (!token?.name) throw lastError || new Error('Gemini no devolvió un token efímero');
+    await getAdminDb().collection(STATION_SESSION_COLLECTION).doc(sessionId).update({
+      [`modelTrace.liveByStation.${station}`]: FieldValue.arrayUnion(selectedModel),
+    });
     return stationApiSuccess({
       token: token.name,
-      model: STATION_LIVE_MODEL,
+      model: selectedModel,
       expiresAt: expireTime,
-      resumed: Boolean(resumeHandle),
+      resumed: Boolean(resumeHandle && excludedModels.size === 0),
       openingInstruction: station === 'DEFENSA'
         ? 'Inicia la defensa ahora con una primera pregunta específica del caso.'
         : '',

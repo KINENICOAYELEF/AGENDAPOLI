@@ -54,6 +54,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       ...(input.elapsedSeconds !== undefined ? { elapsedSeconds: input.elapsedSeconds } : {}),
       ...(input.transcript ? { transcript: input.transcript } : {}),
       ...(input.semanticSummary !== undefined ? { semanticSummary: input.semanticSummary } : {}),
+      ...(input.semanticConfirmation ? { semanticConfirmation: input.semanticConfirmation } : {}),
       ...(input.audioUncertainties ? { audioUncertainties: input.audioUncertainties } : {}),
       ...(input.reconnectCount !== undefined ? { reconnectCount: input.reconnectCount } : {}),
     };
@@ -75,6 +76,16 @@ export async function PATCH(request: Request, context: RouteContext) {
       patched.status = 'PAUSED';
       status = 'ABANDONED';
     } else if (input.action === 'COMPLETE_STATION') {
+      if (station !== 'PLANIFICACION_ESCRITA') {
+        const confirmationStatus = patched.semanticConfirmation?.status || 'PENDING';
+        if (confirmationStatus === 'PENDING') {
+          throw new Error('INCOMPLETE: Espera el cierre de escucha antes de completar la estación');
+        }
+        const hasStudentEvidence = patched.transcript.some((turn) => turn.role === 'STUDENT' && turn.text.trim().length >= 3);
+        if (!hasStudentEvidence && patched.elapsedSeconds < 60) {
+          throw new Error('INCOMPLETE: La estación no contiene todavía una respuesta oral recuperable');
+        }
+      }
       patched.status = 'COMPLETED';
       patched.remainingSeconds = Math.max(0, patched.remainingSeconds);
       const index = STATION_KEYS.indexOf(station as StationKey);

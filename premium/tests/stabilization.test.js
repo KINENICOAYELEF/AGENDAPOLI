@@ -462,4 +462,49 @@ describe('Simulador clínico por estaciones de voz — beta docente', () => {
     assert.match(route, /export async function DELETE/);
     assert.match(route, /Una simulación completada forma parte del historial y no se elimina/);
   });
+
+  test('usa dos modelos Live oficiales y cambia de modelo sin perder el checkpoint', () => {
+    const server = readFileSync(new URL('../src/lib/simulador-estaciones/server.ts', import.meta.url), 'utf8');
+    const tokenRoute = readFileSync(new URL('../src/app/api/simulador-estaciones/sessions/[sessionId]/live-token/route.ts', import.meta.url), 'utf8');
+    const hook = readFileSync(new URL('../src/hooks/useResumableGeminiLive.ts', import.meta.url), 'utf8');
+    assert.match(server, /gemini-3\.1-flash-live-preview/);
+    assert.match(server, /gemini-2\.5-flash-native-audio-preview-12-2025/);
+    assert.match(tokenRoute, /excludeModels/);
+    assert.match(hook, /onBeforeReconnect/);
+    assert.match(hook, /failedModelsRef/);
+  });
+
+  test('el cierre semántico es estructurado y obligatorio antes de avanzar', () => {
+    const types = readFileSync(new URL('../src/lib/simulador-estaciones/types.ts', import.meta.url), 'utf8');
+    const route = readFileSync(new URL('../src/app/api/simulador-estaciones/sessions/[sessionId]/route.ts', import.meta.url), 'utf8');
+    const ui = readFileSync(new URL('../src/components/simulador-estaciones/SimuladorEstacionesBeta.tsx', import.meta.url), 'utf8');
+    assert.match(types, /SemanticConfirmationSchema/);
+    assert.match(types, /studentCorrections/);
+    assert.match(route, /Espera el cierre de escucha/);
+    assert.match(ui, /Confirmar escucha y pasar a la siguiente/);
+    assert.match(ui, /Esperando el resumen de la voz/);
+  });
+
+  test('presenta antecedentes, plan, transcripciones y feedback completo', () => {
+    const ui = readFileSync(new URL('../src/components/simulador-estaciones/SimuladorEstacionesBeta.tsx', import.meta.url), 'utf8');
+    assert.match(ui, /Antecedentes reunidos/);
+    assert.match(ui, /Tu planificación escrita/);
+    assert.match(ui, /Retroalimentación completa/);
+    assert.match(ui, /Transcripción y cierres semánticos/);
+    assert.match(ui, /Segmentos no evaluables por audio/);
+  });
+
+  test('verifica citas y conserva compatibilidad con historial, PDF y perfil docente', () => {
+    const server = readFileSync(new URL('../src/lib/simulador-estaciones/server.ts', import.meta.url), 'utf8');
+    const history = readFileSync(new URL('../src/components/SimuladorHistorial.tsx', import.meta.url), 'utf8');
+    const service = readFileSync(new URL('../src/services/simuladorFirebase.ts', import.meta.url), 'utf8');
+    const profile = readFileSync(new URL('../src/lib/agent/simulationProfileSync.ts', import.meta.url), 'utf8');
+    assert.match(server, /verifyEvaluationEvidence/);
+    assert.match(server, /notaGlobalIncluyeDefensa/);
+    assert.match(history, /ESTACIONES_VOZ_60/);
+    assert.match(history, /scoreValue/);
+    assert.match(service, /Transcripción completa por estación/);
+    assert.match(profile, /data\.puntajeGlobal/);
+    assert.match(profile, /countableForMinimum !== false/);
+  });
 });

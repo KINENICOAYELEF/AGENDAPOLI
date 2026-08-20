@@ -128,6 +128,15 @@ export const TranscriptTurnSchema = z.object({
 });
 export type TranscriptTurn = z.infer<typeof TranscriptTurnSchema>;
 
+export const SemanticConfirmationSchema = z.object({
+  status: z.enum(['PENDING', 'CONFIRMED', 'PARTIAL', 'UNAVAILABLE']).default('PENDING'),
+  summary: z.string().max(5000).default(''),
+  studentCorrections: z.array(z.string().max(1200)).max(12).default([]),
+  unresolvedAudio: z.array(z.string().max(1200)).max(12).default([]),
+  capturedAtMs: z.number().int().nonnegative().optional(),
+});
+export type SemanticConfirmation = z.infer<typeof SemanticConfirmationSchema>;
+
 export const StationProgressSchema = z.object({
   station: z.enum(STATION_KEYS),
   remainingSeconds: z.number().int().min(0).max(15 * 60),
@@ -135,6 +144,12 @@ export const StationProgressSchema = z.object({
   status: z.enum(['NOT_STARTED', 'IN_PROGRESS', 'PAUSED', 'COMPLETED']),
   transcript: z.array(TranscriptTurnSchema).max(500).default([]),
   semanticSummary: z.string().max(12000).default(''),
+  semanticConfirmation: SemanticConfirmationSchema.default({
+    status: 'PENDING',
+    summary: '',
+    studentCorrections: [],
+    unresolvedAudio: [],
+  }),
   audioUncertainties: z.array(z.string().max(1000)).max(30).default([]),
   reconnectCount: z.number().int().min(0).max(50).default(0),
 });
@@ -147,6 +162,7 @@ export const SessionPatchSchema = z.object({
   elapsedSeconds: z.number().int().min(0).max(20 * 60).optional(),
   transcript: z.array(TranscriptTurnSchema).max(500).optional(),
   semanticSummary: z.string().max(12000).optional(),
+  semanticConfirmation: SemanticConfirmationSchema.optional(),
   audioUncertainties: z.array(z.string().max(1000)).max(30).optional(),
   planningDraft: PlanningDraftSchema.optional(),
   reconnectCount: z.number().int().min(0).max(50).optional(),
@@ -177,6 +193,11 @@ export interface PublicStationSession {
   updatedAt: string;
   completedAt?: string;
   evaluation?: StationSimulationEvaluation;
+  modelTrace?: {
+    caseGeneration?: string;
+    finalEvaluation?: string;
+    liveByStation?: Partial<Record<StationKey, string[]>>;
+  };
   errorMessage?: string;
 }
 
@@ -184,6 +205,7 @@ export const EvidenceItemSchema = z.object({
   station: z.enum(STATION_KEYS),
   evidence: z.string().max(1200),
   interpretation: z.string().max(1800),
+  verified: z.boolean().optional(),
 });
 
 export const StationScoreSchema = z.object({
@@ -242,6 +264,12 @@ export function createEmptyStations(): Record<StationKey, StationProgress> {
         status: 'NOT_STARTED',
         transcript: [],
         semanticSummary: '',
+        semanticConfirmation: {
+          status: 'PENDING',
+          summary: '',
+          studentCorrections: [],
+          unresolvedAudio: [],
+        },
         audioUncertainties: [],
         reconnectCount: 0,
       },

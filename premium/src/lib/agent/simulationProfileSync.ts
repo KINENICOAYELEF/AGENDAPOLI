@@ -21,6 +21,16 @@ export interface StudentSimulationMetrics {
   lastAttemptAt?: string;
 }
 
+function timestampToIso(value: any): string | undefined {
+  if (!value) return undefined;
+  const date = typeof value.toDate === 'function'
+    ? value.toDate()
+    : value instanceof Date
+      ? value
+      : new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 export async function fetchStudentSimulationMetrics(studentId: string): Promise<StudentSimulationMetrics> {
   const db = getAdminDb();
 
@@ -29,7 +39,8 @@ export async function fetchStudentSimulationMetrics(studentId: string): Promise<
     db.collection('defensas_voz_intentos').where('userId', '==', studentId).get(),
   ]);
 
-  const osceCount = osceSnap.size;
+  const validOsceDocs = osceSnap.docs.filter((doc: any) => doc.data().countableForMinimum !== false);
+  const osceCount = validOsceDocs.length;
   const defenseCount = defenseSnap.size;
   const total = osceCount + defenseCount;
 
@@ -39,13 +50,13 @@ export async function fetchStudentSimulationMetrics(studentId: string): Promise<
   let totalOralScore = 0;
   let oralCount = 0;
 
-  osceSnap.forEach((doc: any) => {
+  validOsceDocs.forEach((doc: any) => {
     const data = doc.data();
-    const d = data.fechaInicio || data.fechaCompleto || data.sessionAt || data.createdAt;
+    const d = timestampToIso(data.fecha || data.fechaInicio || data.fechaCompleto || data.sessionAt || data.createdAt);
     if (d && (!lastAttemptAt || d > lastAttemptAt)) {
       lastAttemptAt = d;
     }
-    const score = data.porcentajeGlobal ?? data.scorePuntaje ?? data.puntajeTotal;
+    const score = data.puntajeGlobal ?? data.porcentajeGlobal ?? data.scorePuntaje ?? data.puntajeTotal;
     if (typeof score === 'number') {
       totalWrittenScore += score > 1 ? score / 100 : score;
       writtenCount++;
@@ -54,7 +65,7 @@ export async function fetchStudentSimulationMetrics(studentId: string): Promise<
 
   defenseSnap.forEach((doc: any) => {
     const data = doc.data();
-    const d = data.createdAt || data.sessionAt || data.fechaInicio;
+    const d = timestampToIso(data.fecha || data.createdAt || data.sessionAt || data.fechaInicio);
     if (d && (!lastAttemptAt || d > lastAttemptAt)) {
       lastAttemptAt = d;
     }
