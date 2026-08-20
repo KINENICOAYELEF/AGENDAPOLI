@@ -152,12 +152,17 @@ function participantPayload(input: any, staffId: string, existing?: OlderAdultPa
 export async function GET(req: Request) {
   try {
     await requireWorkshopStaff(req.headers.get('authorization'));
-    return NextResponse.json({ ok: true, data: await loadStaffDashboard(req) });
+    return NextResponse.json({ ok: true, data: await loadStaffDashboard(req) }, {
+      headers: { 'Cache-Control': 'no-store, max-age=0', Pragma: 'no-cache' },
+    });
   } catch (error: any) {
     console.error('[adulto-mayor/staff:get]', error);
     const message = error?.message || 'No se pudo cargar el taller.';
     const status = message.includes('Unauthorized') ? 401 : message.includes('Forbidden') ? 403 : 500;
-    return NextResponse.json({ ok: false, error: message }, { status });
+    return NextResponse.json({ ok: false, error: message }, {
+      status,
+      headers: { 'Cache-Control': 'no-store, max-age=0', Pragma: 'no-cache' },
+    });
   }
 }
 

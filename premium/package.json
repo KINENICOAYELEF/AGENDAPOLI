@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "render:am-pdf": "node scripts/render-adulto-mayor-pdf.mjs",
     "test": "node --test tests/stabilization.test.js && tsc --noEmit"
   },
   "dependencies": {

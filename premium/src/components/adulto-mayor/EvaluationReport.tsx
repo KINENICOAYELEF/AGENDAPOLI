@@ -1,6 +1,7 @@
 'use client';
 
-import { Download, AlertTriangle, CheckCircle2, Activity, Brain, PersonStanding, Zap } from 'lucide-react';
+import { useState } from 'react';
+import { Download, AlertTriangle, CheckCircle2, Activity, Brain, LoaderCircle, PersonStanding, Zap } from 'lucide-react';
 import { OlderAdultEvaluation } from '@/lib/adultoMayor/types';
 import { FunctionalRadar } from './FunctionalRadar';
 
@@ -33,12 +34,20 @@ function ResultCard({ icon, title, value, detail, tone = 'teal' }: {
 export function EvaluationReport({ evaluation, previous }: { evaluation: OlderAdultEvaluation; previous?: OlderAdultEvaluation }) {
   const result = evaluation.results;
   const tests = evaluation.data.tests;
-  const printReport = () => {
-    document.body.classList.add('am-printing');
-    const cleanup = () => document.body.classList.remove('am-printing');
-    window.addEventListener('afterprint', cleanup, { once: true });
-    window.print();
-    window.setTimeout(cleanup, 1500);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
+  const exportPdf = async () => {
+    setExporting(true);
+    setExportError('');
+    try {
+      const { downloadOlderAdultEvaluationPdf } = await import('@/lib/adultoMayor/pdf');
+      await downloadOlderAdultEvaluationPdf(evaluation, previous);
+    } catch (error) {
+      console.error('[adulto-mayor/pdf]', error);
+      setExportError('No se pudo crear el PDF. Intenta nuevamente.');
+    } finally {
+      setExporting(false);
+    }
   };
   return (
     <section data-adulto-mayor-report className="am-print-report overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
@@ -51,13 +60,15 @@ export function EvaluationReport({ evaluation, previous }: { evaluation: OlderAd
           </div>
           <button
             type="button"
-            onClick={printReport}
+            onClick={exportPdf}
+            disabled={exporting}
             data-no-print
-            className="am-no-print inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-black text-teal-900 shadow-lg shadow-black/10 transition hover:bg-teal-50"
+            className="am-no-print inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-black text-teal-900 shadow-lg shadow-black/10 transition hover:bg-teal-50 disabled:cursor-wait disabled:opacity-70"
           >
-            <Download className="h-4 w-4" /> Exportar PDF
+            {exporting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} {exporting ? 'Creando PDF…' : 'Descargar PDF'}
           </button>
         </div>
+        {exportError && <p data-no-print className="am-no-print mt-4 rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-800">{exportError}</p>}
         <div className="mt-5 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
           <div><span className="block text-teal-200">Edad</span><strong>{evaluation.participantSnapshot.age ?? '—'} años</strong></div>
           <div><span className="block text-teal-200">Evaluador/a</span><strong>{evaluation.evaluatorName}</strong></div>

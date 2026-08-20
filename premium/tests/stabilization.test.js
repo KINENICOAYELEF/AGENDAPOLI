@@ -332,4 +332,43 @@ describe('Módulo Taller de Adulto Mayor', () => {
     assert.match(staffPage, /Personas archivadas/);
     assert.match(staffPage, /Eliminar prueba/);
   });
+
+  test('el dictado grupal requiere revisión y nunca sobrescribe el formulario automáticamente', () => {
+    const recorder = readFileSync(new URL('../src/components/adulto-mayor/WorkshopEvolutionRecorder.tsx', import.meta.url), 'utf8');
+    assert.match(recorder, /Dictado listo para revisar/);
+    assert.match(recorder, /Completar campos vacíos/);
+    assert.match(recorder, /Reemplazar contenido/);
+    assert.match(recorder, /setProposal\(safeProposal\)/);
+    assert.doesNotMatch(recorder, /setDraft\(current => \(\{ \.\.\.current, \.\.\.payload\.data/);
+  });
+
+  test('la navegación móvil muestra las cinco secciones sin carrusel horizontal', () => {
+    const staffPage = readFileSync(new URL('../src/app/app/taller-adulto-mayor/page.tsx', import.meta.url), 'utf8');
+    assert.match(staffPage, /grid grid-cols-5/);
+    assert.match(staffPage, /aria-current=/);
+    assert.doesNotMatch(staffPage, /overflow-x-auto.*min-w-max/);
+  });
+
+  test('la edad se solicita de forma explícita y permite registrar que la fecha se desconoce', () => {
+    const staffPage = readFileSync(new URL('../src/app/app/taller-adulto-mayor/page.tsx', import.meta.url), 'utf8');
+    const publicPage = readFileSync(new URL('../src/app/evaluacion-adulto-mayor/page.tsx', import.meta.url), 'utf8');
+    for (const source of [staffPage, publicPage]) {
+      assert.match(source, /No se conoce la fecha/);
+      assert.match(source, /Fecha de nacimiento \*/);
+    }
+  });
+
+  test('el informe se descarga como PDF diseñado y el portal puede recuperarse de cargas lentas', () => {
+    const report = readFileSync(new URL('../src/components/adulto-mayor/EvaluationReport.tsx', import.meta.url), 'utf8');
+    const pdf = readFileSync(new URL('../src/lib/adultoMayor/pdf.ts', import.meta.url), 'utf8');
+    const publicPage = readFileSync(new URL('../src/app/evaluacion-adulto-mayor/page.tsx', import.meta.url), 'utf8');
+    assert.match(report, /downloadOlderAdultEvaluationPdf/);
+    assert.match(report, /Descargar PDF/);
+    assert.doesNotMatch(report, /window\.print\(\)/);
+    assert.match(pdf, /new jsPDF/);
+    assert.match(pdf, /drawRadar/);
+    assert.match(pdf, /doc\.save\(filename\)/);
+    assert.match(publicPage, /controller\.abort\(\), 20_000/);
+    assert.match(publicPage, /Reintentar/);
+  });
 });

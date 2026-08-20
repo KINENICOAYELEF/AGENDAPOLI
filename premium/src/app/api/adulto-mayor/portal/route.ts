@@ -122,12 +122,19 @@ async function loadPortalPayload(req: Request): Promise<PublicPortalPayload> {
 export async function GET(req: Request) {
   try {
     const payload = await loadPortalPayload(req);
-    return NextResponse.json({ ok: true, data: payload });
+    return NextResponse.json({ ok: true, data: payload }, {
+      headers: { 'Cache-Control': 'no-store, max-age=0', Pragma: 'no-cache' },
+    });
   } catch (error: any) {
     if (await validatePortalAccess(req)) {
-      return NextResponse.json({ ok: true, data: { needsRegistration: true } });
+      return NextResponse.json({ ok: true, data: { needsRegistration: true } }, {
+        headers: { 'Cache-Control': 'no-store, max-age=0', Pragma: 'no-cache' },
+      });
     }
-    return NextResponse.json({ ok: false, error: error?.message || 'Acceso no disponible.' }, { status: 401 });
+    return NextResponse.json({ ok: false, error: error?.message || 'Acceso no disponible.' }, {
+      status: 401,
+      headers: { 'Cache-Control': 'no-store, max-age=0', Pragma: 'no-cache' },
+    });
   }
 }
 

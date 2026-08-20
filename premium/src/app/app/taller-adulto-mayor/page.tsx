@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, Archive, ArchiveRestore, Check, ClipboardCheck, Copy, FileText,
   Link2, LoaderCircle, Mic2, Pencil, Plus, RefreshCw, RotateCcw, Search,
@@ -50,12 +50,23 @@ const emptyParticipant = (): Partial<OlderAdultParticipant> => ({
 
 async function staffRequest(body?: unknown) {
   const token = await auth.currentUser?.getIdToken();
-  const response = await fetch('/api/adulto-mayor/staff', {
-    method: body ? 'POST' : 'GET',
-    headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), Authorization: `Bearer ${token}` },
-    body: body ? JSON.stringify(body) : undefined,
-    cache: 'no-store',
-  });
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 20_000);
+  let response: Response;
+  try {
+    response = await fetch(body ? '/api/adulto-mayor/staff' : `/api/adulto-mayor/staff?actualizar=${Date.now()}`, {
+      method: body ? 'POST' : 'GET',
+      headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), Authorization: `Bearer ${token}` },
+      body: body ? JSON.stringify(body) : undefined,
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+  } catch (error: any) {
+    if (error?.name === 'AbortError') throw new Error('La carga tardó demasiado. Reintenta sin perder lo que estabas haciendo.');
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
+  }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || !payload.ok) throw new Error(payload.error || 'No se pudo completar la acción.');
   return payload.data;
@@ -64,23 +75,29 @@ async function staffRequest(body?: unknown) {
 function ParticipantDialog({ initial, onClose, onSaved }: {
   initial?: OlderAdultParticipant;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (participant: OlderAdultParticipant) => Promise<void> | void;
 }) {
   const [form, setForm] = useState<Partial<OlderAdultParticipant>>(() => initial || emptyParticipant());
+  const [unknownBirthDate, setUnknownBirthDate] = useState(Boolean(initial && !initial.birthDate));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const update = (key: keyof OlderAdultParticipant, value: unknown) => setForm(current => ({ ...current, [key]: value }));
   const save = async () => {
-    setSaving(true); setError('');
+    setError('');
+    if (!form.birthDate && !unknownBirthDate) {
+      setError('Registra la fecha de nacimiento o marca que no se conoce. La edad es necesaria para interpretar varias pruebas.');
+      return;
+    }
+    setSaving(true);
     try {
-      await staffRequest({ action: 'saveParticipant', participant: form });
-      onSaved();
+      const result = await staffRequest({ action: 'saveParticipant', participant: { ...form, birthDate: unknownBirthDate ? '' : form.birthDate } });
+      await onSaved(result.participant);
     } catch (reason: any) {
       setError(reason?.message || 'No se pudo guardar.');
     } finally { setSaving(false); }
   };
   const fields: Array<[keyof OlderAdultParticipant, string, string]> = [
-    ['fullName', 'Nombre completo *', 'text'], ['rut', 'RUT', 'text'], ['birthDate', 'Fecha de nacimiento', 'date'],
+    ['fullName', 'Nombre completo *', 'text'], ['rut', 'RUT', 'text'],
     ['phone', 'Teléfono', 'tel'], ['commune', 'Comuna', 'text'], ['nationality', 'Nacionalidad', 'text'],
     ['educationLevel', 'Escolaridad', 'text'], ['occupation', 'Ocupación', 'text'],
     ['emergencyContact', 'Contacto de emergencia', 'text'], ['address', 'Dirección', 'text'],
@@ -94,13 +111,18 @@ function ParticipantDialog({ initial, onClose, onSaved }: {
         </div>
         <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
           {fields.map(([key, label, type]) => <label key={key} className={key === 'address' ? 'sm:col-span-2' : ''}><span className="mb-1.5 block text-xs font-black text-slate-600">{label}</span><input type={type} value={String(form[key] || '')} onChange={event => update(key, event.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100" /></label>)}
+          <div>
+            <label><span className="mb-1.5 block text-xs font-black text-slate-600">Fecha de nacimiento *</span><input type="date" max={chileDate()} disabled={unknownBirthDate} value={String(form.birthDate || '')} onChange={event => update('birthDate', event.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 disabled:bg-slate-100 disabled:text-slate-400" /></label>
+            <label className="mt-2 flex items-center gap-2 text-xs font-bold text-slate-500"><input type="checkbox" checked={unknownBirthDate} onChange={event => { setUnknownBirthDate(event.target.checked); if (event.target.checked) update('birthDate', ''); }} className="h-4 w-4 accent-emerald-600" /> No se conoce la fecha</label>
+            <p className="mt-1 text-[11px] leading-relaxed text-slate-400">Permite calcular la edad e interpretar referencias de fuerza y STS30.</p>
+          </div>
           <label><span className="mb-1.5 block text-xs font-black text-slate-600">Sexo registrado</span><select value={form.sex || 'NO_ESPECIFICA'} onChange={event => update('sex', event.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3"><option value="MUJER">Mujer</option><option value="HOMBRE">Hombre</option><option value="NO_ESPECIFICA">No especifica</option></select></label>
           <label><span className="mb-1.5 block text-xs font-black text-slate-600">¿Lee?</span><select value={form.readingAbility || 'SI'} onChange={event => update('readingAbility', event.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3"><option value="SI">Sí</option><option value="CON_DIFICULTAD">Con dificultad</option><option value="NO">No</option></select></label>
           <label><span className="mb-1.5 block text-xs font-black text-slate-600">¿Escribe?</span><select value={form.writingAbility || 'SI'} onChange={event => update('writingAbility', event.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3"><option value="SI">Sí</option><option value="CON_DIFICULTAD">Con dificultad</option><option value="NO">No</option></select></label>
           <label className="sm:col-span-2"><span className="mb-1.5 block text-xs font-black text-slate-600">Red de apoyo</span><textarea rows={3} value={form.supportNetwork || ''} onChange={event => update('supportNetwork', event.target.value)} className="w-full rounded-2xl border border-slate-200 px-4 py-3" /></label>
           {error && <p className="sm:col-span-2 rounded-2xl bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</p>}
         </div>
-        <div className="sticky bottom-0 flex gap-3 border-t border-slate-100 bg-white px-5 py-4"><button type="button" onClick={onClose} className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 font-black text-slate-600">Cancelar</button><button type="button" onClick={save} disabled={saving || !form.fullName} className="flex-[1.6] rounded-2xl bg-emerald-600 px-4 py-3 font-black text-white shadow-lg shadow-emerald-600/20 disabled:opacity-40">{saving ? 'Guardando…' : 'Guardar persona'}</button></div>
+        <div className="sticky bottom-0 flex gap-3 border-t border-slate-100 bg-white px-5 py-4"><button type="button" onClick={onClose} className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 font-black text-slate-600">Cancelar</button><button type="button" onClick={save} disabled={saving || !form.fullName || (!form.birthDate && !unknownBirthDate)} className="flex-[1.6] rounded-2xl bg-emerald-600 px-4 py-3 font-black text-white shadow-lg shadow-emerald-600/20 disabled:opacity-40">{saving ? 'Guardando…' : 'Guardar persona'}</button></div>
       </div>
     </div>
   );
@@ -117,13 +139,20 @@ export default function TallerAdultoMayorPage() {
   const [message, setMessage] = useState('');
   const [editing, setEditing] = useState<OlderAdultParticipant | 'NEW' | null>(null);
   const [selectedEvaluation, setSelectedEvaluation] = useState<OlderAdultEvaluation | null>(null);
+  const loadSequence = useRef(0);
 
   const load = useCallback(async (quiet = false) => {
+    const sequence = ++loadSequence.current;
     if (!quiet) setLoading(true);
     setError('');
-    try { setData(await staffRequest()); }
-    catch (reason: any) { setError(reason?.message || 'No se pudo cargar el taller.'); }
-    finally { if (!quiet) setLoading(false); }
+    try {
+      const freshData = await staffRequest();
+      if (sequence === loadSequence.current) setData(freshData);
+    } catch (reason: any) {
+      if (sequence === loadSequence.current) setError(reason?.message || 'No se pudo cargar el taller.');
+    } finally {
+      if (!quiet && sequence === loadSequence.current) setLoading(false);
+    }
   }, []);
   useEffect(() => { void load(); }, [load]);
 
@@ -197,10 +226,10 @@ export default function TallerAdultoMayorPage() {
   if (selectedEvaluation) return <EvaluationWizard scope="STAFF" evaluation={selectedEvaluation} previous={previousEvaluation} onUpdated={evaluation => { setSelectedEvaluation(evaluation); setData(current => current ? { ...current, evaluations: [evaluation, ...current.evaluations.filter(item => item.id !== evaluation.id)] } : current); }} onClose={() => { setSelectedEvaluation(null); void load(true); }} />;
   if (loading) return <div className="flex min-h-[60vh] items-center justify-center"><div className="text-center"><LoaderCircle className="mx-auto h-10 w-10 animate-spin text-emerald-600" /><p className="mt-3 text-sm font-bold text-slate-500">Preparando el taller…</p></div></div>;
 
-  const tabs: Array<[Tab, string, React.ReactNode]> = [
-    ['HOY', 'Asistencia', <ClipboardCheck key="a" className="h-4 w-4" />], ['PERSONAS', 'Personas', <UsersRound key="p" className="h-4 w-4" />],
-    ['EVALUACIONES', 'Evaluaciones', <Activity key="e" className="h-4 w-4" />], ['REGISTRO', 'Registrar taller', <Mic2 key="r" className="h-4 w-4" />],
-    ['ACCESOS', 'Accesos externos', <Link2 key="l" className="h-4 w-4" />],
+  const tabs: Array<[Tab, string, string, React.ReactNode]> = [
+    ['HOY', 'Hoy', 'Asistencia', <ClipboardCheck key="a" className="h-4 w-4" />], ['PERSONAS', 'Personas', 'Personas', <UsersRound key="p" className="h-4 w-4" />],
+    ['EVALUACIONES', 'Evaluar', 'Evaluaciones', <Activity key="e" className="h-4 w-4" />], ['REGISTRO', 'Taller', 'Registrar taller', <Mic2 key="r" className="h-4 w-4" />],
+    ['ACCESOS', 'Accesos', 'Accesos externos', <Link2 key="l" className="h-4 w-4" />],
   ];
 
   return (
@@ -213,7 +242,7 @@ export default function TallerAdultoMayorPage() {
         </div>
       </section>
 
-      <nav className="sticky top-0 z-30 -mx-4 mt-4 overflow-x-auto border-y border-slate-200 bg-slate-100/90 px-4 py-2 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border sm:bg-white sm:p-2" aria-label="Secciones del taller"><div className="flex min-w-max gap-1">{tabs.map(([value, label, icon]) => <button key={value} type="button" onClick={() => setTab(value)} className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${tab === value ? 'bg-slate-950 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}>{icon}{label}</button>)}</div></nav>
+      <nav className="sticky top-0 z-30 -mx-4 mt-4 border-y border-slate-200 bg-white/95 px-2 py-2 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border sm:p-2" aria-label="Secciones del taller"><div className="grid grid-cols-5 gap-1 sm:flex">{tabs.map(([value, mobileLabel, desktopLabel, icon]) => <button key={value} type="button" onClick={() => setTab(value)} aria-current={tab === value ? 'page' : undefined} className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-black transition sm:flex-row sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm ${tab === value ? 'bg-slate-950 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}>{icon}<span className="max-w-full truncate sm:hidden">{mobileLabel}</span><span className="hidden sm:inline">{desktopLabel}</span></button>)}</div></nav>
 
       {(error || message) && <div className={`mt-4 rounded-2xl border p-4 text-sm font-bold ${error ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{error || message}</div>}
 
@@ -234,14 +263,23 @@ export default function TallerAdultoMayorPage() {
 
       {tab === 'EVALUACIONES' && <section className="mt-5 rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-2xl font-black text-slate-950">Evaluaciones funcionales</h2><p className="text-sm text-slate-500">Resultados, perfil funcional y seguimiento a 4–6 semanas.</p></div><div className="flex gap-2"><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar persona" className="rounded-xl border border-slate-200 py-2.5 pl-10 pr-3" /></div><button type="button" onClick={() => setTab('PERSONAS')} className="rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-black text-white">Nueva</button></div></div><div className="mt-5 space-y-3">{(data?.evaluations || []).filter(item => item.participantSnapshot.fullName.toLowerCase().includes(query.toLowerCase())).map(item => <article key={item.id} className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-4 transition hover:border-emerald-300 hover:shadow-md sm:flex-row sm:items-center"><button type="button" onClick={() => openEvaluation(item)} className="flex min-w-0 flex-1 items-center gap-3 text-left"><div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${item.status === 'SUBMITTED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}><FileText className="h-5 w-5" /></div><div className="min-w-0 flex-1"><p className="font-black text-slate-900">{item.participantSnapshot.fullName}</p><p className="text-xs font-medium text-slate-500">{item.evaluatorName} · {shortDate(item.submittedAt || item.updatedAt)}</p></div></button><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase ${item.status === 'SUBMITTED' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{item.status === 'SUBMITTED' ? 'Finalizada' : `Borrador · paso ${item.step}`}</span>{item.status === 'SUBMITTED' && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">SPPB {item.results.sppbTotal}/12</span>}{item.status === 'DRAFT' && <button type="button" onClick={() => void deleteDraft(item)} className="inline-flex items-center gap-1 rounded-xl bg-rose-50 px-3 py-2 text-xs font-black text-rose-700"><Trash2 className="h-3.5 w-3.5" /> Descartar</button>}</div></article>)}{!data?.evaluations.length && <p className="py-10 text-center text-sm font-bold text-slate-500">Aún no hay evaluaciones.</p>}</div></section>}
 
-      {tab === 'REGISTRO' && <div className="mt-5 space-y-5"><WorkshopEvolutionRecorder attendanceCount={presentCount} onSaved={() => { setMessage('Evolución grupal guardada.'); void load(true); }} /><section className="rounded-[26px] border border-slate-200 bg-white p-5"><h2 className="text-xl font-black text-slate-950">Historial del taller</h2><div className="mt-4 space-y-3">{data?.workshopEvolutions.map(item => <article key={item.id} className={`rounded-2xl border p-4 ${item.testRecord ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'}`}><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-black text-slate-900">{shortDate(item.date)} · {item.attendanceCount} presentes</p><div className="flex items-center gap-2"><span className="text-xs font-bold text-slate-500">{item.startTime}–{item.endTime}</span>{item.testRecord && <button type="button" onClick={() => void act({ action: 'deleteTestWorkshopEvolution', evolutionId: item.id }, 'Sesión de prueba eliminada.')} className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-2.5 py-1.5 text-[10px] font-black text-white"><Trash2 className="h-3 w-3" /> Eliminar prueba</button>}</div></div><p className="mt-2 text-sm font-bold text-slate-700">{item.summary}</p><p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-500">{item.activities}</p></article>)}{!data?.workshopEvolutions.length && <p className="text-sm font-bold text-slate-500">Todavía no hay sesiones registradas.</p>}</div></section></div>}
+      {tab === 'REGISTRO' && <div className="mt-5 space-y-5"><WorkshopEvolutionRecorder attendanceCount={presentCount} onSaved={evolution => { setData(current => current ? { ...current, workshopEvolutions: [evolution, ...current.workshopEvolutions.filter(item => item.id !== evolution.id)] } : current); setMessage('Evolución grupal guardada.'); void load(true); }} /><section className="rounded-[26px] border border-slate-200 bg-white p-5"><h2 className="text-xl font-black text-slate-950">Historial del taller</h2><div className="mt-4 space-y-3">{data?.workshopEvolutions.map(item => <article key={item.id} className={`rounded-2xl border p-4 ${item.testRecord ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'}`}><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-black text-slate-900">{shortDate(item.date)} · {item.attendanceCount} presentes</p><div className="flex items-center gap-2"><span className="text-xs font-bold text-slate-500">{item.startTime}–{item.endTime}</span>{item.testRecord && <button type="button" onClick={() => void act({ action: 'deleteTestWorkshopEvolution', evolutionId: item.id }, 'Sesión de prueba eliminada.')} className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-2.5 py-1.5 text-[10px] font-black text-white"><Trash2 className="h-3 w-3" /> Eliminar prueba</button>}</div></div><p className="mt-2 text-sm font-bold text-slate-700">{item.summary}</p><p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-500">{item.activities}</p></article>)}{!data?.workshopEvolutions.length && <p className="text-sm font-bold text-slate-500">Todavía no hay sesiones registradas.</p>}</div></section></div>}
 
       {tab === 'ACCESOS' && <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_1.3fr]">
         <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700"><Link2 className="h-6 w-6" /></div><h2 className="mt-4 text-xl font-black text-slate-950">Enlace general para evaluar</h2><p className="mt-2 text-sm leading-relaxed text-slate-500">Compártelo con los alumnos. Cada uno se identifica una vez, elige a la persona y completa su evaluación. No necesitas crear cuentas ni asignaciones.</p><div className="mt-4 break-all rounded-2xl bg-slate-50 p-3 font-mono text-xs text-slate-600">{data?.portalUrl}</div><button type="button" onClick={() => copy(data?.portalUrl || '', 'Enlace general')} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-black text-white"><Copy className="h-4 w-4" /> Copiar enlace</button><button type="button" onClick={async () => { if (!confirm('¿Cambiar el enlace general? El enlace antiguo dejará de abrir nuevos accesos.')) return; const result = await act({ action: 'rotatePortal' }, 'Enlace general renovado.'); if (result?.portalUrl) setData(current => current ? { ...current, portalUrl: result.portalUrl } : current); }} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-600"><RotateCcw className="h-4 w-4" /> Renovar enlace general</button></section>
         <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6 text-emerald-600" /><div><h2 className="text-xl font-black text-slate-950">Alumnos evaluadores</h2><p className="text-sm text-slate-500">Solo pueden ver y exportar las evaluaciones que realizaron.</p></div></div><div className="mt-4 space-y-3">{data?.evaluators.map(person => <article key={person.id} className={`rounded-2xl border p-4 ${person.testRecord ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'}`}><div className="flex flex-col gap-3 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="font-black text-slate-900">{person.fullName}</p><p className="truncate text-xs font-medium text-slate-500">{person.email} · {person.university || 'Sin universidad'} · {person.evaluationCount} evaluación(es)</p></div><div className="flex flex-wrap gap-2"><button type="button" onClick={async () => { const result = await act({ action: 'renewEvaluatorAccess', evaluatorId: person.id }, 'Acceso personal renovado.'); await copy(result.recoveryUrl, 'Enlace personal'); }} className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-700">Copiar acceso</button><button type="button" onClick={() => void act({ action: 'setEvaluatorActive', evaluatorId: person.id, active: !person.active }, person.active ? 'Acceso pausado.' : 'Acceso reactivado.')} className={`rounded-xl px-3 py-2 text-xs font-black ${person.active ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>{person.active ? 'Pausar' : 'Reactivar'}</button>{person.testRecord && <button type="button" onClick={() => void act({ action: 'deleteTestEvaluator', evaluatorId: person.id }, 'Evaluador de prueba eliminado.')} className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-3 py-2 text-xs font-black text-white"><Trash2 className="h-3.5 w-3.5" /> Eliminar prueba</button>}</div></div></article>)}</div></section>
       </div>}
 
-      {editing && <ParticipantDialog initial={editing === 'NEW' ? undefined : editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setMessage('Persona guardada.'); void load(true); }} />}
+      {editing && <ParticipantDialog initial={editing === 'NEW' ? undefined : editing} onClose={() => setEditing(null)} onSaved={async participant => {
+        setData(current => current ? {
+          ...current,
+          participants: [participant, ...current.participants.filter(item => item.id !== participant.id)].sort((a, b) => a.fullName.localeCompare(b.fullName, 'es')),
+          archivedParticipants: current.archivedParticipants.filter(item => item.id !== participant.id),
+        } : current);
+        setEditing(null);
+        setMessage('Persona guardada.');
+        await load(true);
+      }} />}
     </div>
   );
 }

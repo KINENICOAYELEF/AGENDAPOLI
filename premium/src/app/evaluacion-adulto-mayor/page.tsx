@@ -11,6 +11,7 @@ import {
   Link2,
   LogOut,
   Plus,
+  RefreshCw,
   Search,
   ShieldCheck,
   UserRound,
@@ -29,11 +30,23 @@ const personDefaults = {
 };
 
 async function portalPost(body: any) {
-  const response = await fetch('/api/adulto-mayor/portal', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 20_000);
+  let response: Response;
+  try {
+    response = await fetch('/api/adulto-mayor/portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+  } catch (error: any) {
+    if (error?.name === 'AbortError') throw new Error('La conexión tardó demasiado. Reintenta sin perder tus datos.');
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
+  }
   const payload = await response.json();
   if (!response.ok || !payload.ok) {
     const error: any = new Error(payload.error || 'No se pudo completar la solicitud.');
@@ -55,12 +68,24 @@ export default function OlderAdultPublicEvaluationPage() {
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [newPerson, setNewPerson] = useState({ ...personDefaults });
+  const [unknownBirthDate, setUnknownBirthDate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState<OlderAdultEvaluation | null>(null);
   const [copied, setCopied] = useState(false);
+  const [bootAttempt, setBootAttempt] = useState(0);
 
   const loadPortal = async () => {
-    const response = await fetch('/api/adulto-mayor/portal', { cache: 'no-store' });
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 20_000);
+    let response: Response;
+    try {
+      response = await fetch(`/api/adulto-mayor/portal?actualizar=${Date.now()}`, { cache: 'no-store', signal: controller.signal });
+    } catch (error: any) {
+      if (error?.name === 'AbortError') throw new Error('La conexión tardó demasiado. Reintenta para continuar.');
+      throw error;
+    } finally {
+      window.clearTimeout(timer);
+    }
     const payload = await response.json();
     if (!response.ok || !payload.ok) throw new Error(payload.error || 'No se pudo abrir el portal.');
     if (payload.data.needsRegistration) {
@@ -76,6 +101,7 @@ export default function OlderAdultPublicEvaluationPage() {
     let active = true;
     const boot = async () => {
       setLoading(true);
+      setFatalError('');
       try {
         const params = new URLSearchParams(window.location.search);
         const access = params.get('acceso');
@@ -96,7 +122,7 @@ export default function OlderAdultPublicEvaluationPage() {
     };
     void boot();
     return () => { active = false; };
-  }, []);
+  }, [bootAttempt]);
 
   const filteredParticipants = useMemo(() => {
     const query = search.trim().toLocaleLowerCase('es');
@@ -136,16 +162,21 @@ export default function OlderAdultPublicEvaluationPage() {
 
   const createPerson = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!newPerson.birthDate && !unknownBirthDate) {
+      setFormError('Registra la fecha de nacimiento o marca que no se conoce. La edad permite interpretar las pruebas.');
+      return;
+    }
     setCreating(true);
     setFormError('');
     try {
-      const data = await portalPost({ action: 'createParticipant', participant: newPerson });
+      const data = await portalPost({ action: 'createParticipant', participant: { ...newPerson, birthDate: unknownBirthDate ? '' : newPerson.birthDate } });
       setPortal(current => current ? {
         ...current,
         participants: [...current.participants, data.participant].sort((a, b) => a.fullName.localeCompare(b.fullName, 'es')),
       } : current);
       setShowCreate(false);
       setNewPerson({ ...personDefaults });
+      setUnknownBirthDate(false);
       await startEvaluation(data.participant.id);
     } catch (error: any) {
       setFormError(error?.message || 'No se pudo crear la persona.');
@@ -193,7 +224,8 @@ export default function OlderAdultPublicEvaluationPage() {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600"><ShieldCheck className="h-7 w-7" /></div>
           <h1 className="mt-5 text-xl font-black text-slate-900">Acceso no disponible</h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">{fatalError}</p>
-          <p className="mt-4 text-xs text-slate-400">Vuelve a abrir el enlace compartido por el equipo del Taller de Adulto Mayor.</p>
+          <button type="button" onClick={() => setBootAttempt(value => value + 1)} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-black text-white"><RefreshCw className="h-4 w-4" /> Reintentar</button>
+          <p className="mt-4 text-xs text-slate-400">Si el problema continúa, vuelve a abrir el enlace compartido por el equipo del taller.</p>
         </section>
       </main>
     );
@@ -288,7 +320,11 @@ export default function OlderAdultPublicEvaluationPage() {
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <label className="sm:col-span-2"><span className="mb-1 block text-sm font-black text-slate-700">Nombre completo *</span><input required value={newPerson.fullName} onChange={event => setNewPerson(current => ({ ...current, fullName: event.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-teal-500" /></label>
               <label><span className="mb-1 block text-sm font-black text-slate-700">RUT</span><input value={newPerson.rut} onChange={event => setNewPerson(current => ({ ...current, rut: event.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-teal-500" /></label>
-              <label><span className="mb-1 block text-sm font-black text-slate-700">Fecha de nacimiento</span><input type="date" value={newPerson.birthDate} onChange={event => setNewPerson(current => ({ ...current, birthDate: event.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-teal-500" /></label>
+              <div>
+                <label><span className="mb-1 block text-sm font-black text-slate-700">Fecha de nacimiento *</span><input type="date" max={new Date().toISOString().slice(0, 10)} disabled={unknownBirthDate} value={newPerson.birthDate} onChange={event => setNewPerson(current => ({ ...current, birthDate: event.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-teal-500 disabled:bg-slate-100 disabled:text-slate-400" /></label>
+                <label className="mt-2 flex items-center gap-2 text-xs font-bold text-slate-500"><input type="checkbox" checked={unknownBirthDate} onChange={event => { setUnknownBirthDate(event.target.checked); if (event.target.checked) setNewPerson(current => ({ ...current, birthDate: '' })); }} className="h-4 w-4 accent-teal-700" /> No se conoce la fecha</label>
+                <p className="mt-1 text-[11px] leading-relaxed text-slate-400">La edad mejora la interpretación de fuerza, STS30 y potencia.</p>
+              </div>
               <label><span className="mb-1 block text-sm font-black text-slate-700">Sexo para referencias</span><select value={newPerson.sex} onChange={event => setNewPerson(current => ({ ...current, sex: event.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-teal-500"><option value="NO_ESPECIFICA">No especifica</option><option value="MUJER">Mujer</option><option value="HOMBRE">Hombre</option></select></label>
               <label><span className="mb-1 block text-sm font-black text-slate-700">Comuna</span><input value={newPerson.commune} onChange={event => setNewPerson(current => ({ ...current, commune: event.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-teal-500" /></label>
               <label><span className="mb-1 block text-sm font-black text-slate-700">Teléfono</span><input value={newPerson.phone} onChange={event => setNewPerson(current => ({ ...current, phone: event.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-teal-500" /></label>
@@ -298,7 +334,7 @@ export default function OlderAdultPublicEvaluationPage() {
               <label className="sm:col-span-2"><span className="mb-1 block text-sm font-black text-slate-700">Con quién vive / red de apoyo</span><textarea value={newPerson.supportNetwork} onChange={event => setNewPerson(current => ({ ...current, supportNetwork: event.target.value }))} rows={2} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-teal-500" /></label>
             </div>
             {formError && <p className="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700">{formError}</p>}
-            <button disabled={creating} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-700 px-5 py-3.5 text-sm font-black text-white disabled:opacity-50">{creating ? 'Creando…' : 'Crear y comenzar evaluación'}<ArrowRight className="h-4 w-4" /></button>
+            <button disabled={creating || (!newPerson.birthDate && !unknownBirthDate)} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-700 px-5 py-3.5 text-sm font-black text-white disabled:opacity-50">{creating ? 'Creando…' : 'Crear y comenzar evaluación'}<ArrowRight className="h-4 w-4" /></button>
           </form>
         </div>
       )}

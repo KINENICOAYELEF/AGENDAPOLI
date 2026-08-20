@@ -14,6 +14,24 @@ const empty = (attendanceCount = 0) => ({
   adaptations: '', groupResponse: '', incidents: '', nextPlan: '', transcription: '', attendanceCount,
 });
 
+const transcriptionFields = [
+  'summary', 'activities', 'dosage', 'adaptations', 'groupResponse', 'incidents', 'nextPlan', 'transcription',
+] as const;
+
+type EvolutionDraft = ReturnType<typeof empty>;
+type TranscriptionProposal = Partial<Pick<EvolutionDraft, typeof transcriptionFields[number]>>;
+
+const fieldLabels: Record<typeof transcriptionFields[number], string> = {
+  summary: 'Resumen breve',
+  activities: 'Actividades realizadas',
+  dosage: 'Dosis e intensidad',
+  adaptations: 'Adaptaciones',
+  groupResponse: 'Respuesta del grupo',
+  incidents: 'Síntomas o incidentes',
+  nextPlan: 'Próxima sesión',
+  transcription: 'Transcripción original',
+};
+
 export function WorkshopEvolutionRecorder({ attendanceCount, onSaved }: {
   attendanceCount: number;
   onSaved: (evolution: WorkshopEvolution) => void;
@@ -24,6 +42,7 @@ export function WorkshopEvolutionRecorder({ attendanceCount, onSaved }: {
   const [saving, setSaving] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState('');
+  const [proposal, setProposal] = useState<TranscriptionProposal | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -76,12 +95,31 @@ export function WorkshopEvolutionRecorder({ attendanceCount, onSaved }: {
       });
       const payload = await response.json();
       if (!response.ok || !payload.ok) throw new Error(payload.error || 'No se pudo ordenar el audio.');
-      setDraft(current => ({ ...current, ...payload.data, attendanceCount }));
+      const safeProposal = Object.fromEntries(
+        transcriptionFields
+          .filter(key => typeof payload.data?.[key] === 'string')
+          .map(key => [key, String(payload.data[key]).trim()]),
+      ) as TranscriptionProposal;
+      setProposal(safeProposal);
     } catch (transcriptionError: any) {
       setError(transcriptionError?.message || 'No se pudo procesar el audio. Puedes completar el registro manualmente.');
     } finally {
       setProcessing(false);
     }
+  };
+
+  const applyProposal = (replaceExisting: boolean) => {
+    if (!proposal) return;
+    setDraft(current => {
+      const next = { ...current };
+      transcriptionFields.forEach(key => {
+        const suggested = proposal[key]?.trim();
+        if (!suggested) return;
+        if (replaceExisting || !String(current[key] || '').trim()) next[key] = suggested;
+      });
+      return { ...next, attendanceCount };
+    });
+    setProposal(null);
   };
 
   const save = async () => {
@@ -120,6 +158,30 @@ export function WorkshopEvolutionRecorder({ attendanceCount, onSaved }: {
       <div className="p-4 sm:p-6">
         {recording && <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4"><p className="flex items-center gap-2 text-sm font-black text-rose-800"><span className="h-2.5 w-2.5 animate-pulse rounded-full bg-rose-600" /> Grabando continuamente</p><p className="mt-2 text-xs leading-relaxed text-rose-700">Cuenta: qué hicieron, dosis o tiempos, adaptaciones, respuesta general, incidentes y qué proponen para la próxima sesión.</p></div>}
         {processing && <div className="mb-5 flex items-center gap-3 rounded-2xl bg-indigo-50 p-4 text-sm font-black text-indigo-800"><Sparkles className="h-5 w-5 animate-pulse" /> Ordenando el dictado para que lo revises…</div>}
+        {proposal && (
+          <div className="mb-5 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 sm:p-5">
+            <div className="flex items-start gap-3">
+              <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-indigo-700" />
+              <div>
+                <h3 className="text-sm font-black text-indigo-950">Dictado listo para revisar</h3>
+                <p className="mt-1 text-xs leading-relaxed text-indigo-800">Nada se ha cambiado todavía. Puedes completar solo los campos vacíos o reemplazar el contenido actual de forma explícita.</p>
+              </div>
+            </div>
+            <div className="mt-4 max-h-64 space-y-2 overflow-auto rounded-xl bg-white/80 p-3">
+              {transcriptionFields.filter(key => key !== 'transcription' && proposal[key]).map(key => (
+                <div key={key} className="border-b border-indigo-100 pb-2 last:border-0 last:pb-0">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-indigo-500">{fieldLabels[key]}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-slate-700">{proposal[key]}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+              <button type="button" onClick={() => applyProposal(false)} className="rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-black text-white">Completar campos vacíos</button>
+              <button type="button" onClick={() => applyProposal(true)} className="rounded-xl border border-indigo-300 bg-white px-4 py-2.5 text-sm font-black text-indigo-800">Reemplazar contenido</button>
+              <button type="button" onClick={() => setProposal(null)} className="rounded-xl px-4 py-2.5 text-sm font-black text-slate-500">Descartar</button>
+            </div>
+          </div>
+        )}
         {error && <div className="mb-5 rounded-2xl bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div>}
         <div className="grid gap-4 sm:grid-cols-4">
           <label><span className="mb-1 block text-xs font-black text-slate-500">Fecha</span><input type="date" value={draft.date} onChange={event => update('date', event.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2.5" /></label>
@@ -141,11 +203,10 @@ export function WorkshopEvolutionRecorder({ attendanceCount, onSaved }: {
           ))}
         </div>
         <div className="mt-5 flex flex-wrap justify-end gap-2">
-          <button type="button" onClick={() => setDraft(empty(attendanceCount))} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-black text-slate-600"><Trash2 className="h-4 w-4" /> Limpiar</button>
+          <button type="button" onClick={() => { setDraft(empty(attendanceCount)); setProposal(null); }} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-black text-slate-600"><Trash2 className="h-4 w-4" /> Limpiar</button>
           <button type="button" onClick={save} disabled={saving || processing || recording} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 disabled:opacity-40"><Save className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar evolución grupal'}</button>
         </div>
       </div>
     </section>
   );
 }
-
