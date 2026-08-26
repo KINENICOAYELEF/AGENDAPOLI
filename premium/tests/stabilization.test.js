@@ -474,6 +474,36 @@ describe('Simulador clínico por estaciones de voz — beta docente', () => {
     assert.match(hook, /failedModelsRef/);
   });
 
+  test('la conversación Live evita eco, detecta fin de turno y permite recuperar una respuesta ausente', () => {
+    const tokenRoute = readFileSync(new URL('../src/app/api/simulador-estaciones/sessions/[sessionId]/live-token/route.ts', import.meta.url), 'utf8');
+    const hook = readFileSync(new URL('../src/hooks/useResumableGeminiLive.ts', import.meta.url), 'utf8');
+    const ui = readFileSync(new URL('../src/components/simulador-estaciones/SimuladorEstacionesBeta.tsx', import.meta.url), 'utf8');
+    assert.match(tokenRoute, /automaticActivityDetection/);
+    assert.match(tokenRoute, /silenceDurationMs: 650/);
+    assert.match(hook, /activeAudioRef\.current > 0/);
+    assert.match(hook, /audioStreamEnd: true/);
+    assert.match(ui, /El paciente no respondió/);
+    assert.match(ui, /Pausar mi micrófono/);
+    assert.match(ui, /Reactivar mi micrófono/);
+  });
+
+  test('el paciente no regala diagnósticos ni invierte el interrogatorio', () => {
+    const prompts = readFileSync(new URL('../src/lib/simulador-estaciones/prompts.ts', import.meta.url), 'utf8');
+    assert.match(prompts, /Nunca inviertas los roles/);
+    assert.match(prompts, /NO menciones la sospecha de derivación/);
+    assert.match(prompts, /NO preguntes "¿qué cree usted\?"/);
+    assert.match(prompts, /Después de responder, guarda silencio/);
+  });
+
+  test('la navegación visual hace visible el caso y confirma cada cambio de estación', () => {
+    const ui = readFileSync(new URL('../src/components/simulador-estaciones/SimuladorEstacionesBeta.tsx', import.meta.url), 'utf8');
+    assert.match(ui, /Información inicial del caso/);
+    assert.match(ui, /Ahora:/);
+    assert.match(ui, /Después:/);
+    assert.match(ui, /Etapa guardada/);
+    assert.match(ui, /Entrar a la siguiente etapa/);
+  });
+
   test('el cierre semántico es estructurado y obligatorio antes de avanzar', () => {
     const types = readFileSync(new URL('../src/lib/simulador-estaciones/types.ts', import.meta.url), 'utf8');
     const route = readFileSync(new URL('../src/app/api/simulador-estaciones/sessions/[sessionId]/route.ts', import.meta.url), 'utf8');

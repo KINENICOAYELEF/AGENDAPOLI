@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality } from '@google/genai';
+import { EndSensitivity, GoogleGenAI, Modality, StartSensitivity } from '@google/genai';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAdminDb, requireTeacher } from '@/lib/server/firebaseAdmin';
 import { stationApiError, stationApiSuccess } from '@/lib/simulador-estaciones/api';
@@ -71,6 +71,17 @@ export async function POST(request: Request, context: RouteContext) {
                 systemInstruction,
                 inputAudioTranscription: {},
                 outputAudioTranscription: {},
+                realtimeInputConfig: {
+                  automaticActivityDetection: {
+                    disabled: false,
+                    // Reduce activaciones por ruido/eco y cierra el turno tras
+                    // una pausa clínica natural, sin dejar al paciente esperando.
+                    startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW,
+                    endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_HIGH,
+                    prefixPaddingMs: 100,
+                    silenceDurationMs: 650,
+                  },
+                },
                 // Un handle pertenece a la sesión/modelo que lo emitió. Si el
                 // cliente pidió cambiar de modelo por falla, reconstruimos el
                 // contexto desde el checkpoint en vez de reutilizarlo.

@@ -87,6 +87,7 @@ export function useResumableGeminiLive({
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const playbackTimeRef = useRef(0);
   const activeAudioRef = useRef(0);
+  const audioSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const manualCloseRef = useRef(false);
   const connectingRef = useRef(false);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -102,6 +103,9 @@ export function useResumableGeminiLive({
 
   useEffect(() => {
     micOpenRef.current = isMicOpen;
+    streamRef.current?.getAudioTracks().forEach((track) => {
+      track.enabled = isMicOpen;
+    });
   }, [isMicOpen]);
 
   useEffect(() => {
@@ -124,6 +128,16 @@ export function useResumableGeminiLive({
     return payload.data;
   }, [sessionId, station]);
 
+  const stopPlayback = useCallback(() => {
+    audioSourcesRef.current.forEach((source) => {
+      try { source.stop(); } catch { /* La fuente ya pudo terminar. */ }
+    });
+    audioSourcesRef.current.clear();
+    activeAudioRef.current = 0;
+    playbackTimeRef.current = outputContextRef.current?.currentTime || 0;
+    setIsSpeaking(false);
+  }, []);
+
   const playAudio = useCallback((base64: string) => {
     const context = outputContextRef.current;
     if (!context || !base64) return;
@@ -141,15 +155,18 @@ export function useResumableGeminiLive({
     playbackTimeRef.current = Math.max(playbackTimeRef.current, context.currentTime);
     source.start(playbackTimeRef.current);
     playbackTimeRef.current += buffer.duration;
+    audioSourcesRef.current.add(source);
     activeAudioRef.current += 1;
     setIsSpeaking(true);
     source.onended = () => {
+      audioSourcesRef.current.delete(source);
       activeAudioRef.current = Math.max(0, activeAudioRef.current - 1);
       if (activeAudioRef.current === 0) setIsSpeaking(false);
     };
   }, []);
 
   const handleMessage = useCallback((message: LiveServerMessage) => {
+    if (message.serverContent?.interrupted) stopPlayback();
     if (message.data) playAudio(message.data);
     const content = message.serverContent;
     if (content?.inputTranscription?.text) {
@@ -176,7 +193,7 @@ export function useResumableGeminiLive({
       gracefulGoAwayRef.current = true;
       setState('RECONNECTING');
     }
-  }, [onResumeHandle, playAudio, station]);
+  }, [onResumeHandle, playAudio, station, stopPlayback]);
 
   const openLiveSession = useCallback(async (isReconnect: boolean) => {
     if (connectingRef.current || manualCloseRef.current) return;
@@ -198,6 +215,8 @@ export function useResumableGeminiLive({
           onmessage: handleMessage,
           onerror: (event) => {
             console.error('[simulador-estaciones] Live error', event);
+            setState('RECONNECTING');
+            try { liveSessionRef.current?.close(); } catch { /* onclose gestiona el reintento. */ }
           },
           onclose: () => {
             liveSessionRef.current = null;
@@ -286,7 +305,9 @@ export function useResumableGeminiLive({
       for (let index = 0; index < samples.length; index += 1) energy += samples[index] ** 2;
       setVolume(micOpenRef.current ? Math.sqrt(energy / samples.length) : 0);
       const session = liveSessionRef.current;
-      if (!session || !micOpenRef.current) return;
+      // Evita que la voz del paciente reproducida por los parlantes vuelva a
+      // entrar al modelo como si fuera una intervención del estudiante.
+      if (!session || !micOpenRef.current || activeAudioRef.current > 0) return;
       try {
         session.sendRealtimeInput({
           audio: {
@@ -305,6 +326,8 @@ export function useResumableGeminiLive({
     manualCloseRef.current = false;
     startedAtRef.current = Date.now();
     failedModelsRef.current.clear();
+    setIsMicOpen(true);
+    micOpenRef.current = true;
     try {
       await ensureMicrophone();
       await openLiveSession(false);
@@ -324,6 +347,7 @@ export function useResumableGeminiLive({
       // Cierre idempotente.
     }
     liveSessionRef.current = null;
+    stopPlayback();
     if (stopMic) {
       processorRef.current?.disconnect();
       sourceRef.current?.disconnect();
@@ -339,7 +363,7 @@ export function useResumableGeminiLive({
     setState('IDLE');
     setIsSpeaking(false);
     setVolume(0);
-  }, []);
+  }, [stopPlayback]);
 
   const retry = useCallback(async () => {
     manualCloseRef.current = false;
@@ -352,6 +376,19 @@ export function useResumableGeminiLive({
     if (!liveSessionRef.current) return false;
     liveSessionRef.current.sendClientContent({ turns: text, turnComplete: true });
     return true;
+  }, []);
+
+  const toggleMic = useCallback(() => {
+    const next = !micOpenRef.current;
+    micOpenRef.current = next;
+    setIsMicOpen(next);
+    streamRef.current?.getAudioTracks().forEach((track) => {
+      track.enabled = next;
+    });
+    if (!next) {
+      setVolume(0);
+      try { liveSessionRef.current?.sendRealtimeInput({ audioStreamEnd: true }); } catch { /* La reconexión mantiene el estado. */ }
+    }
   }, []);
 
   useEffect(() => () => disconnect(true), [disconnect]);
@@ -369,6 +406,6 @@ export function useResumableGeminiLive({
     retry,
     disconnect,
     sendText,
-    toggleMic: () => setIsMicOpen((value) => !value),
+    toggleMic,
   };
 }

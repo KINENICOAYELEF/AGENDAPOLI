@@ -242,9 +242,20 @@ function SessionShell({ session, onBack, onSessionChange }: {
 }) {
   const currentDefinition = STATION_DEFINITIONS[session.currentStationIndex];
   const allStationsComplete = STATION_KEYS.every((key) => session.stations[key]?.status === 'COMPLETED');
+  const [transition, setTransition] = useState<{ fromIndex: number; toIndex: number } | null>(null);
+  const handleSessionChange = useCallback((updated: PublicStationSession) => {
+    if (
+      updated.status !== 'COMPLETED'
+      && updated.currentStationIndex > session.currentStationIndex
+    ) {
+      setTransition({ fromIndex: session.currentStationIndex, toIndex: updated.currentStationIndex });
+    }
+    onSessionChange(updated);
+  }, [onSessionChange, session.currentStationIndex]);
+
   return (
     <main className="min-h-screen bg-slate-50 pb-10">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-3 sm:px-6">
           <button onClick={onBack} className="rounded-xl border border-slate-200 p-2.5 text-slate-600"><ArrowLeft className="h-5 w-5" /></button>
           <div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-900">{regionLabel(session.region)} · {String(session.visibleCase?.nombre || 'Caso clínico')}</p><p className="text-xs text-slate-500">Beta docente · guardado continuo</p></div>
@@ -254,13 +265,20 @@ function SessionShell({ session, onBack, onSessionChange }: {
 
       <div className="mx-auto max-w-7xl space-y-5 px-3 py-5 sm:px-6">
         <StationStepper session={session} />
+        {session.status !== 'COMPLETED' && !allStationsComplete && <CaseOverview session={session} />}
         {session.status === 'COMPLETED' && session.evaluation ? (
           <ResultsView session={session} />
         ) : allStationsComplete ? (
           <EvaluationPending session={session} onSessionChange={onSessionChange} />
+        ) : transition && transition.toIndex === session.currentStationIndex ? (
+          <StationTransition
+            fromIndex={transition.fromIndex}
+            toIndex={transition.toIndex}
+            onContinue={() => setTransition(null)}
+          />
         ) : (
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
-            <div className="xl:hidden"><CaseSidebar session={session} /></div>
+            {session.currentStationIndex > 0 && <div className="xl:hidden"><CaseSidebar session={session} /></div>}
             <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-100 px-4 py-5 sm:px-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -269,9 +287,9 @@ function SessionShell({ session, onBack, onSessionChange }: {
                 </div>
               </div>
               {currentDefinition.kind === 'WRITTEN' ? (
-                <WrittenWorkspace key={session.currentStation} session={session} onSessionChange={onSessionChange} />
+                <WrittenWorkspace key={session.currentStation} session={session} onSessionChange={handleSessionChange} />
               ) : (
-                <VoiceWorkspace key={session.currentStation} session={session} station={session.currentStation as VoiceStationKey} onSessionChange={onSessionChange} />
+                <VoiceWorkspace key={session.currentStation} session={session} station={session.currentStation as VoiceStationKey} onSessionChange={handleSessionChange} />
               )}
             </section>
             <div className="hidden xl:block"><CaseSidebar session={session} /></div>
@@ -320,35 +338,78 @@ function EvaluationPending({ session, onSessionChange }: { session: PublicStatio
 }
 
 function StationStepper({ session }: { session: PublicStationSession }) {
+  const current = STATION_DEFINITIONS[session.currentStationIndex];
+  const next = STATION_DEFINITIONS[session.currentStationIndex + 1];
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
-      <div className="flex min-w-[760px] gap-1">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-widest text-indigo-600">Etapa {session.currentStationIndex + 1} de {STATION_DEFINITIONS.length}</p>
+          <p className="mt-1 font-black text-slate-950">Ahora: {current?.title}</p>
+          {next && <p className="mt-1 text-xs text-slate-500">Después: {next.title}</p>}
+        </div>
+        <span className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600">{Math.round(((session.currentStationIndex) / STATION_DEFINITIONS.length) * 100)}% completado</span>
+      </div>
+      <div className="mt-4 grid grid-cols-7 gap-1.5" aria-label="Progreso del examen">
         {STATION_DEFINITIONS.map((station, index) => {
           const done = session.stations[station.key]?.status === 'COMPLETED';
           const active = index === session.currentStationIndex && session.status !== 'COMPLETED';
-          return <div key={station.key} className={`flex flex-1 items-center gap-2 rounded-xl px-3 py-2.5 ${active ? 'bg-indigo-600 text-white' : done ? 'bg-emerald-50 text-emerald-800' : 'text-slate-400'}`}><span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${active ? 'bg-white/20' : done ? 'bg-emerald-200' : 'bg-slate-100'}`}>{done ? <Check className="h-3.5 w-3.5" /> : index + 1}</span><span className="truncate text-xs font-extrabold">{station.shortTitle}</span></div>;
+          return <div key={station.key} title={station.title} className={`h-2.5 rounded-full transition ${active ? 'bg-indigo-600 ring-2 ring-indigo-100' : done ? 'bg-emerald-500' : 'bg-slate-200'}`}><span className="sr-only">{station.shortTitle}: {done ? 'completada' : active ? 'actual' : 'pendiente'}</span></div>;
         })}
       </div>
     </div>
   );
 }
 
-function CaseSidebar({ session }: { session: PublicStationSession }) {
+function CaseOverview({ session }: { session: PublicStationSession }) {
   const visible = session.visibleCase as Record<string, string>;
+  return (
+    <section className="rounded-[24px] border border-indigo-200 bg-gradient-to-br from-white to-indigo-50 p-4 shadow-sm sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-indigo-600"><BookOpenCheck className="h-4 w-4" /> Información inicial del caso</p>
+          <h2 className="mt-2 text-xl font-black text-slate-950">{visible.nombre || 'Caso simulado'}</h2>
+          <p className="mt-1 text-sm text-slate-600">{visible.edad} · {visible.ocupacion}</p>
+        </div>
+        <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-indigo-700 ring-1 ring-indigo-100">Disponible durante todo el examen</span>
+      </div>
+      <dl className="mt-4 grid gap-3 md:grid-cols-[1.25fr_1.25fr_0.5fr]">
+        <CaseDatum label="Motivo de consulta" value={visible.motivo_consulta} />
+        <CaseDatum label="Derivación" value={visible.derivacion} />
+        <CaseDatum label="Tiempo de evolución" value={visible.tiempo_evolucion} />
+      </dl>
+    </section>
+  );
+}
+
+function CaseDatum({ label, value }: { label: string; value?: string }) {
+  return <div className="rounded-2xl border border-white bg-white/90 p-3 shadow-sm"><dt className="text-[10px] font-black uppercase tracking-wider text-slate-400">{label}</dt><dd className="mt-1.5 text-sm font-semibold leading-5 text-slate-800">{value || 'No informado'}</dd></div>;
+}
+
+function StationTransition({ fromIndex, toIndex, onContinue }: { fromIndex: number; toIndex: number; onContinue: () => void }) {
+  const completed = STATION_DEFINITIONS[fromIndex];
+  const next = STATION_DEFINITIONS[toIndex];
+  return (
+    <section className="mx-auto max-w-2xl rounded-[28px] border border-emerald-200 bg-white p-6 text-center shadow-sm sm:p-9">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-100 text-emerald-700"><Check className="h-8 w-8" /></div>
+      <p className="mt-5 text-xs font-black uppercase tracking-widest text-emerald-700">Etapa guardada</p>
+      <h1 className="mt-2 text-2xl font-black text-slate-950">{completed?.title} completada</h1>
+      <div className="mx-auto mt-5 max-w-lg rounded-2xl bg-slate-50 p-4 text-left">
+        <p className="text-[11px] font-black uppercase tracking-widest text-indigo-600">A continuación</p>
+        <p className="mt-1 text-lg font-black text-slate-950">{next?.title}</p>
+        <p className="mt-2 text-sm leading-6 text-slate-600">{next?.description}</p>
+        <p className="mt-3 text-xs font-bold text-slate-500">Tiempo: {(next?.durationSeconds || 0) / 60} minutos · La conversación y los datos anteriores permanecen guardados.</p>
+      </div>
+      <button onClick={onContinue} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-4 text-sm font-black text-white sm:w-auto"><ArrowRight className="h-4 w-4" /> Entrar a la siguiente etapa</button>
+    </section>
+  );
+}
+
+function CaseSidebar({ session }: { session: PublicStationSession }) {
   const priorKeys = STATION_KEYS.slice(0, session.currentStationIndex);
   const hasPlanning = session.stations.PLANIFICACION_ESCRITA?.status === 'COMPLETED';
   return (
-    <aside className="space-y-4">
-      <div className="rounded-[24px] bg-slate-950 p-5 text-white shadow-lg">
-        <p className="text-xs font-black uppercase tracking-widest text-cyan-300">Ficha disponible</p>
-        <h2 className="mt-3 text-2xl font-black">{visible.nombre || 'Caso simulado'}</h2>
-        <p className="mt-1 text-sm text-slate-300">{visible.edad} · {visible.ocupacion}</p>
-        <dl className="mt-5 space-y-4 text-sm">
-          <div><dt className="text-xs font-bold uppercase text-slate-500">Motivo de consulta</dt><dd className="mt-1 leading-6 text-slate-100">{visible.motivo_consulta}</dd></div>
-          <div><dt className="text-xs font-bold uppercase text-slate-500">Derivación</dt><dd className="mt-1 leading-6 text-slate-100">{visible.derivacion}</dd></div>
-          <div><dt className="text-xs font-bold uppercase text-slate-500">Evolución</dt><dd className="mt-1 leading-6 text-slate-100">{visible.tiempo_evolucion}</dd></div>
-        </dl>
-      </div>
+    <aside className="space-y-4 xl:sticky xl:top-5 xl:self-start">
       {priorKeys.length > 0 && (
         <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="flex items-center gap-2 font-black text-slate-950"><BookOpenCheck className="h-4 w-4 text-indigo-600" /> Antecedentes reunidos</h2>
@@ -378,7 +439,7 @@ function CaseSidebar({ session }: { session: PublicStationSession }) {
           </div>
         </div>
       )}
-      <div className="rounded-[24px] border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950"><strong className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> El caso no cambia</strong><p className="mt-2">Cerrar la pestaña, cambiar de dispositivo o reconectar la voz no genera un paciente nuevo.</p></div>
+      <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-5 text-sm leading-6 text-emerald-950"><strong className="flex items-center gap-2"><Save className="h-4 w-4" /> Guardado automático</strong><p className="mt-2">Puedes cerrar la pestaña o reconectar la voz. Volverás al mismo caso y a la etapa pendiente.</p></div>
     </aside>
   );
 }
@@ -398,6 +459,8 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
   const [closingReady, setClosingReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [nudging, setNudging] = useState(false);
+  const [showResponseRecovery, setShowResponseRecovery] = useState(false);
   const resumeHandleRef = useRef('');
   const transcriptRef = useRef<TranscriptTurn[]>(restoredTranscript || []);
   const remainingRef = useRef(progress.remainingSeconds);
@@ -572,6 +635,14 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
     }
   };
 
+  const requestMissingResponse = () => {
+    if (nudging || live.isSpeaking) return;
+    setNudging(true);
+    const sent = live.sendText('[CONTROL TÉCNICO] La intervención del estudiante ya terminó y no se reprodujo una respuesta. Continúa ahora exactamente desde el último turno, sin saludar, sin repetir información previa, sin dar pistas y respetando el rol de esta estación.');
+    if (!sent) setLocalError('No se pudo solicitar la respuesta. Usa “Reintentar voz” para reconectar sin perder el avance.');
+    window.setTimeout(() => setNudging(false), 5000);
+  };
+
   const finish = async () => {
     setSaving(true);
     setLocalError('');
@@ -599,14 +670,49 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
 
   const connected = live.state === 'CONNECTED';
   const reconnecting = live.state === 'RECONNECTING' || live.state === 'CONNECTING';
+  const lastTurn = live.transcript.at(-1);
+  const statusTone = live.isSpeaking
+    ? 'border-indigo-200 bg-indigo-50'
+    : connected && live.isMicOpen
+      ? 'border-emerald-200 bg-emerald-50'
+      : connected
+        ? 'border-rose-200 bg-rose-50'
+        : reconnecting
+          ? 'border-amber-200 bg-amber-50'
+          : 'border-slate-200 bg-slate-50';
+  const statusTitle = live.isSpeaking
+    ? 'Paciente respondiendo'
+    : connected && live.isMicOpen
+      ? 'Tu micrófono está activo'
+      : connected
+        ? 'Tu micrófono está pausado'
+        : reconnecting
+          ? 'Reconectando sin descontar tiempo'
+          : live.state === 'ERROR'
+            ? 'La voz necesita reintento'
+            : 'Lista para comenzar';
+  const statusDetail = live.isSpeaking
+    ? 'Espera a que termine antes de volver a hablar.'
+    : connected && live.isMicOpen
+      ? 'Habla con naturalidad; el paciente responderá al terminar tu frase.'
+      : connected
+        ? 'La estación sigue conectada, pero no se envía tu audio.'
+        : 'El cronómetro comienza cuando conectas la voz.';
+
+  useEffect(() => {
+    setShowResponseRecovery(false);
+    if (!connected || live.isSpeaking || lastTurn?.role !== 'STUDENT') return;
+    const timer = window.setTimeout(() => setShowResponseRecovery(true), 6000);
+    return () => window.clearTimeout(timer);
+  }, [connected, lastTurn?.id, lastTurn?.text, live.isSpeaking]);
 
   return (
     <div className="p-4 sm:p-6">
       <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
-        <div className={`rounded-2xl border p-4 ${connected ? 'border-emerald-200 bg-emerald-50' : reconnecting ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
+        <div className={`rounded-2xl border p-4 ${statusTone}`}>
           <div className="flex items-center gap-3">
-            <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${connected ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600'}`}>{connected ? <Radio className="h-5 w-5 animate-pulse" /> : reconnecting ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Mic className="h-5 w-5" />}</span>
-            <div><p className="font-black text-slate-900">{connected ? 'Estación en curso' : reconnecting ? 'Reconectando sin descontar tiempo' : live.state === 'ERROR' ? 'La voz necesita reintento' : 'Lista para comenzar'}</p><p className="mt-0.5 text-xs text-slate-500">{connected ? (live.isSpeaking ? 'La voz está respondiendo' : 'Micrófono escuchando') : 'El cronómetro comienza al conectar'}</p></div>
+            <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${live.isSpeaking ? 'bg-indigo-600 text-white' : connected && live.isMicOpen ? 'bg-emerald-600 text-white' : connected ? 'bg-rose-600 text-white' : 'bg-white text-slate-600'}`}>{live.isSpeaking ? <Radio className="h-5 w-5 animate-pulse" /> : reconnecting ? <LoaderCircle className="h-5 w-5 animate-spin" /> : live.isMicOpen ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}</span>
+            <div><p className="font-black text-slate-900">{statusTitle}</p><p className="mt-0.5 text-xs leading-5 text-slate-600">{statusDetail}</p></div>
           </div>
         </div>
         <div className={`rounded-2xl px-6 py-4 text-center ${remaining <= 60 ? 'bg-rose-600 text-white' : 'bg-slate-950 text-white'}`}><Clock3 className="mx-auto mb-1 h-4 w-4 opacity-70" /><span className="font-mono text-3xl font-black tabular-nums">{formatTime(remaining)}</span></div>
@@ -614,14 +720,15 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
 
       {(localError || live.error) && <div className="mt-4 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-800"><WifiOff className="mt-0.5 h-4 w-4 shrink-0" />{localError || live.error}</div>}
 
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="mt-5 grid gap-2 sm:flex sm:flex-wrap">
         {!connected && !reconnecting && !closing && <button onClick={() => void start()} className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3.5 text-sm font-black text-white sm:flex-none"><Play className="h-4 w-4" /> {progress.elapsedSeconds > 0 ? 'Reanudar estación' : 'Comenzar estación'}</button>}
         {live.state === 'ERROR' && <button onClick={() => void retryVoice()} className="flex items-center gap-2 rounded-2xl bg-amber-500 px-5 py-3.5 text-sm font-black text-white"><RefreshCcw className="h-4 w-4" /> Reintentar voz</button>}
-        {connected && <button onClick={live.toggleMic} className="flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700">{live.isMicOpen ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}{live.isMicOpen ? 'Silenciar' : 'Activar'}</button>}
-        {connected && !closing && <button onClick={askToClose} className="ml-auto flex items-center gap-2 rounded-2xl border border-slate-300 px-4 py-3 text-sm font-black text-slate-800"><CirclePause className="h-4 w-4" /> Terminar etapa</button>}
+        {connected && <button onClick={live.toggleMic} disabled={live.isSpeaking} aria-pressed={!live.isMicOpen} className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-black transition disabled:cursor-wait disabled:opacity-50 ${live.isMicOpen ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-600 bg-emerald-600 text-white'}`}>{live.isMicOpen ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}{live.isMicOpen ? 'Pausar mi micrófono' : 'Reactivar mi micrófono'}</button>}
+        {showResponseRecovery && !closing && <button onClick={requestMissingResponse} disabled={nudging} className="flex items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-black text-amber-900 disabled:opacity-50"><RefreshCcw className={`h-4 w-4 ${nudging ? 'animate-spin' : ''}`} /> {nudging ? 'Solicitando respuesta…' : 'El paciente no respondió'}</button>}
+        {connected && !closing && <button onClick={askToClose} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-300 px-4 py-3 text-sm font-black text-slate-800 sm:ml-auto"><CirclePause className="h-4 w-4" /> Finalizar esta etapa</button>}
       </div>
 
-      {connected && <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${Math.min(100, live.volume * 900)}%` }} /></div>}
+      {connected && live.isMicOpen && !live.isSpeaking && <div className="mt-4"><div className="mb-1 flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400"><span>Nivel de tu voz</span><span>{live.volume > 0.012 ? 'Audio detectado' : 'Habla para comprobar'}</span></div><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${Math.min(100, live.volume * 900)}%` }} /></div></div>}
 
       {closing && (
         <div className="mt-5 rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
@@ -640,11 +747,16 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
 }
 
 function TranscriptView({ transcript, compact = false }: { transcript: TranscriptTurn[]; compact?: boolean }) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (element) element.scrollTop = element.scrollHeight;
+  }, [transcript]);
   return (
     <div className={compact ? '' : 'mt-6 border-t border-slate-100 pt-5'}>
-      <div className="flex items-center justify-between"><h3 className="text-sm font-black text-slate-900">Registro recuperable</h3><span className="text-xs text-slate-400">{transcript.length} turnos</span></div>
-      <div className="mt-3 max-h-80 space-y-2 overflow-y-auto rounded-2xl bg-slate-50 p-3">
-        {transcript.length === 0 ? <p className="py-8 text-center text-sm text-slate-400">La transcripción aparecerá aquí al comenzar.</p> : transcript.map((turn) => <div key={turn.id} className={`rounded-xl p-3 text-sm leading-6 ${turn.role === 'STUDENT' ? 'ml-4 bg-indigo-600 text-white' : 'mr-4 border border-slate-200 bg-white text-slate-700'}`}><span className={`mb-1 block text-[10px] font-black uppercase tracking-widest ${turn.role === 'STUDENT' ? 'text-indigo-200' : 'text-slate-400'}`}>{turn.role === 'STUDENT' ? 'Estudiante' : turn.role === 'PATIENT' ? 'Paciente' : 'Comisión'}</span>{turn.text}</div>)}
+      <div className="flex items-center justify-between"><div><h3 className="text-sm font-black text-slate-900">Conversación guardada</h3><p className="mt-0.5 text-xs text-slate-500">Se conserva aunque cierres o reconectes.</p></div><span className="text-xs text-slate-400">{transcript.length} turnos</span></div>
+      <div ref={scrollRef} className="mt-3 max-h-80 space-y-3 overflow-y-auto rounded-2xl border border-slate-100 bg-slate-50 p-3 sm:p-4">
+        {transcript.length === 0 ? <p className="py-8 text-center text-sm text-slate-400">La conversación aparecerá aquí al comenzar.</p> : transcript.map((turn) => <div key={turn.id} className={`w-fit max-w-[92%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm ${turn.role === 'STUDENT' ? 'ml-auto rounded-br-md bg-indigo-600 text-white' : 'mr-auto rounded-bl-md border border-slate-200 bg-white text-slate-700'}`}><span className={`mb-1 block text-[10px] font-black uppercase tracking-widest ${turn.role === 'STUDENT' ? 'text-indigo-200' : 'text-slate-400'}`}>{turn.role === 'STUDENT' ? 'Estudiante' : turn.role === 'PATIENT' ? 'Paciente' : 'Comisión'}</span>{turn.text}</div>)}
       </div>
     </div>
   );
