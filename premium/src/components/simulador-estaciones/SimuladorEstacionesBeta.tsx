@@ -242,6 +242,7 @@ function SessionShell({ session, onBack, onSessionChange }: {
 }) {
   const currentDefinition = STATION_DEFINITIONS[session.currentStationIndex];
   const allStationsComplete = STATION_KEYS.every((key) => session.stations[key]?.status === 'COMPLETED');
+  const shellRef = useRef<HTMLElement | null>(null);
   const [transition, setTransition] = useState<{ fromIndex: number; toIndex: number } | null>(null);
   const handleSessionChange = useCallback((updated: PublicStationSession) => {
     if (
@@ -253,8 +254,15 @@ function SessionShell({ session, onBack, onSessionChange }: {
     onSessionChange(updated);
   }, [onSessionChange, session.currentStationIndex]);
 
+  useEffect(() => {
+    const shell = shellRef.current;
+    const appScroller = shell?.closest('.overflow-auto') as HTMLElement | null;
+    if (appScroller) appScroller.scrollTo({ top: 0, behavior: 'auto' });
+    else window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [session.id, session.currentStationIndex, transition]);
+
   return (
-    <main className="min-h-screen bg-slate-50 pb-10">
+    <main ref={shellRef} className="min-h-screen bg-slate-50 pb-10">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-3 sm:px-6">
           <button onClick={onBack} className="rounded-xl border border-slate-200 p-2.5 text-slate-600"><ArrowLeft className="h-5 w-5" /></button>
@@ -278,7 +286,7 @@ function SessionShell({ session, onBack, onSessionChange }: {
           />
         ) : (
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
-            {session.currentStationIndex > 0 && <div className="xl:hidden"><CaseSidebar session={session} /></div>}
+            {session.currentStationIndex > 0 && <MobilePriorContext session={session} />}
             <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-100 px-4 py-5 sm:px-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -363,8 +371,30 @@ function StationStepper({ session }: { session: PublicStationSession }) {
 
 function CaseOverview({ session }: { session: PublicStationSession }) {
   const visible = session.visibleCase as Record<string, string>;
+  const [mobileOpen, setMobileOpen] = useState(session.currentStationIndex === 0);
+
+  useEffect(() => {
+    setMobileOpen(session.currentStationIndex === 0);
+  }, [session.id, session.currentStationIndex]);
+
   return (
     <section className="rounded-[24px] border border-indigo-200 bg-gradient-to-br from-white to-indigo-50 p-4 shadow-sm sm:p-5">
+      <details
+        className="md:hidden"
+        open={mobileOpen}
+        onToggle={(event) => setMobileOpen(event.currentTarget.open)}
+      >
+        <summary className="cursor-pointer list-none">
+          <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-indigo-600"><BookOpenCheck className="h-4 w-4" /> Ficha del caso</p>
+          <div className="mt-2 flex items-center justify-between gap-3"><div><h2 className="text-lg font-black text-slate-950">{visible.nombre || 'Caso simulado'}</h2><p className="mt-1 text-xs text-slate-600">{visible.edad} · {visible.ocupacion}</p></div><span className="shrink-0 text-xs font-black text-indigo-700">Ver datos</span></div>
+        </summary>
+        <dl className="mt-4 grid gap-2">
+          <CaseDatum label="Motivo de consulta" value={visible.motivo_consulta} />
+          <CaseDatum label="Derivación" value={visible.derivacion} />
+          <CaseDatum label="Tiempo de evolución" value={visible.tiempo_evolucion} />
+        </dl>
+      </details>
+      <div className="hidden md:block">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-indigo-600"><BookOpenCheck className="h-4 w-4" /> Información inicial del caso</p>
@@ -378,6 +408,7 @@ function CaseOverview({ session }: { session: PublicStationSession }) {
         <CaseDatum label="Derivación" value={visible.derivacion} />
         <CaseDatum label="Tiempo de evolución" value={visible.tiempo_evolucion} />
       </dl>
+      </div>
     </section>
   );
 }
@@ -441,6 +472,28 @@ function CaseSidebar({ session }: { session: PublicStationSession }) {
       )}
       <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-5 text-sm leading-6 text-emerald-950"><strong className="flex items-center gap-2"><Save className="h-4 w-4" /> Guardado automático</strong><p className="mt-2">Puedes cerrar la pestaña o reconectar la voz. Volverás al mismo caso y a la etapa pendiente.</p></div>
     </aside>
+  );
+}
+
+function MobilePriorContext({ session }: { session: PublicStationSession }) {
+  const priorKeys = STATION_KEYS.slice(0, session.currentStationIndex).filter((key) => key !== 'PLANIFICACION_ESCRITA');
+  return (
+    <details className="rounded-2xl border border-slate-200 bg-white shadow-sm xl:hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-sm font-black text-slate-900">
+        <span className="flex items-center gap-2"><BookOpenCheck className="h-4 w-4 text-indigo-600" /> Consultar etapas anteriores</span>
+        <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] text-slate-500">{priorKeys.length}</span>
+      </summary>
+      <div className="space-y-2 border-t border-slate-200 p-3">
+        {priorKeys.map((key) => {
+          const progress = session.stations[key];
+          const label = STATION_DEFINITIONS.find((item) => item.key === key)?.title || key;
+          const content = progress.semanticConfirmation?.summary
+            || progress.semanticSummary
+            || progress.transcript.map((turn) => `${turn.role === 'STUDENT' ? 'Estudiante' : turn.role === 'PATIENT' ? 'Paciente' : 'Comisión'}: ${turn.text}`).join('\n');
+          return <details key={key} className="rounded-xl bg-slate-50"><summary className="cursor-pointer list-none px-3 py-3 text-xs font-black text-slate-800">{label}</summary><div className="border-t border-slate-200 px-3 py-3 whitespace-pre-wrap text-xs leading-5 text-slate-600">{content || 'No quedó contenido recuperable.'}</div></details>;
+        })}
+      </div>
+    </details>
   );
 }
 

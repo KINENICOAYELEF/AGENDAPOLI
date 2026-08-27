@@ -498,6 +498,11 @@ describe('Simulador clínico por estaciones de voz — beta docente', () => {
   test('la navegación visual hace visible el caso y confirma cada cambio de estación', () => {
     const ui = readFileSync(new URL('../src/components/simulador-estaciones/SimuladorEstacionesBeta.tsx', import.meta.url), 'utf8');
     assert.match(ui, /Información inicial del caso/);
+    assert.match(ui, /Ficha del caso/);
+    assert.match(ui, /Consultar etapas anteriores/);
+    assert.match(ui, /closest\('\.overflow-auto'\)/);
+    assert.match(ui, /scrollTo\(\{ top: 0/);
+    assert.match(ui, /setMobileOpen\(session\.currentStationIndex === 0\)/);
     assert.match(ui, /Ahora:/);
     assert.match(ui, /Después:/);
     assert.match(ui, /Etapa guardada/);
