@@ -415,9 +415,13 @@ describe('Simulador clínico por estaciones de voz — beta docente', () => {
   test('el caso secreto nunca forma parte de la respuesta pública', () => {
     const server = readFileSync(new URL('../src/lib/simulador-estaciones/server.ts', import.meta.url), 'utf8');
     const publicProjection = server.slice(server.indexOf('export function toPublicSession'), server.indexOf('export function buildStationInstruction'));
+    const publicCase = server.slice(server.indexOf('function toPublicVisibleCase'), server.indexOf('export function toPublicSession'));
     assert.doesNotMatch(publicProjection, /fullCase:/);
     assert.doesNotMatch(publicProjection, /liveResumeHandles:/);
     assert.match(publicProjection, /visibleCase:/);
+    assert.doesNotMatch(publicCase, /motivo_consulta/);
+    assert.doesNotMatch(publicCase, /derivacion/);
+    assert.doesNotMatch(publicCase, /tiempo_evolucion/);
   });
 
   test('usa token efímero, reanudación y compresión sin exponer la API key al navegador', () => {
@@ -474,13 +478,17 @@ describe('Simulador clínico por estaciones de voz — beta docente', () => {
     assert.match(hook, /failedModelsRef/);
   });
 
-  test('la conversación Live evita eco, detecta fin de turno y permite recuperar una respuesta ausente', () => {
+  test('la conversación Live conserva todo el audio, detecta fin de turno y permite recuperar una respuesta ausente', () => {
     const tokenRoute = readFileSync(new URL('../src/app/api/simulador-estaciones/sessions/[sessionId]/live-token/route.ts', import.meta.url), 'utf8');
     const hook = readFileSync(new URL('../src/hooks/useResumableGeminiLive.ts', import.meta.url), 'utf8');
     const ui = readFileSync(new URL('../src/components/simulador-estaciones/SimuladorEstacionesBeta.tsx', import.meta.url), 'utf8');
     assert.match(tokenRoute, /automaticActivityDetection/);
+    assert.match(tokenRoute, /START_SENSITIVITY_HIGH/);
     assert.match(tokenRoute, /silenceDurationMs: 650/);
-    assert.match(hook, /activeAudioRef\.current > 0/);
+    assert.doesNotMatch(hook, /activeAudioRef\.current > 0/);
+    assert.match(hook, /inputContext\.resume\(\)/);
+    assert.match(hook, /outputContext\.resume\(\)/);
+    assert.match(hook, /echoCancellation: true/);
     assert.match(hook, /audioStreamEnd: true/);
     assert.match(ui, /El paciente no respondió/);
     assert.match(ui, /Pausar mi micrófono/);
@@ -493,12 +501,16 @@ describe('Simulador clínico por estaciones de voz — beta docente', () => {
     assert.match(prompts, /NO menciones la sospecha de derivación/);
     assert.match(prompts, /NO preguntes "¿qué cree usted\?"/);
     assert.match(prompts, /Después de responder, guarda silencio/);
+    assert.match(prompts, /liveCaseContext/);
+    assert.match(prompts, /no necesita conocer la rúbrica/);
+    assert.match(prompts, /¿qué necesita saber\?/);
+    assert.match(prompts, /normalmente entre 5 y 30 palabras/);
   });
 
   test('la navegación visual hace visible el caso y confirma cada cambio de estación', () => {
     const ui = readFileSync(new URL('../src/components/simulador-estaciones/SimuladorEstacionesBeta.tsx', import.meta.url), 'utf8');
-    assert.match(ui, /Información inicial del caso/);
-    assert.match(ui, /Ficha del caso/);
+    assert.match(ui, /Identificación de la persona simulada/);
+    assert.match(ui, /La ficha no adelanta el motivo/);
     assert.match(ui, /Consultar etapas anteriores/);
     assert.match(ui, /closest\('\.overflow-auto'\)/);
     assert.match(ui, /scrollTo\(\{ top: 0/);

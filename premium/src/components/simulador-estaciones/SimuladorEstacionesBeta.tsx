@@ -385,36 +385,24 @@ function CaseOverview({ session }: { session: PublicStationSession }) {
         onToggle={(event) => setMobileOpen(event.currentTarget.open)}
       >
         <summary className="cursor-pointer list-none">
-          <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-indigo-600"><BookOpenCheck className="h-4 w-4" /> Ficha del caso</p>
-          <div className="mt-2 flex items-center justify-between gap-3"><div><h2 className="text-lg font-black text-slate-950">{visible.nombre || 'Caso simulado'}</h2><p className="mt-1 text-xs text-slate-600">{visible.edad} · {visible.ocupacion}</p></div><span className="shrink-0 text-xs font-black text-indigo-700">Ver datos</span></div>
+          <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-indigo-600"><BookOpenCheck className="h-4 w-4" /> Identificación</p>
+          <div className="mt-2 flex items-center justify-between gap-3"><div><h2 className="text-lg font-black text-slate-950">{visible.nombre || 'Caso simulado'}</h2><p className="mt-1 text-xs text-slate-600">{visible.edad} · {visible.ocupacion}</p></div><span className="shrink-0 text-xs font-black text-indigo-700">Ver ficha</span></div>
         </summary>
-        <dl className="mt-4 grid gap-2">
-          <CaseDatum label="Motivo de consulta" value={visible.motivo_consulta} />
-          <CaseDatum label="Derivación" value={visible.derivacion} />
-          <CaseDatum label="Tiempo de evolución" value={visible.tiempo_evolucion} />
-        </dl>
+        <p className="mt-4 rounded-xl bg-white/90 p-3 text-xs font-semibold leading-5 text-slate-600">Área asignada: {regionLabel(session.region)}. El motivo, la evolución y el impacto funcional debes obtenerlos durante la entrevista.</p>
       </details>
       <div className="hidden md:block">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-indigo-600"><BookOpenCheck className="h-4 w-4" /> Información inicial del caso</p>
+          <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-indigo-600"><BookOpenCheck className="h-4 w-4" /> Identificación de la persona simulada</p>
           <h2 className="mt-2 text-xl font-black text-slate-950">{visible.nombre || 'Caso simulado'}</h2>
           <p className="mt-1 text-sm text-slate-600">{visible.edad} · {visible.ocupacion}</p>
         </div>
-        <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-indigo-700 ring-1 ring-indigo-100">Disponible durante todo el examen</span>
+        <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-indigo-700 ring-1 ring-indigo-100">Área: {regionLabel(session.region)}</span>
       </div>
-      <dl className="mt-4 grid gap-3 md:grid-cols-[1.25fr_1.25fr_0.5fr]">
-        <CaseDatum label="Motivo de consulta" value={visible.motivo_consulta} />
-        <CaseDatum label="Derivación" value={visible.derivacion} />
-        <CaseDatum label="Tiempo de evolución" value={visible.tiempo_evolucion} />
-      </dl>
+      <p className="mt-4 rounded-2xl border border-white bg-white/90 p-3 text-sm font-semibold leading-6 text-slate-600 shadow-sm">La ficha no adelanta el motivo, la evolución ni hipótesis diagnósticas. Debes obtener esa información entrevistando a la persona.</p>
       </div>
     </section>
   );
-}
-
-function CaseDatum({ label, value }: { label: string; value?: string }) {
-  return <div className="rounded-2xl border border-white bg-white/90 p-3 shadow-sm"><dt className="text-[10px] font-black uppercase tracking-wider text-slate-400">{label}</dt><dd className="mt-1.5 text-sm font-semibold leading-5 text-slate-800">{value || 'No informado'}</dd></div>;
 }
 
 function StationTransition({ fromIndex, toIndex, onContinue }: { fromIndex: number; toIndex: number; onContinue: () => void }) {

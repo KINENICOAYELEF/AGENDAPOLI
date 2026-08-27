@@ -74,9 +74,10 @@ export async function POST(request: Request, context: RouteContext) {
                 realtimeInputConfig: {
                   automaticActivityDetection: {
                     disabled: false,
-                    // Reduce activaciones por ruido/eco y cierra el turno tras
-                    // una pausa clínica natural, sin dejar al paciente esperando.
-                    startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_LOW,
+                    // Prioriza no perder la voz del estudiante. La cancelación
+                    // de eco del navegador controla el audio de los parlantes;
+                    // una sensibilidad baja omitía intervenciones normales.
+                    startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
                     endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_HIGH,
                     prefixPaddingMs: 100,
                     silenceDurationMs: 650,

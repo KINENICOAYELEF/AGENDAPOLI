@@ -194,6 +194,21 @@ function timestampToIso(value?: Timestamp) {
   return value?.toDate().toISOString();
 }
 
+function toPublicVisibleCase(session: StoredSession) {
+  const source = session.visibleCase || session.fullCase?.ficha_visible || {};
+  const visible = source as Record<string, unknown>;
+  // La ficha pública solo identifica a la persona simulada. La evolución,
+  // comportamiento, derivación diagnóstica y limitaciones se deben descubrir
+  // durante la entrevista, igual que en el examen real.
+  return {
+    nombre: String(visible.nombre || 'Caso simulado'),
+    edad: String(visible.edad || ''),
+    sexo: String(visible.sexo || ''),
+    ocupacion: String(visible.ocupacion || ''),
+    deporte_actividad: String(visible.deporte_actividad || ''),
+  };
+}
+
 export function toPublicSession(session: StoredSession & { id: string }): PublicStationSession {
   return {
     id: session.id,
@@ -208,7 +223,7 @@ export function toPublicSession(session: StoredSession & { id: string }): Public
     currentStationIndex: session.currentStationIndex,
     stations: session.stations,
     planningDraft: session.planningDraft || createEmptyPlanningDraft(),
-    visibleCase: session.visibleCase || {},
+    visibleCase: toPublicVisibleCase(session),
     createdAt: timestampToIso(session.createdAt) || new Date().toISOString(),
     updatedAt: timestampToIso(session.updatedAt) || new Date().toISOString(),
     completedAt: timestampToIso(session.completedAt),

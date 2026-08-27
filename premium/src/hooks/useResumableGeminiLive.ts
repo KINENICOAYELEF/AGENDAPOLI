@@ -103,9 +103,6 @@ export function useResumableGeminiLive({
 
   useEffect(() => {
     micOpenRef.current = isMicOpen;
-    streamRef.current?.getAudioTracks().forEach((track) => {
-      track.enabled = isMicOpen;
-    });
   }, [isMicOpen]);
 
   useEffect(() => {
@@ -291,6 +288,7 @@ export function useResumableGeminiLive({
     streamRef.current = stream;
     const inputContext = new AudioContext({ sampleRate: 16000 });
     const outputContext = new AudioContext({ sampleRate: 24000 });
+    await Promise.all([inputContext.resume(), outputContext.resume()]);
     inputContextRef.current = inputContext;
     outputContextRef.current = outputContext;
     const source = inputContext.createMediaStreamSource(stream);
@@ -305,9 +303,11 @@ export function useResumableGeminiLive({
       for (let index = 0; index < samples.length; index += 1) energy += samples[index] ** 2;
       setVolume(micOpenRef.current ? Math.sqrt(energy / samples.length) : 0);
       const session = liveSessionRef.current;
-      // Evita que la voz del paciente reproducida por los parlantes vuelva a
-      // entrar al modelo como si fuera una intervención del estudiante.
-      if (!session || !micOpenRef.current || activeAudioRef.current > 0) return;
+      // No descartamos el micrófono durante la reproducción. Ese bloqueo
+      // podía comerse frases completas si el estudiante empezaba apenas
+      // terminaba de hablar el paciente. La cancelación de eco del navegador
+      // y las reglas de turnos se encargan de diferenciar la voz reproducida.
+      if (!session || !micOpenRef.current) return;
       try {
         session.sendRealtimeInput({
           audio: {
@@ -382,12 +382,12 @@ export function useResumableGeminiLive({
     const next = !micOpenRef.current;
     micOpenRef.current = next;
     setIsMicOpen(next);
-    streamRef.current?.getAudioTracks().forEach((track) => {
-      track.enabled = next;
-    });
     if (!next) {
       setVolume(0);
       try { liveSessionRef.current?.sendRealtimeInput({ audioStreamEnd: true }); } catch { /* La reconexión mantiene el estado. */ }
+    } else {
+      void inputContextRef.current?.resume();
+      void outputContextRef.current?.resume();
     }
   }, []);
 

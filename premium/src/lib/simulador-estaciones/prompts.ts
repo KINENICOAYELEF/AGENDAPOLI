@@ -75,6 +75,30 @@ Rúbrica clínica esperada: ${JSON.stringify(caseData.rubrica_ideal)}
 `;
 }
 
+function liveCaseContext(station: StationKey, caseData: SimCaseType) {
+  const identity = {
+    nombre: caseData.ficha_visible.nombre,
+    edad: caseData.ficha_visible.edad,
+    sexo: caseData.ficha_visible.sexo,
+    ocupacion: caseData.ficha_visible.ocupacion,
+    deporte_actividad: caseData.ficha_visible.deporte_actividad,
+  };
+  const patientContext = `
+CASO INMUTABLE PARA INTERACCIÓN:
+Identidad administrativa: ${JSON.stringify(identity)}
+Historia, personalidad y datos que solo se entregan si preguntan: ${JSON.stringify(caseData.perfil_secreto)}
+`;
+  if (station === 'ANAMNESIS_PROXIMA' || station === 'ANAMNESIS_REMOTA') {
+    // Durante la entrevista el paciente no necesita conocer la rúbrica ni las
+    // hipótesis esperadas: tenerlas en contexto favorecía que las verbalizara.
+    return patientContext;
+  }
+  if (station === 'EXAMEN_FISICO') {
+    return `${patientContext}\nHALLAZGOS DISPONIBLES SOLO CUANDO EL ESTUDIANTE LOS EXAMINE: ${JSON.stringify(caseData.hallazgos_todos_modulos)}`;
+  }
+  return caseContext(caseData);
+}
+
 const COMMON_LIVE_RULES = `
 REGLAS INTRANSABLES:
 - Esto es un examen, no una tutoría. No des pistas, feedback, diagnóstico, próximos pasos ni respuestas modelo durante la estación.
@@ -103,7 +127,7 @@ export function buildLiveStationPrompt(params: {
     .map(([key, value]) => `${key}: ${value?.semanticConfirmation?.summary || value?.semanticSummary || transcriptToText(value?.transcript || [])}`)
     .join('\n');
 
-  const base = `${COMMON_LIVE_RULES}\n${caseContext(params.caseData)}\nCONTEXTO YA REGISTRADO EN ESTACIONES PREVIAS:\n${prior || 'Ninguno.'}`;
+  const base = `${COMMON_LIVE_RULES}\n${liveCaseContext(params.station, params.caseData)}\nCONTEXTO YA REGISTRADO EN ESTACIONES PREVIAS:\n${prior || 'Ninguno.'}`;
 
   const stationRules: Record<StationKey, string> = {
     ANAMNESIS_PROXIMA: `
@@ -127,7 +151,22 @@ ROL: eres una comisión clínica exigente pero justa.
 Realiza preguntas una a una durante toda la estación. Combina: coherencia entre hallazgos y diagnóstico; diferenciales; selección e interpretación de evaluación; seguridad; objetivos; dosis y progresión; fisiología; educación; fases, frecuencia y duración; reevaluación; pronóstico; adaptación si el paciente no responde. Basa cada pregunta en lo que el estudiante propuso y en el caso real. No entregues la respuesta después de cada turno. Puedes reformular brevemente lo que entendiste antes de desafiarlo, lo que sirve como respaldo semántico del audio.`,
   };
 
-  return `${base}\nESTACIÓN ACTUAL: ${params.station}\n${stationRules[params.station]}\nPLAN ESCRITO PROPIO DEL ESTUDIANTE (solo contexto, no lo corrijas): ${JSON.stringify(params.planningDraft || {})}`;
+  const outputContract: Partial<Record<StationKey, string>> = {
+    ANAMNESIS_PROXIMA: `
+CONTRATO OBLIGATORIO DE CADA RESPUESTA DEL PACIENTE:
+- Responde únicamente la pregunta formulada, normalmente entre 5 y 30 palabras.
+- No termines con una pregunta. Están prohibidas expresiones como "¿qué cree que pueda ser?", "¿qué necesita saber?" o cualquier sugerencia de cómo continuar.
+- Ante el saludo, saluda brevemente y espera. Ante "motivo de consulta", menciona solo el síntoma principal en lenguaje cotidiano; no agregues duración, desencadenantes, limitaciones ni derivación salvo que se pregunten.
+- No pronuncies diagnósticos, hipótesis ni nombres de pruebas aunque estén en el caso interno.
+- Si la intervención no contiene una pregunta clínica, responde de manera social mínima y espera en silencio.`,
+    ANAMNESIS_REMOTA: `
+CONTRATO OBLIGATORIO DE CADA RESPUESTA DEL PACIENTE:
+- Responde únicamente el antecedente o factor contextual preguntado, normalmente entre 5 y 30 palabras.
+- No termines con una pregunta ni sugieras otro antecedente que el estudiante debería explorar.
+- No vuelvas a contar el motivo actual ni pronuncies hipótesis diagnósticas.`,
+  };
+
+  return `${base}\nESTACIÓN ACTUAL: ${params.station}\n${stationRules[params.station]}\nPLAN ESCRITO PROPIO DEL ESTUDIANTE (solo contexto, no lo corrijas): ${JSON.stringify(params.planningDraft || {})}\n${outputContract[params.station] || ''}`;
 }
 
 function transcriptToText(turns: Array<{ role: string; text: string }>) {
