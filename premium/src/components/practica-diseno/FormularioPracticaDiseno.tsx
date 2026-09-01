@@ -1052,27 +1052,42 @@ export default function FormularioPracticaDiseno() {
               <div className="flex items-center justify-between">
                 <Label required>Objetivo General de Intervención</Label>
                 <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                  Meta Integradora
+                  Meta Funcional Integradora
                 </span>
               </div>
 
-              <div className="text-xs text-emerald-950 bg-white/90 p-4 rounded-xl border border-emerald-200 space-y-2 leading-relaxed">
-                <p className="font-bold text-emerald-900 text-xs">
-                  ¿En qué se diferencia el Objetivo General de los Objetivos Específicos?:
-                </p>
-                <p>
-                  El <strong>Objetivo General</strong> NO es un desglose de mediciones analíticas (eso va en los específicos). Es el <strong>propósito macro e integrador</strong> de la intervención: define la gran meta de control motor o capacidad funcional contextualizada en la actividad o rol real de la persona.
-                </p>
-                <div className="bg-emerald-50/60 p-2.5 rounded-lg border border-emerald-200/80 font-mono text-[11px] text-emerald-900">
-                  <strong>Estructura sugerida:</strong> [Verbo integrador] + [Capacidad motriz o control motor global] + [Contexto o tarea funcional clave] + [para Actividad / Participación / Deporte / Vida diaria]
+              <div className="text-xs text-emerald-950 bg-white/90 p-4 rounded-xl border border-emerald-200 space-y-3 leading-relaxed">
+                <div>
+                  <p className="font-bold text-emerald-900 text-xs">
+                    ¿En qué se diferencia el Objetivo General de los Objetivos Específicos?:
+                  </p>
+                  <p className="mt-1">
+                    El <strong>Objetivo General</strong> es el <strong>propósito macro e integrador</strong>: sintetiza la capacidad motriz o funcional global en el contexto de la actividad real de la persona. <strong>No debe redactarse como un objetivo analítico con micro-mediciones</strong> (eso corresponde a los específicos).
+                  </p>
                 </div>
-                <div className="pt-1 text-[11px] text-emerald-900 space-y-1">
-                  <p><strong>Ejemplos orientativos de Objetivo General:</strong></p>
-                  <ul className="list-disc list-inside space-y-0.5 text-slate-700 italic pl-1">
-                    <li><em>&quot;Optimizar el control unipodal dinámico de rodilla durante actividades de pivote para sus actividades deportivas.&quot;</em></li>
-                    <li><em>&quot;Mejorar el equilibrio dinámico y la capacidad de marcha durante desplazamientos en desniveles para su autonomía en actividades de la comunidad.&quot;</em></li>
-                    <li><em>&quot;Restablecer la tolerancia a la carga y la estabilidad lumbopélvica durante tareas de levantamiento para su desempeño laboral seguro.&quot;</em></li>
-                  </ul>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                  <div className="bg-red-50 p-2.5 rounded-lg border border-red-200 text-red-900">
+                    <p className="font-bold mb-1">Qué NO poner en el Objetivo General (Errores comunes):</p>
+                    <ul className="list-disc list-inside space-y-0.5 text-red-800">
+                      <li>&quot;Aumentar fuerza de cuádriceps de M3 a M4 en 4 semanas&quot; <em>(Es un específico analítico)</em></li>
+                      <li>&quot;Disminuir dolor de 6/10 a 2/10 en 2 semanas&quot; <em>(Es un específico analítico)</em></li>
+                      <li>&quot;Ganar 20° de flexión de rodilla&quot; <em>(Es un específico analítico)</em></li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 text-emerald-900">
+                    <p className="font-bold mb-1">Qué SÍ poner (Meta Funcional Integradora):</p>
+                    <ul className="list-disc list-inside space-y-0.5 text-emerald-800">
+                      <li>&quot;Optimizar el control unipodal dinámico de rodilla durante actividades de pivote para sus actividades deportivas.&quot;</li>
+                      <li>&quot;Mejorar la estabilidad postural y marcha en desniveles para su autonomía en la comunidad.&quot;</li>
+                      <li>&quot;Restablecer la tolerancia a la carga y control lumbopélvico en levantamiento de peso para su rol laboral.&quot;</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50/60 p-2 rounded-lg border border-emerald-200/80 font-mono text-[11px] text-emerald-900">
+                  <strong>Estructura del General:</strong> [Verbo integrador] + [Capacidad motriz o control motor global] + [Contexto o tarea funcional clave] + [para Actividad / Participación / Deporte / Vida diaria]
                 </div>
               </div>
 
@@ -1082,7 +1097,7 @@ export default function FormularioPracticaDiseno() {
                 rows={3}
                 value={caso.objetivos.objetivoGeneral}
                 onChange={(v) => setCaso({ ...caso, objetivos: { ...caso.objetivos, objetivoGeneral: v } })}
-                placeholder="Redacten el objetivo general integrador. Ej: Optimizar el control unipodal dinámico de rodilla durante actividades de pivote para sus actividades deportivas..."
+                placeholder="Redacten el objetivo general integrador (sin micro-mediciones analíticas). Ej: Optimizar el control unipodal dinámico de rodilla durante actividades de pivote para sus actividades deportivas..."
               />
             </div>
 
