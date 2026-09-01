@@ -266,7 +266,7 @@ function CifSection({
 
 // ─── FORMULARIO PRINCIPAL ───────────────────────────────────────────────────
 export default function FormularioPracticaDiseno() {
-  const STORAGE_KEY = "practica_diseno_borrador_v8";
+  const STORAGE_KEY = "practica_diseno_borrador_v9";
 
   const [dupla, setDupla] = useState<DatosEstudianteDupla>({
     estudiante1: "",
@@ -281,6 +281,7 @@ export default function FormularioPracticaDiseno() {
   const [showAnamnesisExample, setShowAnamnesisExample] = useState(false);
   const [showDiferenciaGeneral, setShowDiferenciaGeneral] = useState(false);
   const [showVerbosTable, setShowVerbosTable] = useState(false);
+  const [showGuiaPriorizacion, setShowGuiaPriorizacion] = useState(false);
 
   const [enviando, setEnviando] = useState(false);
   const [enviadoExito, setEnviadoExito] = useState(false);
@@ -298,7 +299,7 @@ export default function FormularioPracticaDiseno() {
           if (!c.planIntervencion?.estrategias || !Array.isArray(c.planIntervencion.estrategias)) {
             c.planIntervencion = {
               estrategias: [
-                estrategiaFittVacio("Funciones y Estructuras"),
+                estrategiaFittVacio(),
               ],
             };
           }
@@ -307,7 +308,7 @@ export default function FormularioPracticaDiseno() {
               problemaPrincipal: "",
               objetivoGeneral: c.objetivos?.objetivoGeneral || "",
               especificos: c.objetivos?.especificos || [
-                { id: guid(), prioridad: 1, dimensionCIF: "Funciones y Estructuras", texto: "" },
+                { id: guid(), prioridad: 1, texto: "" },
               ],
             };
           }
@@ -360,7 +361,7 @@ export default function FormularioPracticaDiseno() {
     }));
   };
 
-  // Manejo de Objetivos Específicos Priorizados
+  // Manejo de Objetivos Específicos Priorizados (Sin selector de dimensión)
   const addObjetivoEspecifico = () => {
     if (caso.objetivos.especificos.length >= 6) return;
     const nextPrioridad = caso.objetivos.especificos.length + 1;
@@ -370,7 +371,7 @@ export default function FormularioPracticaDiseno() {
         ...prev.objetivos,
         especificos: [
           ...prev.objetivos.especificos,
-          { id: guid(), prioridad: nextPrioridad, dimensionCIF: "Actividades", texto: "" },
+          { id: guid(), prioridad: nextPrioridad, texto: "" },
         ],
       },
     }));
@@ -386,12 +387,12 @@ export default function FormularioPracticaDiseno() {
     }));
   };
 
-  const updateObjetivoEspecifico = (id: string, field: keyof ObjetivoEspecificoItem, val: string | number) => {
+  const updateObjetivoEspecifico = (id: string, texto: string) => {
     setCaso((prev) => ({
       ...prev,
       objetivos: {
         ...prev.objetivos,
-        especificos: prev.objetivos.especificos.map((obj) => (obj.id === id ? { ...obj, [field]: val } : obj)),
+        especificos: prev.objetivos.especificos.map((obj) => (obj.id === id ? { ...obj, texto } : obj)),
       },
     }));
   };
@@ -402,7 +403,7 @@ export default function FormularioPracticaDiseno() {
     setCaso((prev) => ({
       ...prev,
       planIntervencion: {
-        estrategias: [...prev.planIntervencion.estrategias, estrategiaFittVacio("Actividades")],
+        estrategias: [...prev.planIntervencion.estrategias, estrategiaFittVacio()],
       },
     }));
   };
@@ -429,7 +430,7 @@ export default function FormularioPracticaDiseno() {
   };
 
   // Alternar selección de objetivo relacionado en una estrategia
-  const toggleObjetivoRelacionado = (estId: string, objTag: string, dimensionSug?: string) => {
+  const toggleObjetivoRelacionado = (estId: string, objTag: string) => {
     const est = caso.planIntervencion.estrategias.find((e) => e.id === estId);
     if (!est) return;
 
@@ -452,7 +453,6 @@ export default function FormularioPracticaDiseno() {
           return {
             ...item,
             objetivoRelacionado: nuevaRelacion,
-            dimensionCIF: dimensionSug && (!item.dimensionCIF || item.dimensionCIF === "Funciones y Estructuras") ? dimensionSug : item.dimensionCIF,
           };
         }),
       },
@@ -933,7 +933,7 @@ export default function FormularioPracticaDiseno() {
         </SectionCard>
 
         {/* 7. Objetivos de Intervención Priorizados */}
-        <SectionCard title="7. Objetivos de intervención (Priorizados por relevancia clínica)">
+        <SectionCard title="7. Objetivos de intervención">
           {/* ACORDEÓN 1: GUÍA DE DIFERENCIACIÓN GENERAL VS ESPECÍFICOS */}
           <div className="border border-emerald-200 rounded-2xl overflow-hidden mb-3">
             <button
@@ -978,67 +978,143 @@ export default function FormularioPracticaDiseno() {
             )}
           </div>
 
-          {/* ACORDEÓN 2: CATÁLOGO DE VERBOS Y PARÁMETROS CIF */}
-          <div className="border border-teal-200 rounded-2xl overflow-hidden mb-5">
+          {/* ACORDEÓN 2: TABLA GUÍA DESGLOSADA PASO A PASO PARA ARMAR OBJETIVOS */}
+          <div className="border border-teal-200 rounded-2xl overflow-hidden mb-3">
             <button
               type="button"
               onClick={() => setShowVerbosTable(!showVerbosTable)}
               className="w-full flex items-center justify-between px-4 py-3 bg-teal-50 hover:bg-teal-100 transition text-xs font-bold text-teal-800"
             >
-              <span>{showVerbosTable ? "Ocultar" : "Ver"} Catálogo de Verbos y Parámetros por Dimensión CIF</span>
+              <span>{showVerbosTable ? "Ocultar" : "Ver"} Tabla Guía Desglosada: Cómo Construir Objetivos Paso a Paso</span>
               <span>{showVerbosTable ? "▲" : "▼"}</span>
             </button>
 
             {showVerbosTable && (
               <div className="p-4 bg-white text-xs text-slate-700 space-y-3 border-t border-teal-200 overflow-x-auto">
-                <div className="p-2.5 bg-teal-50/60 rounded-xl border border-teal-200 text-[11px]">
-                  <strong>Fórmula de Redacción para Específicos:</strong> [Verbo en infinitivo] + [Parámetro/Variable fisiológica o motriz] + [Criterio de logro/Magnitud] + [Plazo o condición temporal]
-                </div>
+                <p className="text-slate-600">
+                  Sigan las 4 columnas para armar la oración de cada objetivo específico:
+                </p>
 
                 <table className="w-full border-collapse border border-slate-200 text-left text-xs">
                   <thead>
                     <tr className="bg-slate-100 text-slate-800 font-bold">
-                      <th className="border border-slate-200 p-2">Dimensión CIF</th>
-                      <th className="border border-slate-200 p-2">Verbos de Acción Sugeridos</th>
-                      <th className="border border-slate-200 p-2">Parámetros / Variables Típicas</th>
+                      <th className="border border-slate-200 p-2">Enfoque</th>
+                      <th className="border border-slate-200 p-2">1. Verbo de Acción</th>
+                      <th className="border border-slate-200 p-2">2. Parámetro Funcional</th>
+                      <th className="border border-slate-200 p-2">3. Criterio / Medición</th>
+                      <th className="border border-slate-200 p-2">4. Plazo / Condición</th>
+                      <th className="border border-slate-200 p-2 bg-slate-200/60">Ejemplo Completo Armado</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     <tr>
                       <td className="border border-slate-200 p-2 font-bold text-teal-900 bg-teal-50/40">
-                        Estructuras y Funciones
+                        Dolor / Síntomas
                       </td>
-                      <td className="border border-slate-200 p-2">
-                        Modular, mitigar, incrementar, ganar, fortalecer, optimizar, coordinar, acondicionar.
+                      <td className="border border-slate-200 p-2">Modular / Mitigar / Atenuar</td>
+                      <td className="border border-slate-200 p-2">el dolor patelofemoral anterior</td>
+                      <td className="border border-slate-200 p-2">a EVA ≤ 2/10 en reposo y carga</td>
+                      <td className="border border-slate-200 p-2">en un plazo de 2 semanas.</td>
+                      <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
+                        &quot;Modular el dolor patelofemoral anterior a EVA ≤ 2/10 en reposo y carga en un plazo de 2 semanas.&quot;
                       </td>
-                      <td className="border border-slate-200 p-2">
-                        Dolor (EVA/EN), ROM activo/pasivo, Fuerza muscular (MRC), Equilibrio estático, Control motor.
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-200 p-2 font-bold text-teal-900 bg-teal-50/40">
+                        Fuerza Muscular
+                      </td>
+                      <td className="border border-slate-200 p-2">Incrementar / Desarrollar / Fortalecer</td>
+                      <td className="border border-slate-200 p-2">la fuerza de cuádriceps y glúteo medio</td>
+                      <td className="border border-slate-200 p-2">a grado M4+ en escala MRC</td>
+                      <td className="border border-slate-200 p-2">al término de 4 semanas.</td>
+                      <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
+                        &quot;Incrementar la fuerza de cuádriceps y glúteo medio a grado M4+ en escala MRC al término de 4 semanas.&quot;
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-200 p-2 font-bold text-teal-900 bg-teal-50/40">
+                        Movilidad / ROM
+                      </td>
+                      <td className="border border-slate-200 p-2">Ganar / Restablecer / Ampliar</td>
+                      <td className="border border-slate-200 p-2">el rango activo de flexión de rodilla</td>
+                      <td className="border border-slate-200 p-2">a +115° sin compensaciones</td>
+                      <td className="border border-slate-200 p-2">en 3 semanas de intervención.</td>
+                      <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
+                        &quot;Ganar el rango activo de flexión de rodilla a +115° sin compensaciones en 3 semanas de intervención.&quot;
                       </td>
                     </tr>
                     <tr>
                       <td className="border border-slate-200 p-2 font-bold text-indigo-900 bg-indigo-50/40">
-                        Actividades (Tareas Motoras)
+                        Marcha / Desplazamiento
                       </td>
-                      <td className="border border-slate-200 p-2">
-                        Reeducar, entrenar, prolongar, ejecutar, independizar, agacharse, transferir, prevenir.
+                      <td className="border border-slate-200 p-2">Reeducar / Prolongar / Entrenar</td>
+                      <td className="border border-slate-200 p-2">la tolerancia a la marcha continua</td>
+                      <td className="border border-slate-200 p-2">durante 500 metros sin claudicación</td>
+                      <td className="border border-slate-200 p-2">al cabo de 4 semanas.</td>
+                      <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
+                        &quot;Prolongar la tolerancia a la marcha continua durante 500 metros sin claudicación al cabo de 4 semanas.&quot;
                       </td>
-                      <td className="border border-slate-200 p-2">
-                        Marcha continua, Transferencias sedente-bípedo (Chair Stand), Subir escaleras, Test TUG.
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-200 p-2 font-bold text-indigo-900 bg-indigo-50/40">
+                        Transferencias / Tareas
+                      </td>
+                      <td className="border border-slate-200 p-2">Entrenar / Independizar / Lograr</td>
+                      <td className="border border-slate-200 p-2">la transición sedente a bípedo</td>
+                      <td className="border border-slate-200 p-2">logrando 12 reps en Chair Stand Test</td>
+                      <td className="border border-slate-200 p-2">en 3 semanas de programa.</td>
+                      <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
+                        &quot;Entrenar la transición sedente a bípedo logrando 12 reps en Chair Stand Test en 3 semanas de programa.&quot;
                       </td>
                     </tr>
                     <tr>
                       <td className="border border-slate-200 p-2 font-bold text-purple-900 bg-purple-50/40">
-                        Participación (Roles / Comunidad)
+                        Autonomía / Comunidad
                       </td>
-                      <td className="border border-slate-200 p-2">
-                        Promover, facilitar, integrar, fomentar, reintegrar, capacitar, empoderar.
-                      </td>
-                      <td className="border border-slate-200 p-2">
-                        Talleres de envejecimiento activo, Autonomía en compras/trámites, Desempeño laboral y del hogar.
+                      <td className="border border-slate-200 p-2">Favorecer / Fomentar / Promover</td>
+                      <td className="border border-slate-200 p-2">la autonomía en traslados comunitarios</td>
+                      <td className="border border-slate-200 p-2">asistiendo de forma autónoma y segura</td>
+                      <td className="border border-slate-200 p-2">2 veces por semana al término del ciclo.</td>
+                      <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
+                        &quot;Favorecer la autonomía en traslados comunitarios asistiendo de forma autónoma y segura 2 veces por semana.&quot;
                       </td>
                     </tr>
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+
+          {/* ACORDEÓN 3: GUÍA DE PRIORIZACIÓN CLÍNICA */}
+          <div className="border border-indigo-200 rounded-2xl overflow-hidden mb-5">
+            <button
+              type="button"
+              onClick={() => setShowGuiaPriorizacion(!showGuiaPriorizacion)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-indigo-50 hover:bg-indigo-100 transition text-xs font-bold text-indigo-800"
+            >
+              <span>{showGuiaPriorizacion ? "Ocultar" : "Ver"} Guía: ¿Cómo definir el orden de prioridad de los Objetivos Específicos?</span>
+              <span>{showGuiaPriorizacion ? "▲" : "▼"}</span>
+            </button>
+
+            {showGuiaPriorizacion && (
+              <div className="p-4 bg-white text-xs text-slate-700 space-y-2 border-t border-indigo-200 leading-relaxed">
+                <p className="font-bold text-indigo-900">
+                  Criterio clínico para ordenar los objetivos específicos:
+                </p>
+                <div className="space-y-1.5 pt-1">
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <p className="font-bold text-slate-800">1. Prioridad #1 (Lo más limitante o urgente):</p>
+                    <p className="text-slate-600">La deficiencia principal o síntoma agudo que bloquea el movimiento o genera mayor riesgo inmediato (ej. dolor agudo limitante, bloqueo articular, o riesgo crítico de caídas).</p>
+                  </div>
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <p className="font-bold text-slate-800">2. Prioridad #2 (Capacidad neuromuscular o funcional base):</p>
+                    <p className="text-slate-600">El factor biomecánico o fisiológico que habilita la función (ej. desarrollar fuerza muscular para tolerar la carga o ganar rango articular necesario).</p>
+                  </div>
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <p className="font-bold text-slate-800">3. Prioridad #3 (Integración motriz y autonomía en la vida real):</p>
+                    <p className="text-slate-600">El entrenamiento de la tarea motriz completa, patrón de marcha o autonomía en actividades comunitarias/laborales.</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -1053,7 +1129,7 @@ export default function FormularioPracticaDiseno() {
                 </span>
               </div>
               <p className="text-xs text-amber-950 leading-relaxed">
-                Identifiquen el impacto funcional y en la vida de la persona (no es solo el dolor ni el nombre de la patología).
+                Identifiquen el impacto funcional y en la vida de la persona (no es solo el dolor ni el nombre de la patología médica).
               </p>
               <FieldTA
                 label=""
@@ -1086,12 +1162,12 @@ export default function FormularioPracticaDiseno() {
               />
             </div>
 
-            {/* OBJETIVOS ESPECÍFICOS PRIORIZADOS */}
+            {/* OBJETIVOS ESPECÍFICOS PRIORIZADOS (SIN SELECTOR DE DIMENSIÓN) */}
             <div className="border-t border-slate-200 pt-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className="font-bold text-slate-800 text-sm">Objetivos Específicos Priorizados</h4>
-                  <p className="text-xs text-slate-500">Ordenados de mayor a menor prioridad clínica para el caso.</p>
+                  <p className="text-xs text-slate-500">Ordenados de mayor a menor urgencia e importancia clínica.</p>
                 </div>
                 {caso.objetivos.especificos.length < 6 && (
                   <button
@@ -1106,29 +1182,17 @@ export default function FormularioPracticaDiseno() {
 
               <div className="space-y-4">
                 {caso.objetivos.especificos.map((obj, idx) => (
-                  <div key={obj.id} className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="bg-teal-600 text-white text-xs font-black px-2.5 py-0.5 rounded-full">
-                          Prioridad #{idx + 1}
-                        </span>
-                        <span className="text-xs font-bold text-slate-700">Dimensión CIF:</span>
-                        <select
-                          value={obj.dimensionCIF}
-                          onChange={(e) => updateObjetivoEspecifico(obj.id, "dimensionCIF", e.target.value)}
-                          className="text-xs font-semibold border border-slate-300 rounded-lg px-2.5 py-1 text-slate-800 outline-none bg-white"
-                        >
-                          <option value="Funciones y Estructuras">Funciones y Estructuras</option>
-                          <option value="Actividades">Actividades (Tareas Motoras)</option>
-                          <option value="Participación">Participación (Roles / Comunidad)</option>
-                        </select>
-                      </div>
+                  <div key={obj.id} className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-3 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                      <span className="bg-teal-700 text-white text-xs font-black px-3 py-1 rounded-full">
+                        Objetivo Específico #{idx + 1} {idx === 0 ? "· Prioridad Principal" : `· Prioridad ${idx + 1}`}
+                      </span>
 
                       {caso.objetivos.especificos.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removeObjetivoEspecifico(obj.id)}
-                          className="text-xs text-red-500 hover:text-red-700 font-semibold self-end sm:self-auto"
+                          className="text-xs text-red-500 hover:text-red-700 font-semibold"
                         >
                           Eliminar
                         </button>
@@ -1140,8 +1204,8 @@ export default function FormularioPracticaDiseno() {
                       required
                       rows={2}
                       value={obj.texto}
-                      onChange={(v) => updateObjetivoEspecifico(obj.id, "texto", v)}
-                      placeholder={`Redacten el objetivo específico de Prioridad #${idx + 1} siguiendo la fórmula: [Verbo] + [Parámetro] + [Medición/Criterio] + [Plazo]...`}
+                      onChange={(v) => updateObjetivoEspecifico(obj.id, v)}
+                      placeholder={`Redacten el objetivo específico de Prioridad #${idx + 1} siguiendo la estructura: [Verbo de acción] + [Parámetro a intervenir] + [Criterio de logro/Medición] + [Plazo temporal]...`}
                     />
                   </div>
                 ))}
@@ -1154,7 +1218,7 @@ export default function FormularioPracticaDiseno() {
         <SectionCard title="8. Plan de intervención propuesto (Prescripción FITT-VP)">
           <GuideBox title="Prescripción y Dosificación FITT-VP">
             <p>
-              Propongan las estrategias de intervención necesarias para dar cumplimiento a los objetivos planteados arriba.
+              Propongan las estrategias de intervención necesarias para dar cumplimiento a los objetivos que plantearon arriba.
             </p>
             <p className="mt-1">
               En cada estrategia, vinculen a qué <strong>Objetivo(s) Específico(s)</strong> tributa y completen los parámetros de dosificación:
@@ -1169,28 +1233,16 @@ export default function FormularioPracticaDiseno() {
 
               return (
                 <div key={est.id} className="border border-slate-200 rounded-2xl p-5 bg-slate-50 space-y-4 relative shadow-sm">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-slate-900 text-white text-xs font-black px-2.5 py-0.5 rounded-full">
-                        Estrategia #{idx + 1}
-                      </span>
-                      <span className="text-xs font-bold text-slate-600">Dimensión:</span>
-                      <select
-                        value={est.dimensionCIF}
-                        onChange={(e) => updateEstrategiaFitt(est.id, "dimensionCIF", e.target.value)}
-                        className="text-xs font-semibold border border-slate-300 rounded-lg px-2.5 py-1 text-slate-800 outline-none bg-white"
-                      >
-                        <option value="Funciones y Estructuras">Funciones y Estructuras</option>
-                        <option value="Actividades">Actividades (Tareas Motoras)</option>
-                        <option value="Participación">Participación (Roles y Entorno)</option>
-                      </select>
-                    </div>
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <span className="bg-slate-900 text-white text-xs font-black px-3 py-1 rounded-full">
+                      Estrategia de Intervención #{idx + 1}
+                    </span>
 
                     {caso.planIntervencion.estrategias.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeEstrategiaFitt(est.id)}
-                        className="text-xs text-red-500 hover:text-red-700 font-semibold self-end sm:self-auto"
+                        className="text-xs text-red-500 hover:text-red-700 font-semibold"
                       >
                         Eliminar estrategia
                       </button>
@@ -1210,17 +1262,17 @@ export default function FormularioPracticaDiseno() {
                     <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
                       <Label required>¿A qué Objetivo(s) tributa esta estrategia?</Label>
                       <p className="text-[11px] text-slate-500">
-                        Hagan clic en las casillas correspondientes a los objetivos que redactaron:
+                        Hagan clic para vincular esta intervención a los objetivos que redactaron:
                       </p>
                       <div className="flex flex-wrap gap-2 pt-1">
                         {caso.objetivos.especificos.map((obj, i) => {
-                          const tag = `Prioridad #${i + 1}`;
+                          const tag = `Objetivo #${i + 1}`;
                           const isSelected = relList.includes(tag);
                           return (
                             <button
                               key={obj.id}
                               type="button"
-                              onClick={() => toggleObjetivoRelacionado(est.id, tag, obj.dimensionCIF)}
+                              onClick={() => toggleObjetivoRelacionado(est.id, tag)}
                               className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center gap-1.5 text-left ${
                                 isSelected
                                   ? "bg-teal-600 border-teal-600 text-white shadow-sm"
@@ -1235,9 +1287,9 @@ export default function FormularioPracticaDiseno() {
                                 {isSelected ? "✓" : ""}
                               </span>
                               <span>
-                                Prioridad #{i + 1} ({obj.dimensionCIF || "CIF"}):{" "}
+                                Objetivo #{i + 1}:{" "}
                                 <span className="font-normal opacity-90">
-                                  {obj.texto ? (obj.texto.length > 25 ? `${obj.texto.slice(0, 25)}...` : obj.texto) : "Sin texto"}
+                                  {obj.texto ? (obj.texto.length > 30 ? `${obj.texto.slice(0, 30)}...` : obj.texto) : "Sin texto redactado"}
                                 </span>
                               </span>
                             </button>

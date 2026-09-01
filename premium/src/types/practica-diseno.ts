@@ -37,21 +37,19 @@ export interface HallazgosCIF {
 export interface ObjetivoEspecificoItem {
   id: string;
   prioridad: number;
-  dimensionCIF: string; // "Funciones y Estructuras" | "Actividades" | "Participación"
   texto: string;
 }
 
 export interface ObjetivosCIF {
   problemaPrincipal: string; // Problema kinesiológico principal (impacto biopsicosocial)
-  objetivoGeneral: string;    // Verbo + Logro funcional + PARA (Participación) + Plazo
+  objetivoGeneral: string;    // Meta integradora de control motor y actividad real
   especificos: ObjetivoEspecificoItem[];
 }
 
 export interface EstrategiaFittVP {
   id: string;
   nombreEstrategia: string;
-  dimensionCIF: string;       // "Funciones y Estructuras" | "Actividades" | "Participación"
-  objetivoRelacionado: string; // Objetivo específico al que tributa
+  objetivoRelacionado: string; // Objetivo(s) a los que tributa
   frecuencia: string;         // F: Frecuencia (ej. 3 veces por semana)
   intensidad: string;         // I: Intensidad (ej. RPE 5-6 Borg, 60% 1RM, peso en kg)
   tiempo: string;             // T: Tiempo / Duración (ej. 30 minutos de sesión / 40s de trabajo)
@@ -161,11 +159,10 @@ export function calcularNotaDiseno(puntajeTotal: number): { nota: number; porcen
   return { nota, porcentaje, aprobado: nota >= 4.0 };
 }
 
-export function estrategiaFittVacio(dim: string = "Funciones y Estructuras"): EstrategiaFittVP {
+export function estrategiaFittVacio(): EstrategiaFittVP {
   return {
     id: typeof crypto !== 'undefined' ? crypto.randomUUID() : Math.random().toString(36).slice(2),
     nombreEstrategia: '',
-    dimensionCIF: dim,
     objetivoRelacionado: '',
     frecuencia: '',
     intensidad: '',
@@ -191,16 +188,14 @@ export function casoDisenoVacio(): CasoDisenoIntervencion {
       problemaPrincipal: '',
       objetivoGeneral: '',
       especificos: [
-        { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '1', prioridad: 1, dimensionCIF: 'Funciones y Estructuras', texto: '' },
-        { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '2', prioridad: 2, dimensionCIF: 'Actividades', texto: '' },
-        { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '3', prioridad: 3, dimensionCIF: 'Participación', texto: '' },
+        { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '1', prioridad: 1, texto: '' },
+        { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '2', prioridad: 2, texto: '' },
+        { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '3', prioridad: 3, texto: '' },
       ],
     },
     planIntervencion: {
       estrategias: [
-        estrategiaFittVacio("Funciones y Estructuras"),
-        estrategiaFittVacio("Actividades"),
-        estrategiaFittVacio("Participación"),
+        estrategiaFittVacio(),
       ],
     },
     pronostico: {

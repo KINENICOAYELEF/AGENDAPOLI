@@ -325,10 +325,7 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
                 <div key={obj.id || i} className="bg-white/80 p-2.5 rounded-lg border border-emerald-200/80">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="bg-emerald-700 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-                      Prioridad {obj.prioridad || i + 1}
-                    </span>
-                    <span className="text-[11px] font-bold text-emerald-800">
-                      [{obj.dimensionCIF || "CIF"}]
+                      Objetivo Específico #{obj.prioridad || i + 1} {i === 0 ? "· Prioridad Principal" : `· Prioridad ${obj.prioridad || i + 1}`}
                     </span>
                   </div>
                   <p className="text-slate-700 text-xs">{obj.texto}</p>
@@ -337,9 +334,7 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
             </div>
           ) : (
             <div className="space-y-1 mt-1 text-xs">
-              <p><strong>Funciones/Estructuras:</strong> {(caso.objetivos as unknown as { estructurasFunciones?: string }).estructurasFunciones || "Sin especificar"}</p>
-              <p><strong>Actividades:</strong> {(caso.objetivos as unknown as { actividades?: string }).actividades || "Sin especificar"}</p>
-              <p><strong>Participación:</strong> {(caso.objetivos as unknown as { participacion?: string }).participacion || "Sin especificar"}</p>
+              <p><strong>Objetivos:</strong> Sin registrar</p>
             </div>
           )}
         </div>
@@ -355,14 +350,9 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
             {caso.planIntervencion.estrategias.map((est, i) => (
               <div key={est.id || i} className="bg-white/95 p-4 rounded-2xl border border-amber-200 text-xs space-y-2.5 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-amber-100 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="bg-slate-900 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full">
-                      Estrategia #{i + 1}
-                    </span>
-                    <span className="font-bold text-amber-900 text-xs">
-                      [{est.dimensionCIF || "CIF"}]
-                    </span>
-                  </div>
+                  <span className="bg-slate-900 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full">
+                    Estrategia #{i + 1}
+                  </span>
                   {est.objetivoRelacionado && (
                     <span className="text-[10px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-medium">
                       Tributa a: {est.objetivoRelacionado}
