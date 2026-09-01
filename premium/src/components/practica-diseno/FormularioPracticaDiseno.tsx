@@ -991,14 +991,18 @@ export default function FormularioPracticaDiseno() {
 
             {showVerbosTable && (
               <div className="p-4 bg-white text-xs text-slate-700 space-y-3 border-t border-teal-200 overflow-x-auto">
-                <p className="text-slate-600">
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
+                  <strong>Regla de oro metodológica:</strong> Los verbos en los objetivos deben expresar el <strong>resultado o cambio fisiológico/funcional deseado</strong> (ej: <em>restablecer, modular, incrementar, reeducar, optimizar</em>). <strong>Nunca usen verbos operativos o de técnicas terapéuticas</strong> (ej: NO usar <em>elongar, masajear, traccionar, aplicar frío ni hacer ejercicios</em>, ya que esos son procedimientos operativos del plan de tratamiento, no metas).
+                </div>
+
+                <p className="text-slate-600 text-xs">
                   Seleccionen elementos de cada columna para armar con precisión técnica la redacción de cada objetivo específico:
                 </p>
 
                 <table className="w-full border-collapse border border-slate-200 text-left text-xs min-w-[700px]">
                   <thead>
                     <tr className="bg-slate-100 text-slate-800 font-bold">
-                      <th className="border border-slate-200 p-2.5 w-1/5">1. Verbos de Acción Sugeridos</th>
+                      <th className="border border-slate-200 p-2.5 w-1/5">1. Verbos de Resultado / Meta</th>
                       <th className="border border-slate-200 p-2.5 w-1/4">2. Parámetros / Variables Funcionales</th>
                       <th className="border border-slate-200 p-2.5 w-1/5">3. Criterio de Logro / Medición</th>
                       <th className="border border-slate-200 p-2.5 w-1/6">4. Plazo o Condición</th>
@@ -1026,8 +1030,8 @@ export default function FormularioPracticaDiseno() {
                     </tr>
                     <tr>
                       <td className="border border-slate-200 p-2">
-                        <strong className="text-teal-900 block font-semibold mb-1">Movilidad / Flexibilidad:</strong>
-                        Incrementar, restablecer, ampliar, optimizar, elongar, recuperar.
+                        <strong className="text-teal-900 block font-semibold mb-1">Movilidad / Extensibilidad:</strong>
+                        Incrementar, restablecer, ampliar, optimizar, recuperar.
                       </td>
                       <td className="border border-slate-200 p-2 text-slate-700">
                         Rango de movimiento (ROM) articular activo/pasivo, extensibilidad miotendinosa de isquiotibiales/tríceps sural, juego articular accesorio, flexo-extensión fisiológica.
@@ -1044,17 +1048,17 @@ export default function FormularioPracticaDiseno() {
                     </tr>
                     <tr>
                       <td className="border border-slate-200 p-2">
-                        <strong className="text-teal-900 block font-semibold mb-1">Fuerza / Potencia / Resistencia:</strong>
-                        Desarrollar, aumentar, fortalecer, potenciar, reclutar, acondicionar.
+                        <strong className="text-teal-900 block font-semibold mb-1">Fuerza / Potencia / Capacidad:</strong>
+                        Desarrollar, incrementar, aumentar, potenciar, reclutar.
                       </td>
                       <td className="border border-slate-200 p-2 text-slate-700">
                         Fuerza isométrica/dinámica de cuádriceps, glúteo medio y tríceps sural, potencia extensora de cadera, resistencia muscular local, torque articular.
                       </td>
                       <td className="border border-slate-200 p-2 text-slate-700">
-                        a grado M4+ en escala MRC, incremento del 15% en dinamometría, ejecución con 10RM progresivo.
+                        a grado M4+ en escala MRC, incremento del 15% en dinamometría, tolerancia a sobrecarga submáxima.
                       </td>
                       <td className="border border-slate-200 p-2 text-slate-600">
-                        al término de 4 semanas de entrenamiento.
+                        al término de 4 semanas.
                       </td>
                       <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
                         &quot;Desarrollar la fuerza isométrica y dinámica de cuádriceps y glúteo medio a grado M4+ en escala MRC en 4 semanas.&quot;
@@ -1099,7 +1103,7 @@ export default function FormularioPracticaDiseno() {
                     <tr>
                       <td className="border border-slate-200 p-2">
                         <strong className="text-indigo-900 block font-semibold mb-1">Marcha y Locomoción:</strong>
-                        Reeducar, prolongar, agilizar, perfeccionar, entrenar.
+                        Reeducar, prolongar, agilizar, perfeccionar, optimizar.
                       </td>
                       <td className="border border-slate-200 p-2 text-slate-700">
                         Patrón cinemático de marcha, simetría del paso, fase de apoyo monopodal, cadencia y velocidad de marcha, desplazamiento en desniveles.
@@ -1116,35 +1120,35 @@ export default function FormularioPracticaDiseno() {
                     </tr>
                     <tr>
                       <td className="border border-slate-200 p-2">
-                        <strong className="text-indigo-900 block font-semibold mb-1">Transferencias / Tareas Motoras:</strong>
-                        Entrenar, independizar, ejecutar, perfeccionar, agilizar.
+                        <strong className="text-indigo-900 block font-semibold mb-1">Transferencias / Transiciones:</strong>
+                        Independizar, optimizar, reeducar, agilizar, perfeccionar.
                       </td>
                       <td className="border border-slate-200 p-2 text-slate-700">
                         Transición sedente a bípedo (sit-to-stand), transferencias piso-bípedo, agacharse a nivel de suelo, tiempo en Timed Up and Go (TUG), subir/bajar peldaños.
                       </td>
                       <td className="border border-slate-200 p-2 text-slate-700">
-                        ejecutando ≥ 12 repeticiones en Chair Stand Test en 30s, reduciendo tiempo en TUG a &lt; 10 segundos.
+                        alcanzando ≥ 12 repeticiones en Chair Stand Test en 30s, reduciendo tiempo en TUG a &lt; 10 segundos.
                       </td>
                       <td className="border border-slate-200 p-2 text-slate-600">
-                        en 3 semanas de entrenamiento funcional.
+                        en 3 semanas de programa.
                       </td>
                       <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
-                        &quot;Entrenar la transición sedente a bípedo logrando ≥ 12 repeticiones en Chair Stand Test en 3 semanas de entrenamiento.&quot;
+                        &quot;Independizar la transición sedente a bípedo logrando ≥ 12 repeticiones en Chair Stand Test en 3 semanas de programa.&quot;
                       </td>
                     </tr>
                     <tr>
                       <td className="border border-slate-200 p-2">
                         <strong className="text-indigo-900 block font-semibold mb-1">Prevención de Caídas:</strong>
-                        Afianzar, desarrollar, estimular, entrenar, potenciar.
+                        Afianzar, desarrollar, optimizar, potenciar, reeducar.
                       </td>
                       <td className="border border-slate-200 p-2 text-slate-700">
                         Estrategia de paso compensatorio, reacciones de enderezamiento postural ante perturbaciones, velocidad de reacción protectora, confianza en equilibrio.
                       </td>
                       <td className="border border-slate-200 p-2 text-slate-700">
-                        ejecutando paso protector eficaz ante perturbación externa, reduciendo puntaje de temor a caer (FES-I).
+                        logrando paso protector eficaz ante perturbación externa, reduciendo puntaje de temor a caer (FES-I).
                       </td>
                       <td className="border border-slate-200 p-2 text-slate-600">
-                        en 4 semanas de trabajo multimodal.
+                        en 4 semanas de intervención multimodal.
                       </td>
                       <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
                         &quot;Afianzar la estrategia de paso compensatorio y reacciones de enderezamiento ante perturbaciones en 4 semanas.&quot;
