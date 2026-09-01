@@ -97,6 +97,18 @@ service cloud.firestore {
     }
 
     // --------------------------------------------------------------------
+    // 3.B Práctica Diseño Intervención – Formulario Público de Estudiantes
+    // --------------------------------------------------------------------
+    match /practica_diseno_entregas/{entregaId} {
+      // Cualquier persona puede crear una entrega (sin login).
+      allow create: if true;
+      // Solo el DOCENTE puede leer todas las entregas y actualizar (guardar revisión).
+      allow read, update: if isDocente();
+      // Eliminación solo por DOCENTE
+      allow delete: if isDocente();
+    }
+
+    // --------------------------------------------------------------------
     // 4. Simulador de Examen Clínico – Intentos
     // --------------------------------------------------------------------
     match /simulador_intentos/{intentoId} {
