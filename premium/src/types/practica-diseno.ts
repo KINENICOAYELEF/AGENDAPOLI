@@ -34,11 +34,16 @@ export interface HallazgosCIF {
   factoresAmbientales: string;
 }
 
+export interface ObjetivoEspecificoItem {
+  id: string;
+  prioridad: number;
+  dimensionCIF: string; // "Estructuras y Funciones" | "Actividades" | "Participación"
+  texto: string;
+}
+
 export interface ObjetivosCIF {
   objetivoGeneral: string;
-  estructurasFunciones: string;
-  actividades: string;
-  participacion: string;
+  especificos: ObjetivoEspecificoItem[];
 }
 
 export interface EstrategiasCIF {
@@ -152,7 +157,14 @@ export function casoDisenoVacio(): CasoDisenoIntervencion {
     hallazgo3: '',
     cif: { estructurasCorporales: '', funcionesCorporales: '', actividades: '', participacion: '', factoresPersonales: '', factoresAmbientales: '' },
     enunciadoDiagnostico: '',
-    objetivos: { objetivoGeneral: '', estructurasFunciones: '', actividades: '', participacion: '' },
+    objetivos: {
+      objetivoGeneral: '',
+      especificos: [
+        { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '1', prioridad: 1, dimensionCIF: 'Funciones y Estructuras', texto: '' },
+        { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '2', prioridad: 2, dimensionCIF: 'Actividades', texto: '' },
+        { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '3', prioridad: 3, dimensionCIF: 'Participación', texto: '' },
+      ],
+    },
     planIntervencion: { estructurasFunciones: '', actividades: '', participacion: '' },
     pronostico: { fundamentacion: '', relacionDiagnosticoEIntervencion: '', factorPronostico1: '', factorPronostico2: '', factorPronostico3: '' },
   };

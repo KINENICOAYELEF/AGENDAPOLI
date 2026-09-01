@@ -304,18 +304,32 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
             <p className="mt-0.5">{caso.objetivos.objetivoGeneral}</p>
           </div>
           <hr className="border-emerald-200" />
-          <div>
-            <span className="font-bold uppercase text-[10px] text-emerald-800 tracking-wider">Esp. Estructuras y Funciones:</span>
-            <p className="mt-0.5">{caso.objetivos.estructurasFunciones}</p>
-          </div>
-          <div>
-            <span className="font-bold uppercase text-[10px] text-emerald-800 tracking-wider">Esp. Actividades:</span>
-            <p className="mt-0.5">{caso.objetivos.actividades}</p>
-          </div>
-          <div>
-            <span className="font-bold uppercase text-[10px] text-emerald-800 tracking-wider">Esp. Participación:</span>
-            <p className="mt-0.5">{caso.objetivos.participacion}</p>
-          </div>
+          <span className="font-bold uppercase text-[10px] text-emerald-800 tracking-wider block">
+            Objetivos Específicos Priorizados:
+          </span>
+          {Array.isArray(caso.objetivos.especificos) && caso.objetivos.especificos.length > 0 ? (
+            <div className="space-y-2 mt-1">
+              {caso.objetivos.especificos.map((obj, i) => (
+                <div key={obj.id || i} className="bg-white/80 p-2.5 rounded-lg border border-emerald-200/80">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="bg-emerald-700 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                      Prioridad {obj.prioridad || i + 1}
+                    </span>
+                    <span className="text-[11px] font-bold text-emerald-800">
+                      [{obj.dimensionCIF || "CIF"}]
+                    </span>
+                  </div>
+                  <p className="text-slate-700 text-xs">{obj.texto}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-1 mt-1 text-xs">
+              <p><strong>Funciones/Estructuras:</strong> {(caso.objetivos as unknown as { estructurasFunciones?: string }).estructurasFunciones || "Sin especificar"}</p>
+              <p><strong>Actividades:</strong> {(caso.objetivos as unknown as { actividades?: string }).actividades || "Sin especificar"}</p>
+              <p><strong>Participación:</strong> {(caso.objetivos as unknown as { participacion?: string }).participacion || "Sin especificar"}</p>
+            </div>
+          )}
         </div>
       </div>
 
