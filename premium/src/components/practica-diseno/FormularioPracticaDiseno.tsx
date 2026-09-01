@@ -2,8 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { enviarEntregaDiseno } from "@/services/practica-diseno";
-import { casoDisenoVacio } from "@/types/practica-diseno";
-import type { CasoDisenoIntervencion, DatosEstudianteDupla, EvaluacionDiseno, ObjetivoEspecificoItem } from "@/types/practica-diseno";
+import { casoDisenoVacio, dosificacionVacia } from "@/types/practica-diseno";
+import type {
+  CasoDisenoIntervencion,
+  DatosEstudianteDupla,
+  EvaluacionDiseno,
+  ObjetivoEspecificoItem,
+  DetalleDosificacionFITT,
+  CalificacionPronostico,
+} from "@/types/practica-diseno";
 
 function guid() {
   return typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).slice(2);
@@ -51,7 +58,7 @@ function FieldTA({
   value,
   onChange,
   required,
-  rows = 5,
+  rows = 4,
   placeholder,
 }: {
   label: string;
@@ -69,7 +76,7 @@ function FieldTA({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3.5 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition resize-y placeholder:text-slate-400 min-h-[110px]"
+        className="w-full px-3.5 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition resize-y placeholder:text-slate-400 min-h-[100px]"
       />
     </div>
   );
@@ -257,9 +264,88 @@ function CifSection({
   );
 }
 
+// ── Componente de Prescripción FITT ──────────────────────────
+function BoxDosificacionFITT({
+  title,
+  subtitle,
+  data,
+  onChange,
+}: {
+  title: string;
+  subtitle: string;
+  data: DetalleDosificacionFITT;
+  onChange: (updated: DetalleDosificacionFITT) => void;
+}) {
+  return (
+    <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50 space-y-4">
+      <div>
+        <h4 className="text-sm font-bold text-slate-800">{title}</h4>
+        <p className="text-xs text-slate-500">{subtitle}</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FieldInput
+          label="Técnica / Modalidad terapéutica"
+          required
+          value={data.tecnicaModalidad}
+          onChange={(v) => onChange({ ...data, tecnicaModalidad: v })}
+          placeholder="Ej: Ejercicio de fuerza isométrica, entrenamiento de equilibrio, marcha..."
+        />
+        <FieldInput
+          label="¿A qué objetivo específico tributa?"
+          required
+          value={data.objetivoRelacionado}
+          onChange={(v) => onChange({ ...data, objetivoRelacionado: v })}
+          placeholder="Ej: Al objetivo específico 1 (fuerza de cuádriceps) y general..."
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-white p-4 rounded-xl border border-slate-200">
+        <FieldInput
+          label="Frecuencia (F)"
+          required
+          value={data.frecuencia}
+          onChange={(v) => onChange({ ...data, frecuencia: v })}
+          placeholder="Ej: 3 días/sem, 1 vez/día"
+        />
+        <FieldInput
+          label="Intensidad (I)"
+          required
+          value={data.intensidad}
+          onChange={(v) => onChange({ ...data, intensidad: v })}
+          placeholder="Ej: RPE 5-6 Borg / 60% 1RM"
+        />
+        <FieldInput
+          label="Tiempo / Volumen (T)"
+          required
+          value={data.volumenTiempo}
+          onChange={(v) => onChange({ ...data, volumenTiempo: v })}
+          placeholder="Ej: 3 series x 10 reps, 60s descanso"
+        />
+        <FieldInput
+          label="Tipo de estímulo (T)"
+          required
+          value={data.tipoEjercicio}
+          onChange={(v) => onChange({ ...data, tipoEjercicio: v })}
+          placeholder="Ej: Cadena cerrada, dinámico, tarea funcional"
+        />
+      </div>
+
+      <FieldTA
+        label="Criterio de Progresión y Parámetros de Seguridad"
+        required
+        rows={2}
+        value={data.progresionSeguridad}
+        onChange={(v) => onChange({ ...data, progresionSeguridad: v })}
+        placeholder="¿Cuándo avanzar la carga/dificultad? ¿Qué síntomas o signos obligan a detener o modificar el ejercicio? Ej: Avanzar a bípedo al tolerar 3x12 sin fatiga excesiva. Detener si EVA > 4 o pérdida de estabilidad..."
+      />
+    </div>
+  );
+}
+
 // ─── FORMULARIO PRINCIPAL ───────────────────────────────────────────────────
 export default function FormularioPracticaDiseno() {
-  const STORAGE_KEY = "practica_diseno_borrador_v5";
+  const STORAGE_KEY = "practica_diseno_borrador_v6";
 
   const [dupla, setDupla] = useState<DatosEstudianteDupla>({
     estudiante1: "",
@@ -270,9 +356,9 @@ export default function FormularioPracticaDiseno() {
 
   const [caso, setCaso] = useState<CasoDisenoIntervencion>(casoDisenoVacio());
 
-  // Estados de ejemplos desplegables
+  // Estados desplegables
   const [showAnamnesisExample, setShowAnamnesisExample] = useState(false);
-  const [showDiagExample, setShowDiagExample] = useState(false);
+  const [showVerbosTable, setShowVerbosTable] = useState(true);
 
   const [enviando, setEnviando] = useState(false);
   const [enviadoExito, setEnviadoExito] = useState(false);
@@ -286,16 +372,25 @@ export default function FormularioPracticaDiseno() {
         const parsed = JSON.parse(saved);
         if (parsed.dupla) setDupla(parsed.dupla);
         if (parsed.caso) {
-          // Asegurar compatibilidad de especificos
-          const objParsed = parsed.caso.objetivos;
-          if (objParsed && !Array.isArray(objParsed.especificos)) {
-            objParsed.especificos = [
-              { id: guid(), prioridad: 1, dimensionCIF: "Funciones y Estructuras", texto: objParsed.estructurasFunciones || "" },
-              { id: guid(), prioridad: 2, dimensionCIF: "Actividades", texto: objParsed.actividades || "" },
-              { id: guid(), prioridad: 3, dimensionCIF: "Participación", texto: objParsed.participacion || "" },
-            ];
+          // Normalizar estructura si venía de versión previa
+          const c = parsed.caso;
+          if (typeof c.planIntervencion?.estructurasFunciones === "string") {
+            c.planIntervencion = {
+              estructurasFunciones: { ...dosificacionVacia(), tecnicaModalidad: c.planIntervencion.estructurasFunciones },
+              actividades: { ...dosificacionVacia(), tecnicaModalidad: c.planIntervencion.actividades },
+              participacion: { ...dosificacionVacia(), tecnicaModalidad: c.planIntervencion.participacion },
+            };
           }
-          setCaso(parsed.caso);
+          if (!c.objetivos?.problemaPrincipal) {
+            c.objetivos = {
+              problemaPrincipal: "",
+              objetivoGeneral: c.objetivos?.objetivoGeneral || "",
+              especificos: c.objetivos?.especificos || [
+                { id: guid(), prioridad: 1, dimensionCIF: "Funciones y Estructuras", texto: "" },
+              ],
+            };
+          }
+          setCaso(c);
         }
       }
     } catch {
@@ -363,7 +458,6 @@ export default function FormularioPracticaDiseno() {
   const removeObjetivoEspecifico = (id: string) => {
     if (caso.objetivos.especificos.length <= 1) return;
     const filtered = caso.objetivos.especificos.filter((obj) => obj.id !== id);
-    // Reordenar prioridades
     const reordered = filtered.map((obj, idx) => ({ ...obj, prioridad: idx + 1 }));
     setCaso((prev) => ({
       ...prev,
@@ -400,8 +494,8 @@ export default function FormularioPracticaDiseno() {
       return;
     }
 
-    if (!caso.objetivos.objetivoGeneral.trim()) {
-      setErrorMsg("Debe completar el Objetivo General de la intervención.");
+    if (!caso.objetivos.problemaPrincipal.trim() || !caso.objetivos.objetivoGeneral.trim()) {
+      setErrorMsg("Debe declarar el Problema Kinesiológico Principal y el Objetivo General.");
       return;
     }
 
@@ -411,8 +505,17 @@ export default function FormularioPracticaDiseno() {
       return;
     }
 
-    if (!caso.planIntervencion.estructurasFunciones.trim() || !caso.planIntervencion.actividades.trim() || !caso.planIntervencion.participacion.trim()) {
-      setErrorMsg("Debe formular al menos una estrategia de intervención para cada dimensión CIF.");
+    const pF = caso.planIntervencion.estructurasFunciones;
+    const pA = caso.planIntervencion.actividades;
+    const pP = caso.planIntervencion.participacion;
+
+    if (!pF.tecnicaModalidad.trim() || !pF.frecuencia.trim() || !pA.tecnicaModalidad.trim() || !pP.tecnicaModalidad.trim()) {
+      setErrorMsg("Debe completar los campos de prescripción y dosificación para cada dimensión CIF.");
+      return;
+    }
+
+    if (!caso.pronostico.calificacion) {
+      setErrorMsg("Debe seleccionar la clasificación del pronóstico (Favorable, Reservado o Desfavorable).");
       return;
     }
 
@@ -472,7 +575,7 @@ export default function FormularioPracticaDiseno() {
           Informe de Práctica: Diseño de Intervención
         </h1>
         <p className="text-slate-300 text-sm max-w-2xl">
-          Formulario de entrega clínica enfocado en anamnesis, evaluaciones, matriz CIF, diagnóstico kinesiológico, objetivos priorizados, plan de intervención y pronóstico.
+          Formulario de entrega clínica enfocado en anamnesis, evaluaciones, matriz CIF, diagnóstico kinesiológico, objetivos priorizados, plan dosificado FITT y pronóstico fundamentado.
         </p>
       </div>
 
@@ -545,7 +648,7 @@ export default function FormularioPracticaDiseno() {
           <FieldTA
             label="Motivo principal de consulta o atención"
             required
-            rows={4}
+            rows={3}
             value={caso.datosUsuaria.motivoConsulta}
             onChange={(v) => setCaso({ ...caso, datosUsuaria: { ...caso.datosUsuaria, motivoConsulta: v } })}
             placeholder="Describe el motivo según lo que la persona refiere. Ej: Ingreso a programa de ejercicio funcional y envejecimiento activo, dolor o molestia, prevención de caídas, acondicionamiento físico..."
@@ -600,7 +703,7 @@ export default function FormularioPracticaDiseno() {
             value={caso.anamnesis}
             onChange={(v) => setCaso({ ...caso, anamnesis: v })}
             required
-            rows={14}
+            rows={12}
             placeholder="Registren aquí la entrevista clínica completa ordenada profesionalmente. Primero la anamnesis próxima (situación actual, funcionalidad, molestias o metas de salud). Luego la anamnesis remota (antecedentes médicos, comorbilidades, fármacos, caídas previas, hábitos y estilo de vida)..."
           />
 
@@ -615,7 +718,7 @@ export default function FormularioPracticaDiseno() {
                 value={caso.interpretacionAnamnesis}
                 onChange={(v) => setCaso({ ...caso, interpretacionAnamnesis: v })}
                 required
-                rows={8}
+                rows={6}
                 placeholder="Analicen como tratantes: ¿Qué datos de la entrevista son los más relevantes clínicamente? ¿Qué hipótesis funcionales o de riesgo de declive funcional se forman? ¿Cuáles son las prioridades para la evaluación física?"
               />
             </div>
@@ -657,7 +760,7 @@ export default function FormularioPracticaDiseno() {
                     value={ev.razon}
                     onChange={(v) => updateEvaluacion(ev.id, "razon", v)}
                     required
-                    rows={3}
+                    rows={2}
                     placeholder="Justifiquen por qué esta prueba aporta información clave sobre la condición o funcionalidad de la persona..."
                   />
                   <FieldInput
@@ -700,7 +803,7 @@ export default function FormularioPracticaDiseno() {
             value={caso.hallazgo1}
             onChange={(v) => setCaso({ ...caso, hallazgo1: v })}
             required
-            rows={3}
+            rows={2}
             placeholder="El hallazgo funcional o clínico prioritario..."
           />
           <FieldTA
@@ -708,7 +811,7 @@ export default function FormularioPracticaDiseno() {
             value={caso.hallazgo2}
             onChange={(v) => setCaso({ ...caso, hallazgo2: v })}
             required
-            rows={3}
+            rows={2}
             placeholder="Segundo hallazgo relevante..."
           />
           <FieldTA
@@ -716,7 +819,7 @@ export default function FormularioPracticaDiseno() {
             value={caso.hallazgo3}
             onChange={(v) => setCaso({ ...caso, hallazgo3: v })}
             required
-            rows={3}
+            rows={2}
             placeholder="Tercer hallazgo relevante..."
           />
         </SectionCard>
@@ -724,7 +827,7 @@ export default function FormularioPracticaDiseno() {
         {/* 5. Tabla CIF */}
         <SectionCard title="5. Tabla CIF – Clasificación del caso">
           <GuideBox title="Guía para completar la CIF">
-            <p>La CIF (Clasificación Internacional del Funcionamiento) sirve para <strong>ordenar y clasificar profesionalmente el caso</strong>. Cada componente responde a una pregunta diferente:</p>
+            <p>La CIF sirve para <strong>ordenar y clasificar el caso</strong>:</p>
             <div className="mt-2 bg-white border border-blue-200 rounded-lg p-3 space-y-1">
               <p><strong>Estructuras</strong> = ¿Qué parte del cuerpo está comprometida o evaluada? (tejidos físicos, articulaciones, masa muscular)</p>
               <p><strong>Funciones</strong> = ¿Qué capacidad fisiológica está alterada o disminuida? (fuerza, equilibrio, movilidad, dolor, resistencia)</p>
@@ -734,38 +837,6 @@ export default function FormularioPracticaDiseno() {
               <p><strong>F. Ambientales</strong> = ¿Qué del entorno físico y social ayuda (+) o dificulta (-)? (red de apoyo, barreras arquitectónicas, acceso)</p>
             </div>
           </GuideBox>
-
-          {/* Guía de severidad */}
-          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 text-xs text-purple-900 space-y-2 mb-4">
-            <p className="font-bold text-sm text-purple-800">¿Cómo clasificar la severidad?</p>
-            <p>Cuando agreguen funciones alteradas, actividades limitadas o restricciones de participación, indiquen <strong>qué tan afectado</strong> está cada ítem:</p>
-            <div className="mt-2 space-y-2">
-              <div className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-purple-100">
-                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-bold shrink-0 mt-0.5">Leve</span>
-                <div>
-                  <p className="font-semibold text-purple-800">Alteración funcional pequeña. La persona realiza la tarea con ligera dificultad o molestia mínima.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-purple-100">
-                <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-bold shrink-0 mt-0.5">Moderado</span>
-                <div>
-                  <p className="font-semibold text-purple-800">Alteración funcional evidente. La persona realiza la actividad con dificultad importante o requiere adaptaciones/pausas.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-purple-100">
-                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-bold shrink-0 mt-0.5">Severo</span>
-                <div>
-                  <p className="font-semibold text-purple-800">Gran alteración funcional. La persona tiene mucha dificultad, casi no puede realizar la tarea o depende de asistencia.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-purple-100">
-                <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-bold shrink-0 mt-0.5">Completo</span>
-                <div>
-                  <p className="font-semibold text-purple-800">Alteración funcional total o incapacidad absoluta para ejecutar la acción.</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <div className="space-y-4">
             <CifSection
@@ -875,163 +946,292 @@ export default function FormularioPracticaDiseno() {
             value={caso.enunciadoDiagnostico}
             onChange={(v) => setCaso({ ...caso, enunciadoDiagnostico: v })}
             required
-            rows={14}
+            rows={12}
             placeholder="Redacten su diagnóstico kinesiológico integrando: (1) Identificación y contexto, (2) Problemas o metas desde la persona, (3) Déficits estructurales/funcionales desde el tratante, y (4) Factores personales y ambientales..."
           />
         </SectionCard>
 
         {/* 7. Objetivos de Intervención Priorizados */}
         <SectionCard title="7. Objetivos de intervención (Priorizados por relevancia clínica)">
-          <GuideBox title="¿Cómo formular y priorizar objetivos kinesiológicos?">
-            <p><strong>Criterio 4 de Rúbrica:</strong> Los objetivos deben guardar coherencia directa con el diagnóstico y ser alcanzables.</p>
-            <p className="mt-1">
-              • <strong>Objetivo General:</strong> Define la meta funcional global más importante que se espera alcanzar con el plan de intervención.
-            </p>
-            <p className="mt-1">
-              • <strong>Objetivos Específicos:</strong> Deben estar <strong>estrictamente ordenados por prioridad clínica</strong> (1º Prioridad: lo más urgente o esencial para la persona; 2º Prioridad; 3º Prioridad...). En cada uno indiquen a qué dimensión CIF apunta (Funciones/Estructuras, Actividades o Participación).
-            </p>
-            <div className="mt-2 bg-white border border-blue-200 rounded-lg p-2.5 font-mono text-[11px] text-slate-800">
-              <strong>Fórmula de redacción:</strong> [Verbo en infinitivo] + [Variable / Parámetro funcional] + [Criterio de logro / Magnitud] + [Plazo o condición]
-            </div>
-          </GuideBox>
+          {/* TABLA GUÍA PEDAGÓGICA DE VERBOS Y PARÁMETROS */}
+          <div className="border border-teal-200 rounded-2xl overflow-hidden mb-5">
+            <button
+              type="button"
+              onClick={() => setShowVerbosTable(!showVerbosTable)}
+              className="w-full flex items-center justify-between px-5 py-3.5 bg-teal-50 hover:bg-teal-100 transition text-sm font-bold text-teal-800"
+            >
+              <span>{showVerbosTable ? "Ocultar" : "Ver"} Tabla Guía: Verbos, Parámetros y Medición para Objetivos</span>
+              <span className="text-xs">{showVerbosTable ? "▲ Ocultar" : "▼ Desplegar"}</span>
+            </button>
 
-          <FieldTA
-            label="Objetivo General de intervención"
-            required
-            rows={3}
-            value={caso.objetivos.objetivoGeneral}
-            onChange={(v) => setCaso({ ...caso, objetivos: { ...caso.objetivos, objetivoGeneral: v } })}
-            placeholder="Meta global funcional de la intervención. Fórmula: [Verbo] + [Variable funcional principal] + [Criterio de éxito] + [Plazo temporal]..."
-          />
+            {showVerbosTable && (
+              <div className="p-4 bg-white text-xs text-slate-700 space-y-4 border-t border-teal-200 overflow-x-auto">
+                <p className="font-bold text-slate-800">
+                  Fórmula de Redacción: <span className="font-mono text-teal-700 font-semibold">[Verbo en infinitivo] + [Parámetro funcional] + [Criterio de logro / Magnitud] + [Plazo o condición]</span>
+                </p>
 
-          <div className="border-t border-slate-200 pt-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-bold text-slate-800 text-sm">Objetivos Específicos Priorizados</h4>
-                <p className="text-xs text-slate-500">Ordenados de mayor a menor prioridad clínica para el caso.</p>
+                <table className="w-full border-collapse border border-slate-200 text-left text-xs">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-800 font-bold">
+                      <th className="border border-slate-200 p-2.5">Dimensión CIF</th>
+                      <th className="border border-slate-200 p-2.5">Verbos de Acción Sugeridos</th>
+                      <th className="border border-slate-200 p-2.5">Parámetros / Variables Típicas</th>
+                      <th className="border border-slate-200 p-2.5">Criterios de Logro / Medición</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="border border-slate-200 p-2.5 font-bold text-teal-900 bg-teal-50/50">
+                        Estructuras y Funciones
+                      </td>
+                      <td className="border border-slate-200 p-2.5">
+                        Modular, Incrementar, Optimizar, Disminuir, Ganar, Desarrollar, Acondicionar, Favorecer.
+                      </td>
+                      <td className="border border-slate-200 p-2.5">
+                        Dolor (EVA/EN), ROM activo/pasivo, Fuerza muscular (MRC), Control motor dinámico, Equilibrio estático, Capacidad aeróbica.
+                      </td>
+                      <td className="border border-slate-200 p-2.5 italic text-slate-600">
+                        A ≤ 2/10 en reposo, en +20° de flexión, a M4 en cuádriceps, manteniendo apoyo unipodal 20s, a 4 semanas.
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-200 p-2.5 font-bold text-indigo-900 bg-indigo-50/50">
+                        Actividades (Tareas Motoras)
+                      </td>
+                      <td className="border border-slate-200 p-2.5">
+                        Reeducar, Entrenar, Lograr, Ejecutar, Adquirir, Mejorar, Transferir, Prevenir.
+                      </td>
+                      <td className="border border-slate-200 p-2.5">
+                        Marcha continua, Transferencias (sedente a bípedo), Subir/bajar escaleras, Agacharse, Alcance de objetos, Tiempo en TUG.
+                      </td>
+                      <td className="border border-slate-200 p-2.5 italic text-slate-600">
+                        Durante 500m continuos sin asistencia, en menos de 10s en TUG, subiendo 1 tramo de escaleras alternando pies.
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-200 p-2.5 font-bold text-purple-900 bg-purple-50/50">
+                        Participación (Roles / Comunidad)
+                      </td>
+                      <td className="border border-slate-200 p-2.5">
+                        Facilitar, Promover, Fomentar, Mantener, Capacitar, Reintegrar, Fortalecer.
+                      </td>
+                      <td className="border border-slate-200 p-2.5">
+                        Asistencia a talleres de envejecimiento activo, Autonomía en compras/trámites, Desempeño laboral, Tareas del hogar, Paseos comunitarios.
+                      </td>
+                      <td className="border border-slate-200 p-2.5 italic text-slate-600">
+                        Con asistencia 2 veces por semana al taller comunitario de forma autónoma y segura al término del mes.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              {caso.objetivos.especificos.length < 6 && (
-                <button
-                  type="button"
-                  onClick={addObjetivoEspecifico}
-                  className="text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-3 py-1.5 rounded-lg transition"
-                >
-                  + Agregar objetivo específico
-                </button>
-              )}
+            )}
+          </div>
+
+          <div className="space-y-4">
+            {/* Problema Kinesiológico Principal */}
+            <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 space-y-2">
+              <Label required>Problema Kinesiológico Principal a Resolver</Label>
+              <p className="text-xs text-amber-900">
+                Identifiquen el problema central o limitación funcional prioritaria detectada en la persona. El Objetivo General debe formularse directamente para solucionar este problema.
+              </p>
+              <FieldTA
+                label=""
+                required
+                rows={2}
+                value={caso.objetivos.problemaPrincipal}
+                onChange={(v) => setCaso({ ...caso, objetivos: { ...caso.objetivos, problemaPrincipal: v } })}
+                placeholder="Ej: Limitación de la autonomía en la marcha comunitaria y riesgo de caídas por disminución de fuerza en miembros inferiores y equilibrio dinámico..."
+              />
             </div>
 
-            <div className="space-y-4">
-              {caso.objetivos.especificos.map((obj, idx) => (
-                <div key={obj.id} className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-teal-600 text-white text-xs font-black px-2.5 py-0.5 rounded-full">
-                        Prioridad {idx + 1}
-                      </span>
-                      <span className="text-xs font-bold text-slate-700">Dimensión CIF:</span>
-                      <select
-                        value={obj.dimensionCIF}
-                        onChange={(e) => updateObjetivoEspecifico(obj.id, "dimensionCIF", e.target.value)}
-                        className="text-xs font-semibold border border-slate-300 rounded-lg px-2.5 py-1 text-slate-800 outline-none bg-white"
-                      >
-                        <option value="Funciones y Estructuras">Funciones y Estructuras</option>
-                        <option value="Actividades">Actividades (Tareas Motoras)</option>
-                        <option value="Participación">Participación (Roles / Comunidad)</option>
-                      </select>
+            {/* Objetivo General */}
+            <FieldTA
+              label="Objetivo General de Intervención (Solución al Problema Principal)"
+              required
+              rows={3}
+              value={caso.objetivos.objetivoGeneral}
+              onChange={(v) => setCaso({ ...caso, objetivos: { ...caso.objetivos, objetivoGeneral: v } })}
+              placeholder="Fórmula: [Verbo] + [Variable funcional principal] + [Criterio de éxito] + [Plazo temporal]..."
+            />
+
+            {/* Objetivos Específicos Priorizados */}
+            <div className="border-t border-slate-200 pt-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-slate-800 text-sm">Objetivos Específicos Priorizados</h4>
+                  <p className="text-xs text-slate-500">Ordenados de mayor a menor prioridad clínica para el caso.</p>
+                </div>
+                {caso.objetivos.especificos.length < 6 && (
+                  <button
+                    type="button"
+                    onClick={addObjetivoEspecifico}
+                    className="text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-3 py-1.5 rounded-lg transition"
+                  >
+                    + Agregar objetivo específico
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                {caso.objetivos.especificos.map((obj, idx) => (
+                  <div key={obj.id} className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-teal-600 text-white text-xs font-black px-2.5 py-0.5 rounded-full">
+                          Prioridad {idx + 1}
+                        </span>
+                        <span className="text-xs font-bold text-slate-700">Dimensión CIF:</span>
+                        <select
+                          value={obj.dimensionCIF}
+                          onChange={(e) => updateObjetivoEspecifico(obj.id, "dimensionCIF", e.target.value)}
+                          className="text-xs font-semibold border border-slate-300 rounded-lg px-2.5 py-1 text-slate-800 outline-none bg-white"
+                        >
+                          <option value="Funciones y Estructuras">Funciones y Estructuras</option>
+                          <option value="Actividades">Actividades (Tareas Motoras)</option>
+                          <option value="Participación">Participación (Roles / Comunidad)</option>
+                        </select>
+                      </div>
+
+                      {caso.objetivos.especificos.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeObjetivoEspecifico(obj.id)}
+                          className="text-xs text-red-500 hover:text-red-700 font-semibold self-end sm:self-auto"
+                        >
+                          Eliminar
+                        </button>
+                      )}
                     </div>
 
-                    {caso.objetivos.especificos.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeObjetivoEspecifico(obj.id)}
-                        className="text-xs text-red-500 hover:text-red-700 font-semibold self-end sm:self-auto"
-                      >
-                        Eliminar
-                      </button>
-                    )}
+                    <FieldTA
+                      label={`Redacción del Objetivo Específico #${idx + 1}`}
+                      required
+                      rows={2}
+                      value={obj.texto}
+                      onChange={(v) => updateObjetivoEspecifico(obj.id, "texto", v)}
+                      placeholder="Redacten el objetivo específico siguiendo la fórmula: [Verbo en infinitivo] + [Parámetro a intervenir] + [Criterio de logro/Medición] + [Plazo temporal]..."
+                    />
                   </div>
-
-                  <FieldTA
-                    label={`Redacción del Objetivo Específico #${idx + 1}`}
-                    required
-                    rows={3}
-                    value={obj.texto}
-                    onChange={(v) => updateObjetivoEspecifico(obj.id, "texto", v)}
-                    placeholder="Redacten el objetivo específico siguiendo la fórmula: [Verbo en infinitivo] + [Parámetro a intervenir] + [Criterio de logro/Medición] + [Plazo temporal]..."
-                  />
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </SectionCard>
 
-        {/* 8. Plan de Intervención */}
-        <SectionCard title="8. Plan de intervención propuesto (Estrategias CIF)">
-          <GuideBox title="Metodología de prescripción kinésica por dimensión CIF (Criterio 5)">
-            <p>El plan debe ser <strong>coherente con los objetivos priorizados</strong> e incluir al menos <strong>una estrategia de intervención para cada dimensión CIF</strong>.</p>
-            <p className="mt-1 font-semibold">Toda estrategia terapéutica debe detallar:</p>
+        {/* 8. Plan de Intervención Dosificado FITT */}
+        <SectionCard title="8. Plan de intervención propuesto (Prescripción FITT por dimensión CIF)">
+          <GuideBox title="Metodología de prescripción kinésica estructurada (Criterio 5)">
+            <p>Para cada dimensión CIF, deben especificar la técnica terapéutica y desglosar con precisión todos los parámetros de dosificación:</p>
             <div className="mt-2 ml-2 space-y-1 text-slate-700">
-              <p>1. <strong>Técnica / Modalidad:</strong> Ejercicio terapéutico (fuerza, equilibrio, resistencia), terapia manual, reeducación de patrones de movimiento, entrenamiento en tareas funcionales, educación ergonómica o para el envejecimiento activo.</p>
-              <p>2. <strong>Dosificación (FITT):</strong> Frecuencia (veces por semana), Intensidad (esfuerzo RPE, carga, dificultad), Volumen/Tiempo (series, repeticiones, duración, descansos) y Tipo de contracción/estímulo.</p>
-              <p>3. <strong>Criterio de Progresión:</strong> Parámetro objetivo para aumentar la complejidad o dosificación.</p>
+              <p>• <strong>Frecuencia (F):</strong> Cuántos días a la semana o veces por día.</p>
+              <p>• <strong>Intensidad (I):</strong> Nivel de esfuerzo (Escala de Borg / RPE 1-10), % de RM, carga o rango angular.</p>
+              <p>• <strong>Tiempo / Volumen (T):</strong> Series $\times$ Repeticiones, duración de trabajo y tiempo de descanso.</p>
+              <p>• <strong>Tipo (T):</strong> Modalidad específica (isométrico, concéntrico, tarea global, circuito, educación ergonómica).</p>
+              <p>• <strong>Progresión y Seguridad:</strong> Criterios para aumentar dificultad y banderas rojas / síntomas de alarma.</p>
             </div>
           </GuideBox>
 
-          <div className="space-y-4">
-            <FieldTA
-              label="Estrategia(s) para Estructuras y Funciones Corporales"
-              required
-              rows={4}
-              value={caso.planIntervencion.estructurasFunciones}
-              onChange={(v) =>
-                setCaso({ ...caso, planIntervencion: { ...caso.planIntervencion, estructurasFunciones: v } })
+          <div className="space-y-6">
+            <BoxDosificacionFITT
+              title="A. Prescripción para Funciones y Estructuras Corporales"
+              subtitle="Técnicas dirigidas a modulación del dolor, movilidad, fuerza muscular, equilibrio o capacidad aeróbica."
+              data={caso.planIntervencion.estructurasFunciones}
+              onChange={(updated) =>
+                setCaso({
+                  ...caso,
+                  planIntervencion: { ...caso.planIntervencion, estructurasFunciones: updated },
+                })
               }
-              placeholder="Detallen la modalidad terapéutica y su dosificación exacta (series, repeticiones, frecuencia, intensidad) para modular dolor, optimizar fuerza muscular, rango articular o capacidad cardiorrespiratoria..."
             />
 
-            <FieldTA
-              label="Estrategia(s) para Actividades"
-              required
-              rows={4}
-              value={caso.planIntervencion.actividades}
-              onChange={(v) =>
-                setCaso({ ...caso, planIntervencion: { ...caso.planIntervencion, actividades: v } })
+            <BoxDosificacionFITT
+              title="B. Prescripción para Actividades (Tareas Motoras)"
+              subtitle="Entrenamiento de tareas funcionales: marcha, prevención de caídas, transferencias, escaleras, alcance."
+              data={caso.planIntervencion.actividades}
+              onChange={(updated) =>
+                setCaso({
+                  ...caso,
+                  planIntervencion: { ...caso.planIntervencion, actividades: updated },
+                })
               }
-              placeholder="Detallen cómo entrenarán las tareas motrices específicas (marcha, equilibrio dinámico, prevención de caídas, escaleras, transferencias), indicando variaciones de superficie, velocidad y progresión funcional..."
             />
 
-            <FieldTA
-              label="Estrategia(s) para Participación"
-              required
-              rows={4}
-              value={caso.planIntervencion.participacion}
-              onChange={(v) =>
-                setCaso({ ...caso, planIntervencion: { ...caso.planIntervencion, participacion: v } })
+            <BoxDosificacionFITT
+              title="C. Prescripción para Participación (Roles y Entorno)"
+              subtitle="Estrategias de educación, adaptación ergonómica/ambiental, envejecimiento activo y pautas domiciliarias."
+              data={caso.planIntervencion.participacion}
+              onChange={(updated) =>
+                setCaso({
+                  ...caso,
+                  planIntervencion: { ...caso.planIntervencion, participacion: updated },
+                })
               }
-              placeholder="Detallen estrategias para favorecer la autonomía en roles sociales, comunitarios o laborales: educación en hábitos y envejecimiento activo, pauta de ejercicios domiciliarios, adaptación ambiental o guía a cuidadores..."
             />
           </div>
         </SectionCard>
 
         {/* 9. Pronóstico Incipiente */}
         <SectionCard title="9. Pronóstico (incipiente) final y factores pronósticos">
-          <GuideBox title="¿Cómo razonar y fundamentar el pronóstico kinesiológico? (Criterio 6)">
-            <p>El pronóstico es la <strong>estimación razonada del potencial y tiempo de recuperación o mantenimiento funcional</strong> de la persona (tanto en rehabilitación de lesiones como en programas de envejecimiento activo o manejo crónico). Debe integrar:</p>
-            <div className="mt-2 ml-2 space-y-1 text-slate-700">
-              <p>1. <strong>Fisiología y adaptabilidad:</strong> Capacidad intrínseca, reserva funcional o tiempos biológicos de cicatrización/adaptación esperados.</p>
-              <p>2. <strong>Respaldo del plan de intervención:</strong> Explicar por qué las estrategias seleccionadas resolverán o mitigarán los déficits diagnosticados.</p>
-              <p>3. <strong>Factores Pronósticos Biopsicosociales:</strong> Declarar obligatoriamente <strong>al menos 3 factores</strong> que facilitan (+) o dificultan (-) la evolución (edad, comorbilidades, adherencia, exigencia laboral/física, motivación, red de apoyo, entorno).</p>
+          {/* GUÍA PEDAGÓGICA PARA CLASIFICAR EL PRONÓSTICO */}
+          <GuideBox title="¿Cómo determinar si el pronóstico es Favorable, Reservado o Desfavorable?">
+            <p>El pronóstico es la estimación clínica del potencial y tiempo de recuperación o mantenimiento funcional de la persona:</p>
+            <div className="mt-2 space-y-2 text-slate-800">
+              <div className="bg-white p-3 rounded-lg border border-green-200">
+                <span className="font-bold text-green-700 uppercase tracking-wide">Pronóstico Favorable:</span>
+                <p className="mt-0.5">El cuadro es tratable/entrenable con kinesiología; los factores protectores superan con claridad a las barreras; la persona tiene buena motivación y adherencia; no hay daño irreversible ni comorbilidades descompensadas. Se espera recuperación o ganancia sustancial de autonomía.</p>
+              </div>
+
+              <div className="bg-white p-3 rounded-lg border border-amber-200">
+                <span className="font-bold text-amber-700 uppercase tracking-wide">Pronóstico Reservado / Relativo:</span>
+                <p className="mt-0.5">Existe incertidumbre clínica; presencia de comorbilidades crónicas o cuadro de larga data (cronicidad); balance equilibrado entre facilitadores y barreras; o adherencia dudosa. Se espera mantenimiento o mejora parcial que requiere reevaluaciones periódicas.</p>
+              </div>
+
+              <div className="bg-white p-3 rounded-lg border border-red-200">
+                <span className="font-bold text-red-700 uppercase tracking-wide">Pronóstico Desfavorable:</span>
+                <p className="mt-0.5">Condición degenerativa severa o irreversible; predominio de barreras ambientales/personales insalvables; alto riesgo de declive funcional severo. Los objetivos se orientan al confort, educación y prevención de complicaciones secundarias.</p>
+              </div>
             </div>
           </GuideBox>
 
+          {/* Selector de Clasificación */}
+          <div className="space-y-2 mb-4">
+            <Label required>Clasificación del Pronóstico Kinesiológico:</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { val: "favorable", label: "Favorable", color: "bg-emerald-600 border-emerald-600 text-white" },
+                { val: "reservado", label: "Reservado / Relativo", color: "bg-amber-600 border-amber-600 text-white" },
+                { val: "desfavorable", label: "Desfavorable", color: "bg-rose-600 border-rose-600 text-white" },
+              ].map((p) => {
+                const active = caso.pronostico.calificacion === p.val;
+                return (
+                  <button
+                    key={p.val}
+                    type="button"
+                    onClick={() =>
+                      setCaso({
+                        ...caso,
+                        pronostico: { ...caso.pronostico, calificacion: p.val as CalificacionPronostico },
+                      })
+                    }
+                    className={`p-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 ${
+                      active ? p.color : "bg-slate-50 border-slate-300 text-slate-700 hover:border-teal-400"
+                    }`}
+                  >
+                    <span>{p.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <FieldTA
-            label="Fundamentación del pronóstico incipiente"
+            label="Fundamentación clínica del pronóstico"
             required
             rows={4}
             value={caso.pronostico.fundamentacion}
             onChange={(v) => setCaso({ ...caso, pronostico: { ...caso.pronostico, fundamentacion: v } })}
-            placeholder="Fundamenten la expectativa de evolución funcional (nivel de autonomía alcanzable o tiempo estimado de mejora/mantenimiento) basándose en la condición clínica, respuesta al ejercicio y adaptabilidad funcional..."
+            placeholder="Fundamenten por qué clasificaron el pronóstico en esa categoría: analicen la adaptabilidad tisular/neuromuscular, respuesta previa, comorbilidades y reserva funcional de la persona..."
           />
 
           <FieldTA
@@ -1042,33 +1242,33 @@ export default function FormularioPracticaDiseno() {
             onChange={(v) =>
               setCaso({ ...caso, pronostico: { ...caso.pronostico, relacionDiagnosticoEIntervencion: v } })
             }
-            placeholder="Expliquen de qué manera el plan de intervención planteado respalda y hace viable el logro de este pronóstico a partir del diagnóstico inicial..."
+            placeholder="Expliquen de qué manera el plan de intervención propuesto hace viable el pronóstico a partir del diagnóstico inicial..."
           />
 
           <div className="pt-2">
             <Label required>Declaración de Factores Pronósticos (Obligatorio declarar 3):</Label>
-            <p className="text-xs text-slate-500 mb-3">Identifiquen al menos 3 factores biopsicosociales concretos presentes en la persona o su entorno.</p>
+            <p className="text-xs text-slate-500 mb-3">Identifiquen al menos 3 factores biopsicosociales concretos (indicar si es [+] Facilitador o [-] Barrera).</p>
             <div className="space-y-3">
               <FieldInput
                 label="Factor Pronóstico 1"
                 required
                 value={caso.pronostico.factorPronostico1}
                 onChange={(v) => setCaso({ ...caso, pronostico: { ...caso.pronostico, factorPronostico1: v } })}
-                placeholder="Ej: Factor personal / conductual (+): Alta adherencia a las sesiones y comprensión del ejercicio..."
+                placeholder="Ej: Factor conductual / personal (+): Alta adherencia a los talleres y motivación por el ejercicio..."
               />
               <FieldInput
                 label="Factor Pronóstico 2"
                 required
                 value={caso.pronostico.factorPronostico2}
                 onChange={(v) => setCaso({ ...caso, pronostico: { ...caso.pronostico, factorPronostico2: v } })}
-                placeholder="Ej: Factor ambiental / físico (-): Presencia de barreras arquitectónicas en el entorno inmediato..."
+                placeholder="Ej: Factor ambiental / físico (-): Presencia de escaleras sin pasamanos en su trayecto habitual..."
               />
               <FieldInput
                 label="Factor Pronóstico 3"
                 required
                 value={caso.pronostico.factorPronostico3}
                 onChange={(v) => setCaso({ ...caso, pronostico: { ...caso.pronostico, factorPronostico3: v } })}
-                placeholder="Ej: Factor biológico / clínico (+): Buena capacidad intrínseca y ausencia de descompensación crónica..."
+                placeholder="Ej: Factor clínico / biológico (+): Buena capacidad funcional previa y ausencia de comorbilidades agudas..."
               />
             </div>
           </div>

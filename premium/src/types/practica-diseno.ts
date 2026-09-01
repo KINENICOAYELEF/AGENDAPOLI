@@ -37,22 +37,36 @@ export interface HallazgosCIF {
 export interface ObjetivoEspecificoItem {
   id: string;
   prioridad: number;
-  dimensionCIF: string; // "Estructuras y Funciones" | "Actividades" | "Participación"
+  dimensionCIF: string; // "Funciones y Estructuras" | "Actividades" | "Participación"
   texto: string;
 }
 
 export interface ObjetivosCIF {
+  problemaPrincipal: string; // Problema kinesiológico principal a resolver
   objetivoGeneral: string;
   especificos: ObjetivoEspecificoItem[];
 }
 
-export interface EstrategiasCIF {
-  estructurasFunciones: string;
-  actividades: string;
-  participacion: string;
+export interface DetalleDosificacionFITT {
+  tecnicaModalidad: string;
+  objetivoRelacionado: string;
+  frecuencia: string;    // Ej: 3 veces por semana / 2 veces al día
+  intensidad: string;    // Ej: RPE 4-6 Borg / 60% 1RM / Rango protegido
+  volumenTiempo: string; // Ej: 3 series x 10 reps, 60s descanso / 20 min continuos
+  tipoEjercicio: string; // Ej: Isométrico, concéntrico, tarea global, circuito
+  progresionSeguridad: string; // Ej: Aumentar 1 serie al completar con RPE < 5, detener si EVA > 4
 }
 
+export interface EstrategiasCIF {
+  estructurasFunciones: DetalleDosificacionFITT;
+  actividades: DetalleDosificacionFITT;
+  participacion: DetalleDosificacionFITT;
+}
+
+export type CalificacionPronostico = 'favorable' | 'reservado' | 'desfavorable';
+
 export interface PronosticoIncipiente {
+  calificacion: CalificacionPronostico | '';
   fundamentacion: string;
   relacionDiagnosticoEIntervencion: string;
   factorPronostico1: string;
@@ -146,6 +160,18 @@ export function calcularNotaDiseno(puntajeTotal: number): { nota: number; porcen
   return { nota, porcentaje, aprobado: nota >= 4.0 };
 }
 
+export function dosificacionVacia(): DetalleDosificacionFITT {
+  return {
+    tecnicaModalidad: '',
+    objetivoRelacionado: '',
+    frecuencia: '',
+    intensidad: '',
+    volumenTiempo: '',
+    tipoEjercicio: '',
+    progresionSeguridad: '',
+  };
+}
+
 export function casoDisenoVacio(): CasoDisenoIntervencion {
   return {
     datosUsuaria: { nombre: '', edad: '', ocupacion: '', contextoAtencion: '', motivoConsulta: '' },
@@ -158,6 +184,7 @@ export function casoDisenoVacio(): CasoDisenoIntervencion {
     cif: { estructurasCorporales: '', funcionesCorporales: '', actividades: '', participacion: '', factoresPersonales: '', factoresAmbientales: '' },
     enunciadoDiagnostico: '',
     objetivos: {
+      problemaPrincipal: '',
       objetivoGeneral: '',
       especificos: [
         { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '1', prioridad: 1, dimensionCIF: 'Funciones y Estructuras', texto: '' },
@@ -165,7 +192,18 @@ export function casoDisenoVacio(): CasoDisenoIntervencion {
         { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '3', prioridad: 3, dimensionCIF: 'Participación', texto: '' },
       ],
     },
-    planIntervencion: { estructurasFunciones: '', actividades: '', participacion: '' },
-    pronostico: { fundamentacion: '', relacionDiagnosticoEIntervencion: '', factorPronostico1: '', factorPronostico2: '', factorPronostico3: '' },
+    planIntervencion: {
+      estructurasFunciones: dosificacionVacia(),
+      actividades: dosificacionVacia(),
+      participacion: dosificacionVacia(),
+    },
+    pronostico: {
+      calificacion: '',
+      fundamentacion: '',
+      relacionDiagnosticoEIntervencion: '',
+      factorPronostico1: '',
+      factorPronostico2: '',
+      factorPronostico3: '',
+    },
   };
 }

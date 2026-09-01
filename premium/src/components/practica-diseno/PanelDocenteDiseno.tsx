@@ -12,6 +12,7 @@ import type {
   RevisionDocenteDiseno,
   PuntajesCriteriosDiseno,
   EstadoEntregaDiseno,
+  DetalleDosificacionFITT,
 } from "@/types/practica-diseno";
 
 // ── Criterios Exactos de la Rúbrica Oficial (28 Puntos Totales) ─────────────
@@ -210,6 +211,57 @@ function CifRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+// ── Componente Vista FITT ──────────────────────────────────────────────────
+function VistaFITT({ title, data }: { title: string; data: DetalleDosificacionFITT | string }) {
+  if (!data) return null;
+  if (typeof data === "string") {
+    return (
+      <div className="bg-white/90 p-3 rounded-xl border border-amber-200 text-xs">
+        <span className="font-bold uppercase text-[10px] text-amber-800 tracking-wider block mb-1">{title}</span>
+        <p className="whitespace-pre-wrap">{data}</p>
+      </div>
+    );
+  }
+  return (
+    <div className="bg-white/95 p-3.5 rounded-xl border border-amber-200 text-xs space-y-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-amber-100 pb-1.5">
+        <span className="font-bold uppercase text-[11px] text-amber-900 tracking-wider">{title}</span>
+        {data.objetivoRelacionado && (
+          <span className="text-[10px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+            Tributa a: {data.objetivoRelacionado}
+          </span>
+        )}
+      </div>
+      <div>
+        <span className="font-semibold text-slate-800">Técnica/Modalidad:</span> {data.tecnicaModalidad || "Sin especificar"}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-amber-50/60 p-2.5 rounded-lg border border-amber-100/80 text-[11px]">
+        <div>
+          <span className="font-bold text-amber-900 block">Frecuencia:</span>
+          <span className="text-slate-700">{data.frecuencia || "-"}</span>
+        </div>
+        <div>
+          <span className="font-bold text-amber-900 block">Intensidad:</span>
+          <span className="text-slate-700">{data.intensidad || "-"}</span>
+        </div>
+        <div>
+          <span className="font-bold text-amber-900 block">Volumen/Tiempo:</span>
+          <span className="text-slate-700">{data.volumenTiempo || "-"}</span>
+        </div>
+        <div>
+          <span className="font-bold text-amber-900 block">Tipo:</span>
+          <span className="text-slate-700">{data.tipoEjercicio || "-"}</span>
+        </div>
+      </div>
+      {data.progresionSeguridad && (
+        <div className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
+          <strong>Progresión y Seguridad:</strong> {data.progresionSeguridad}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Vista Detallada del Caso Estudiantil ───────────────────────────────────
 function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
   return (
@@ -299,8 +351,19 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
           7. Objetivos de Intervención — Relevante para C4
         </h4>
         <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200 text-xs text-emerald-900 space-y-2.5">
+          {caso.objetivos.problemaPrincipal && (
+            <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200 text-amber-900 mb-2">
+              <span className="font-bold uppercase text-[10px] text-amber-800 tracking-wider block">
+                Problema Kinesiológico Principal a Resolver:
+              </span>
+              <p className="mt-0.5">{caso.objetivos.problemaPrincipal}</p>
+            </div>
+          )}
+
           <div>
-            <span className="font-bold uppercase text-[10px] text-emerald-800 tracking-wider">Objetivo General:</span>
+            <span className="font-bold uppercase text-[10px] text-emerald-800 tracking-wider">
+              Objetivo General (Solución al Problema Principal):
+            </span>
             <p className="mt-0.5">{caso.objetivos.objetivoGeneral}</p>
           </div>
           <hr className="border-emerald-200" />
@@ -336,23 +399,12 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
       {/* 8. Plan de Intervención (Para Criterio C5) */}
       <div>
         <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">
-          8. Plan de Intervención (Estrategias CIF) — Relevante para C5
+          8. Plan de Intervención (Prescripción FITT por Dimensión CIF) — Relevante para C5
         </h4>
-        <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-2.5">
-          <div>
-            <span className="font-bold uppercase text-[10px] text-amber-800 tracking-wider">Estrategias Estructuras/Funciones (Técnicas + FITT):</span>
-            <p className="mt-0.5 whitespace-pre-wrap">{caso.planIntervencion.estructurasFunciones}</p>
-          </div>
-          <hr className="border-amber-200" />
-          <div>
-            <span className="font-bold uppercase text-[10px] text-amber-800 tracking-wider">Estrategias Actividades (Entrenamiento de Tareas):</span>
-            <p className="mt-0.5 whitespace-pre-wrap">{caso.planIntervencion.actividades}</p>
-          </div>
-          <hr className="border-amber-200" />
-          <div>
-            <span className="font-bold uppercase text-[10px] text-amber-800 tracking-wider">Estrategias Participación (Ergonomía / Familia / Domicilio):</span>
-            <p className="mt-0.5 whitespace-pre-wrap">{caso.planIntervencion.participacion}</p>
-          </div>
+        <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-3">
+          <VistaFITT title="A. Estructuras y Funciones Corporales" data={caso.planIntervencion.estructurasFunciones} />
+          <VistaFITT title="B. Actividades (Tareas Motoras)" data={caso.planIntervencion.actividades} />
+          <VistaFITT title="C. Participación (Roles y Entorno)" data={caso.planIntervencion.participacion} />
         </div>
       </div>
 
@@ -362,8 +414,25 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
           9. Pronóstico Incipiente Final — Relevante para C6
         </h4>
         <div className="bg-purple-50 p-4 rounded-xl border border-purple-200 text-xs text-purple-900 space-y-2.5">
+          {caso.pronostico.calificacion && (
+            <div className="flex items-center gap-2 pb-1 border-b border-purple-200">
+              <span className="text-[10px] font-bold text-purple-900 uppercase tracking-wider">Clasificación:</span>
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
+                  caso.pronostico.calificacion === "favorable"
+                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    : caso.pronostico.calificacion === "desfavorable"
+                    ? "bg-rose-100 text-rose-800 border border-rose-300"
+                    : "bg-amber-100 text-amber-800 border border-amber-300"
+                }`}
+              >
+                {caso.pronostico.calificacion}
+              </span>
+            </div>
+          )}
+
           <div>
-            <span className="font-bold uppercase text-[10px] text-purple-800 tracking-wider">Fundamentación Fisiopatológica/Funcional:</span>
+            <span className="font-bold uppercase text-[10px] text-purple-800 tracking-wider">Fundamentación Clínica:</span>
             <p className="mt-0.5 whitespace-pre-wrap">{caso.pronostico.fundamentacion}</p>
           </div>
           <div>
