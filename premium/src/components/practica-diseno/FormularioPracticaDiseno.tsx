@@ -553,13 +553,28 @@ export default function FormularioPracticaDiseno() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header Banner */}
-      <div className="bg-slate-900 rounded-3xl p-8 text-white mb-8 shadow-xl">
-        <h1 className="text-2xl md:text-3xl font-extrabold mb-2">
-          Informe de Práctica: Diseño de Intervención
-        </h1>
-        <p className="text-slate-300 text-sm max-w-2xl">
-          Formulario de entrega clínica enfocado en anamnesis, evaluaciones, matriz CIF, diagnóstico kinesiológico, objetivos priorizados, plan dosificado FITT-VP y pronóstico biopsicosocial.
-        </p>
+      <div className="bg-slate-900 rounded-3xl p-8 text-white mb-6 shadow-xl relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold mb-2">
+              Informe de Práctica: Diseño de Intervención
+            </h1>
+            <p className="text-slate-300 text-sm max-w-2xl">
+              Formulario de entrega clínica enfocado en anamnesis, evaluaciones, matriz CIF, diagnóstico kinesiológico, objetivos priorizados, plan dosificado FITT-VP y pronóstico biopsicosocial.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Indicador de Autoguardado en Vivo */}
+      <div className="flex items-center justify-between gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-2xl mb-6 text-xs text-emerald-800 font-semibold shadow-sm">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Borrador guardado automáticamente en tu navegador</span>
+        </div>
+        <span className="text-[11px] font-normal text-emerald-700 hidden sm:inline">
+          Puedes cerrar o recargar la página sin perder tus avances
+        </span>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -757,7 +772,7 @@ export default function FormularioPracticaDiseno() {
                     onChange={(v) => updateEvaluacion(ev.id, "interpretacion", v)}
                     required
                     rows={2}
-                    placeholder="¿Qué significa este valor respecto a los valores normativos de la persona, su autonomía o su riesgo funcional?"
+                    placeholder="¿Qué significa este valor? (Si es test funcional: ¿está sobre o bajo el corte normativo y qué riesgo implica? Si es ROM/fuerza/dolor: ¿qué grado de limitación, asimetría o compromiso representa?)..."
                   />
                 </div>
               </div>
@@ -1429,7 +1444,7 @@ export default function FormularioPracticaDiseno() {
                         required
                         value={est.intensidad}
                         onChange={(v) => updateEstrategiaFitt(est.id, "intensidad", v)}
-                        placeholder="Ej: RPE 5-6 en escala Borg / 60% 1RM"
+                        placeholder="Ej: Escala Borg RPE 4-6 (moderado a algo duro), Talk Test (sin ahogo), o peso/resistencia elástica manejable"
                       />
                       <FieldInput
                         label="T · Tiempo / Duración"
@@ -1443,7 +1458,7 @@ export default function FormularioPracticaDiseno() {
                         required
                         value={est.tipo}
                         onChange={(v) => updateEstrategiaFitt(est.id, "tipo", v)}
-                        placeholder="Ej: Dinámico en cadena cerrada, aeróbico, circuito"
+                        placeholder="Ej: Dinámico en cadena cerrada, aeróbico, circuito motor"
                       />
                       <FieldInput
                         label="V · Volumen"
@@ -1453,11 +1468,11 @@ export default function FormularioPracticaDiseno() {
                         placeholder="Ej: 3 series de 10 reps, 60s descanso"
                       />
                       <FieldInput
-                        label="P · Progresión y Criterio de Avance"
+                        label="P · Progresión y Criterios de Seguridad"
                         required
                         value={est.progresion}
                         onChange={(v) => updateEstrategiaFitt(est.id, "progresion", v)}
-                        placeholder="Ej: Aumentar 1 serie al tolerar con RPE < 5; detener si EVA > 4"
+                        placeholder="Ej: Avance: Aumentar reps o reducir base de apoyo si RPE ≤ 3. Seguridad: Detener si EVA > 4, mareo o disnea"
                       />
                     </div>
                   </div>
