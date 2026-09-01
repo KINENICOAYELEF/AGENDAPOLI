@@ -42,25 +42,26 @@ export interface ObjetivoEspecificoItem {
 }
 
 export interface ObjetivosCIF {
-  problemaPrincipal: string; // Problema kinesiológico principal a resolver
-  objetivoGeneral: string;
+  problemaPrincipal: string; // Problema kinesiológico principal (impacto biopsicosocial)
+  objetivoGeneral: string;    // Verbo + Logro funcional + PARA (Participación) + Plazo
   especificos: ObjetivoEspecificoItem[];
 }
 
-export interface DetalleDosificacionFITT {
-  tecnicaModalidad: string;
-  objetivoRelacionado: string;
-  frecuencia: string;    // Ej: 3 veces por semana / 2 veces al día
-  intensidad: string;    // Ej: RPE 4-6 Borg / 60% 1RM / Rango protegido
-  volumenTiempo: string; // Ej: 3 series x 10 reps, 60s descanso / 20 min continuos
-  tipoEjercicio: string; // Ej: Isométrico, concéntrico, tarea global, circuito
-  progresionSeguridad: string; // Ej: Aumentar 1 serie al completar con RPE < 5, detener si EVA > 4
+export interface EstrategiaFittVP {
+  id: string;
+  nombreEstrategia: string;
+  dimensionCIF: string;       // "Funciones y Estructuras" | "Actividades" | "Participación"
+  objetivoRelacionado: string; // Objetivo específico al que tributa
+  frecuencia: string;         // F: Frecuencia (ej. 3 veces por semana)
+  intensidad: string;         // I: Intensidad (ej. RPE 5-6 Borg, 60% 1RM, peso en kg)
+  tiempo: string;             // T: Tiempo / Duración (ej. 30 minutos de sesión / 40s de trabajo)
+  tipo: string;               // T: Tipo de estímulo (ej. Ejercicio de fuerza, equilibrio, circuito motor)
+  volumen: string;            // V: Volumen (ej. 3 series de 10 repeticiones, descanso 60s)
+  progresion: string;         // P: Progresión y Criterios de Seguridad (ej. Aumentar repeticiones si RPE < 5, suspender si dolor > 3)
 }
 
-export interface EstrategiasCIF {
-  estructurasFunciones: DetalleDosificacionFITT;
-  actividades: DetalleDosificacionFITT;
-  participacion: DetalleDosificacionFITT;
+export interface PlanIntervencionFittVP {
+  estrategias: EstrategiaFittVP[];
 }
 
 export type CalificacionPronostico = 'favorable' | 'reservado' | 'desfavorable';
@@ -85,7 +86,7 @@ export interface CasoDisenoIntervencion {
   cif: HallazgosCIF;
   enunciadoDiagnostico: string; // Clínico o Situacional
   objetivos: ObjetivosCIF;
-  planIntervencion: EstrategiasCIF;
+  planIntervencion: PlanIntervencionFittVP;
   pronostico: PronosticoIncipiente;
 }
 
@@ -160,15 +161,18 @@ export function calcularNotaDiseno(puntajeTotal: number): { nota: number; porcen
   return { nota, porcentaje, aprobado: nota >= 4.0 };
 }
 
-export function dosificacionVacia(): DetalleDosificacionFITT {
+export function estrategiaFittVacio(dim: string = "Funciones y Estructuras"): EstrategiaFittVP {
   return {
-    tecnicaModalidad: '',
+    id: typeof crypto !== 'undefined' ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+    nombreEstrategia: '',
+    dimensionCIF: dim,
     objetivoRelacionado: '',
     frecuencia: '',
     intensidad: '',
-    volumenTiempo: '',
-    tipoEjercicio: '',
-    progresionSeguridad: '',
+    tiempo: '',
+    tipo: '',
+    volumen: '',
+    progresion: '',
   };
 }
 
@@ -193,9 +197,11 @@ export function casoDisenoVacio(): CasoDisenoIntervencion {
       ],
     },
     planIntervencion: {
-      estructurasFunciones: dosificacionVacia(),
-      actividades: dosificacionVacia(),
-      participacion: dosificacionVacia(),
+      estrategias: [
+        estrategiaFittVacio("Funciones y Estructuras"),
+        estrategiaFittVacio("Actividades"),
+        estrategiaFittVacio("Participación"),
+      ],
     },
     pronostico: {
       calificacion: '',

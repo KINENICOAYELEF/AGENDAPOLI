@@ -12,7 +12,7 @@ import type {
   RevisionDocenteDiseno,
   PuntajesCriteriosDiseno,
   EstadoEntregaDiseno,
-  DetalleDosificacionFITT,
+  EstrategiaFittVP,
 } from "@/types/practica-diseno";
 
 // ── Criterios Exactos de la Rúbrica Oficial (28 Puntos Totales) ─────────────
@@ -211,57 +211,6 @@ function CifRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-// ── Componente Vista FITT ──────────────────────────────────────────────────
-function VistaFITT({ title, data }: { title: string; data: DetalleDosificacionFITT | string }) {
-  if (!data) return null;
-  if (typeof data === "string") {
-    return (
-      <div className="bg-white/90 p-3 rounded-xl border border-amber-200 text-xs">
-        <span className="font-bold uppercase text-[10px] text-amber-800 tracking-wider block mb-1">{title}</span>
-        <p className="whitespace-pre-wrap">{data}</p>
-      </div>
-    );
-  }
-  return (
-    <div className="bg-white/95 p-3.5 rounded-xl border border-amber-200 text-xs space-y-2">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-amber-100 pb-1.5">
-        <span className="font-bold uppercase text-[11px] text-amber-900 tracking-wider">{title}</span>
-        {data.objetivoRelacionado && (
-          <span className="text-[10px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-            Tributa a: {data.objetivoRelacionado}
-          </span>
-        )}
-      </div>
-      <div>
-        <span className="font-semibold text-slate-800">Técnica/Modalidad:</span> {data.tecnicaModalidad || "Sin especificar"}
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-amber-50/60 p-2.5 rounded-lg border border-amber-100/80 text-[11px]">
-        <div>
-          <span className="font-bold text-amber-900 block">Frecuencia:</span>
-          <span className="text-slate-700">{data.frecuencia || "-"}</span>
-        </div>
-        <div>
-          <span className="font-bold text-amber-900 block">Intensidad:</span>
-          <span className="text-slate-700">{data.intensidad || "-"}</span>
-        </div>
-        <div>
-          <span className="font-bold text-amber-900 block">Volumen/Tiempo:</span>
-          <span className="text-slate-700">{data.volumenTiempo || "-"}</span>
-        </div>
-        <div>
-          <span className="font-bold text-amber-900 block">Tipo:</span>
-          <span className="text-slate-700">{data.tipoEjercicio || "-"}</span>
-        </div>
-      </div>
-      {data.progresionSeguridad && (
-        <div className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
-          <strong>Progresión y Seguridad:</strong> {data.progresionSeguridad}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Vista Detallada del Caso Estudiantil ───────────────────────────────────
 function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
   return (
@@ -399,13 +348,73 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
       {/* 8. Plan de Intervención (Para Criterio C5) */}
       <div>
         <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">
-          8. Plan de Intervención (Prescripción FITT por Dimensión CIF) — Relevante para C5
+          8. Plan de Intervención (Prescripción FITT-VP por Estrategia) — Relevante para C5
         </h4>
-        <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-3">
-          <VistaFITT title="A. Estructuras y Funciones Corporales" data={caso.planIntervencion.estructurasFunciones} />
-          <VistaFITT title="B. Actividades (Tareas Motoras)" data={caso.planIntervencion.actividades} />
-          <VistaFITT title="C. Participación (Roles y Entorno)" data={caso.planIntervencion.participacion} />
-        </div>
+        {Array.isArray(caso.planIntervencion?.estrategias) && caso.planIntervencion.estrategias.length > 0 ? (
+          <div className="space-y-3">
+            {caso.planIntervencion.estrategias.map((est, i) => (
+              <div key={est.id || i} className="bg-white/95 p-4 rounded-2xl border border-amber-200 text-xs space-y-2.5 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-amber-100 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-slate-900 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full">
+                      Estrategia #{i + 1}
+                    </span>
+                    <span className="font-bold text-amber-900 text-xs">
+                      [{est.dimensionCIF || "CIF"}]
+                    </span>
+                  </div>
+                  {est.objetivoRelacionado && (
+                    <span className="text-[10px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 font-medium">
+                      Tributa a: {est.objetivoRelacionado}
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <span className="font-bold text-slate-800">Técnica / Modalidad:</span>{" "}
+                  <span className="text-slate-700 font-semibold">{est.nombreEstrategia || "Sin especificar"}</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-amber-50/60 p-2.5 rounded-xl border border-amber-100/80 text-[11px]">
+                  <div>
+                    <span className="font-bold text-amber-900 block">F · Frecuencia:</span>
+                    <span className="text-slate-700">{est.frecuencia || "-"}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-amber-900 block">I · Intensidad:</span>
+                    <span className="text-slate-700">{est.intensidad || "-"}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-amber-900 block">T · Tiempo:</span>
+                    <span className="text-slate-700">{est.tiempo || "-"}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-amber-900 block">T · Tipo:</span>
+                    <span className="text-slate-700">{est.tipo || "-"}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-amber-900 block">V · Volumen:</span>
+                    <span className="text-slate-700">{est.volumen || "-"}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-amber-900 block">P · Progresión:</span>
+                    <span className="text-slate-700 truncate" title={est.progresion}>{est.progresion || "-"}</span>
+                  </div>
+                </div>
+
+                {est.progresion && (
+                  <div className="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200 leading-relaxed">
+                    <strong>Criterio de Progresión y Seguridad:</strong> {est.progresion}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 text-xs text-amber-900">
+            <p className="text-slate-500 italic">No hay estrategias registradas.</p>
+          </div>
+        )}
       </div>
 
       {/* 9. Pronóstico Incipiente (Para Criterio C6) */}

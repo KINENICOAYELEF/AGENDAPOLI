@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { enviarEntregaDiseno } from "@/services/practica-diseno";
-import { casoDisenoVacio, dosificacionVacia } from "@/types/practica-diseno";
+import { casoDisenoVacio, estrategiaFittVacio } from "@/types/practica-diseno";
 import type {
   CasoDisenoIntervencion,
   DatosEstudianteDupla,
   EvaluacionDiseno,
   ObjetivoEspecificoItem,
-  DetalleDosificacionFITT,
+  EstrategiaFittVP,
   CalificacionPronostico,
 } from "@/types/practica-diseno";
 
@@ -76,7 +76,7 @@ function FieldTA({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3.5 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition resize-y placeholder:text-slate-400 min-h-[100px]"
+        className="w-full px-3.5 py-3 border border-slate-300 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition resize-y placeholder:text-slate-400 min-h-[90px]"
       />
     </div>
   );
@@ -264,88 +264,9 @@ function CifSection({
   );
 }
 
-// ── Componente de Prescripción FITT ──────────────────────────
-function BoxDosificacionFITT({
-  title,
-  subtitle,
-  data,
-  onChange,
-}: {
-  title: string;
-  subtitle: string;
-  data: DetalleDosificacionFITT;
-  onChange: (updated: DetalleDosificacionFITT) => void;
-}) {
-  return (
-    <div className="border border-slate-200 rounded-2xl p-5 bg-slate-50 space-y-4">
-      <div>
-        <h4 className="text-sm font-bold text-slate-800">{title}</h4>
-        <p className="text-xs text-slate-500">{subtitle}</p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <FieldInput
-          label="Técnica / Modalidad terapéutica"
-          required
-          value={data.tecnicaModalidad}
-          onChange={(v) => onChange({ ...data, tecnicaModalidad: v })}
-          placeholder="Ej: Ejercicio de fuerza isométrica, entrenamiento de equilibrio, marcha..."
-        />
-        <FieldInput
-          label="¿A qué objetivo específico tributa?"
-          required
-          value={data.objetivoRelacionado}
-          onChange={(v) => onChange({ ...data, objetivoRelacionado: v })}
-          placeholder="Ej: Al objetivo específico 1 (fuerza de cuádriceps) y general..."
-        />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-white p-4 rounded-xl border border-slate-200">
-        <FieldInput
-          label="Frecuencia (F)"
-          required
-          value={data.frecuencia}
-          onChange={(v) => onChange({ ...data, frecuencia: v })}
-          placeholder="Ej: 3 días/sem, 1 vez/día"
-        />
-        <FieldInput
-          label="Intensidad (I)"
-          required
-          value={data.intensidad}
-          onChange={(v) => onChange({ ...data, intensidad: v })}
-          placeholder="Ej: RPE 5-6 Borg / 60% 1RM"
-        />
-        <FieldInput
-          label="Tiempo / Volumen (T)"
-          required
-          value={data.volumenTiempo}
-          onChange={(v) => onChange({ ...data, volumenTiempo: v })}
-          placeholder="Ej: 3 series x 10 reps, 60s descanso"
-        />
-        <FieldInput
-          label="Tipo de estímulo (T)"
-          required
-          value={data.tipoEjercicio}
-          onChange={(v) => onChange({ ...data, tipoEjercicio: v })}
-          placeholder="Ej: Cadena cerrada, dinámico, tarea funcional"
-        />
-      </div>
-
-      <FieldTA
-        label="Criterio de Progresión y Parámetros de Seguridad"
-        required
-        rows={2}
-        value={data.progresionSeguridad}
-        onChange={(v) => onChange({ ...data, progresionSeguridad: v })}
-        placeholder="¿Cuándo avanzar la carga/dificultad? ¿Qué síntomas o signos obligan a detener o modificar el ejercicio? Ej: Avanzar a bípedo al tolerar 3x12 sin fatiga excesiva. Detener si EVA > 4 o pérdida de estabilidad..."
-      />
-    </div>
-  );
-}
-
 // ─── FORMULARIO PRINCIPAL ───────────────────────────────────────────────────
 export default function FormularioPracticaDiseno() {
-  const STORAGE_KEY = "practica_diseno_borrador_v6";
+  const STORAGE_KEY = "practica_diseno_borrador_v7";
 
   const [dupla, setDupla] = useState<DatosEstudianteDupla>({
     estudiante1: "",
@@ -372,13 +293,15 @@ export default function FormularioPracticaDiseno() {
         const parsed = JSON.parse(saved);
         if (parsed.dupla) setDupla(parsed.dupla);
         if (parsed.caso) {
-          // Normalizar estructura si venía de versión previa
           const c = parsed.caso;
-          if (typeof c.planIntervencion?.estructurasFunciones === "string") {
+          // Normalizar planIntervencion si venía en formato antiguo
+          if (!c.planIntervencion?.estrategias || !Array.isArray(c.planIntervencion.estrategias)) {
             c.planIntervencion = {
-              estructurasFunciones: { ...dosificacionVacia(), tecnicaModalidad: c.planIntervencion.estructurasFunciones },
-              actividades: { ...dosificacionVacia(), tecnicaModalidad: c.planIntervencion.actividades },
-              participacion: { ...dosificacionVacia(), tecnicaModalidad: c.planIntervencion.participacion },
+              estrategias: [
+                estrategiaFittVacio("Funciones y Estructuras"),
+                estrategiaFittVacio("Actividades"),
+                estrategiaFittVacio("Participación"),
+              ],
             };
           }
           if (!c.objetivos?.problemaPrincipal) {
@@ -475,10 +398,53 @@ export default function FormularioPracticaDiseno() {
     }));
   };
 
+  // Manejo Dinámico de Estrategias FITT-VP
+  const addEstrategiaFitt = () => {
+    if (caso.planIntervencion.estrategias.length >= 8) return;
+    setCaso((prev) => ({
+      ...prev,
+      planIntervencion: {
+        estrategias: [...prev.planIntervencion.estrategias, estrategiaFittVacio("Actividades")],
+      },
+    }));
+  };
+
+  const removeEstrategiaFitt = (id: string) => {
+    if (caso.planIntervencion.estrategias.length <= 1) return;
+    setCaso((prev) => ({
+      ...prev,
+      planIntervencion: {
+        estrategias: prev.planIntervencion.estrategias.filter((est) => est.id !== id),
+      },
+    }));
+  };
+
+  const updateEstrategiaFitt = (id: string, field: keyof EstrategiaFittVP, val: string) => {
+    setCaso((prev) => ({
+      ...prev,
+      planIntervencion: {
+        estrategias: prev.planIntervencion.estrategias.map((est) =>
+          est.id === id ? { ...est, [field]: val } : est
+        ),
+      },
+    }));
+  };
+
   // Helpers CIF
   const getCifItems = (key: keyof CasoDisenoIntervencion["cif"]) => parseCifItems(caso.cif[key]);
   const setCifItems = (key: keyof CasoDisenoIntervencion["cif"], items: CifItem[]) =>
     setCaso((prev) => ({ ...prev, cif: { ...prev.cif, [key]: serializeCifItems(items) } }));
+
+  // Contador de dimensiones CIF en el plan de intervención
+  const countFunciones = caso.planIntervencion.estrategias.filter(
+    (e) => e.dimensionCIF === "Funciones y Estructuras"
+  ).length;
+  const countActividades = caso.planIntervencion.estrategias.filter(
+    (e) => e.dimensionCIF === "Actividades"
+  ).length;
+  const countParticipacion = caso.planIntervencion.estrategias.filter(
+    (e) => e.dimensionCIF === "Participación"
+  ).length;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -505,12 +471,11 @@ export default function FormularioPracticaDiseno() {
       return;
     }
 
-    const pF = caso.planIntervencion.estructurasFunciones;
-    const pA = caso.planIntervencion.actividades;
-    const pP = caso.planIntervencion.participacion;
-
-    if (!pF.tecnicaModalidad.trim() || !pF.frecuencia.trim() || !pA.tecnicaModalidad.trim() || !pP.tecnicaModalidad.trim()) {
-      setErrorMsg("Debe completar los campos de prescripción y dosificación para cada dimensión CIF.");
+    const algunaEstrategiaIncompleta = caso.planIntervencion.estrategias.some(
+      (est) => !est.nombreEstrategia.trim() || !est.frecuencia.trim() || !est.intensidad.trim()
+    );
+    if (caso.planIntervencion.estrategias.length === 0 || algunaEstrategiaIncompleta) {
+      setErrorMsg("Debe completar la técnica y parámetros FITT-VP para cada estrategia propuesta.");
       return;
     }
 
@@ -575,7 +540,7 @@ export default function FormularioPracticaDiseno() {
           Informe de Práctica: Diseño de Intervención
         </h1>
         <p className="text-slate-300 text-sm max-w-2xl">
-          Formulario de entrega clínica enfocado en anamnesis, evaluaciones, matriz CIF, diagnóstico kinesiológico, objetivos priorizados, plan dosificado FITT y pronóstico fundamentado.
+          Formulario de entrega clínica enfocado en anamnesis, evaluaciones, matriz CIF, diagnóstico kinesiológico, objetivos priorizados, plan dosificado FITT-VP y pronóstico biopsicosocial.
         </p>
       </div>
 
@@ -627,14 +592,14 @@ export default function FormularioPracticaDiseno() {
               required
               value={caso.datosUsuaria.edad}
               onChange={(v) => setCaso({ ...caso, datosUsuaria: { ...caso.datosUsuaria, edad: v } })}
-              placeholder="Ej: 42 años"
+              placeholder="Ej: 68 años"
             />
             <FieldInput
               label="Ocupación o actividad principal"
               required
               value={caso.datosUsuaria.ocupacion}
               onChange={(v) => setCaso({ ...caso, datosUsuaria: { ...caso.datosUsuaria, ocupacion: v } })}
-              placeholder="Ej: Auxiliar de aseo, estudiante, deportista recreativa, jubilado/a..."
+              placeholder="Ej: Auxiliar de aseo, estudiante, jubilado/a, deportista recreativa..."
             />
             <FieldInput
               label="Contexto de atención"
@@ -673,7 +638,6 @@ export default function FormularioPracticaDiseno() {
                 <p key={q} className="flex gap-2"><span className="text-blue-400 shrink-0">›</span> <span>{q}</span></p>
               ))}
             </div>
-            <p className="mt-2 font-semibold">Escriban la información de forma ordenada, como un registro clínico profesional.</p>
           </GuideBox>
 
           {/* Ejemplo desplegable */}
@@ -690,10 +654,9 @@ export default function FormularioPracticaDiseno() {
               <div className="px-4 py-4 bg-white text-xs text-slate-700 space-y-3 leading-relaxed border-t border-indigo-200">
                 <p className="font-bold text-indigo-700">Ejemplo de estructura ordenada (próxima → remota):</p>
                 <div className="bg-slate-50 rounded-lg p-4 space-y-2.5 border border-slate-200">
-                  <p><strong>Anamnesis próxima:</strong> Usuaria de 68 años, participa en talleres comunitarios, asiste a evaluación funcional para plan de envejecimiento activo y fortalecimiento. Refiere sensación de fatiga muscular en miembros inferiores al caminar más de 20 minutos y temor leve a caídas en terrenos irregulares. No relata caídas en los últimos 6 meses. Manifiesta alta motivación por mantener su autonomía y continuar asistiendo a sus actividades sociales de manera independiente.</p>
-                  <p><strong>Anamnesis remota:</strong> Hipertensión arterial en tratamiento farmacológico con buen control. Sin antecedentes quirúrgicos recientes. Sedentaria en el hogar pero activa socialmente. Vive acompañada por su cónyuge en vivienda de un piso. Cuenta con buena red de apoyo familiar.</p>
+                  <p><strong>Anamnesis próxima:</strong> Usuaria de 68 años, asiste a evaluación para plan de ejercicio funcional y envejecimiento activo. Refiere fatiga muscular en extremidades inferiores al caminar distancias mayores a 20 minutos y temor leve a caídas en desniveles. No relata caídas en el último semestre. Manifiesta alta motivación por mantener su autonomía y continuar asistiendo a sus talleres comunitarios.</p>
+                  <p><strong>Anamnesis remota:</strong> Hipertensión arterial en tratamiento farmacológico con buen control. Sin antecedentes quirúrgicos recientes. Sedentaria en el hogar pero activa socialmente. Cuenta con buena red de apoyo familiar.</p>
                 </div>
-                <p className="text-indigo-600 italic">Noten el orden lógico: motivo/situación actual, nivel de funcionalidad, impacto en la vida diaria y antecedentes crónicos relevantes.</p>
               </div>
             )}
           </div>
@@ -718,7 +681,7 @@ export default function FormularioPracticaDiseno() {
                 value={caso.interpretacionAnamnesis}
                 onChange={(v) => setCaso({ ...caso, interpretacionAnamnesis: v })}
                 required
-                rows={6}
+                rows={5}
                 placeholder="Analicen como tratantes: ¿Qué datos de la entrevista son los más relevantes clínicamente? ¿Qué hipótesis funcionales o de riesgo de declive funcional se forman? ¿Cuáles son las prioridades para la evaluación física?"
               />
             </div>
@@ -775,7 +738,7 @@ export default function FormularioPracticaDiseno() {
                     value={ev.interpretacion}
                     onChange={(v) => updateEvaluacion(ev.id, "interpretacion", v)}
                     required
-                    rows={3}
+                    rows={2}
                     placeholder="¿Qué significa este valor respecto a los valores normativos de la persona, su autonomía o su riesgo funcional?"
                   />
                 </div>
@@ -946,29 +909,34 @@ export default function FormularioPracticaDiseno() {
             value={caso.enunciadoDiagnostico}
             onChange={(v) => setCaso({ ...caso, enunciadoDiagnostico: v })}
             required
-            rows={12}
+            rows={10}
             placeholder="Redacten su diagnóstico kinesiológico integrando: (1) Identificación y contexto, (2) Problemas o metas desde la persona, (3) Déficits estructurales/funcionales desde el tratante, y (4) Factores personales y ambientales..."
           />
         </SectionCard>
 
         {/* 7. Objetivos de Intervención Priorizados */}
         <SectionCard title="7. Objetivos de intervención (Priorizados por relevancia clínica)">
-          {/* TABLA GUÍA PEDAGÓGICA DE VERBOS Y PARÁMETROS */}
+          {/* TABLA GUÍA PEDAGÓGICA EXTENDIDA DE VERBOS Y PARÁMETROS */}
           <div className="border border-teal-200 rounded-2xl overflow-hidden mb-5">
             <button
               type="button"
               onClick={() => setShowVerbosTable(!showVerbosTable)}
               className="w-full flex items-center justify-between px-5 py-3.5 bg-teal-50 hover:bg-teal-100 transition text-sm font-bold text-teal-800"
             >
-              <span>{showVerbosTable ? "Ocultar" : "Ver"} Tabla Guía: Verbos, Parámetros y Medición para Objetivos</span>
-              <span className="text-xs">{showVerbosTable ? "▲ Ocultar" : "▼ Desplegar"}</span>
+              <span>{showVerbosTable ? "Ocultar" : "Ver"} Catálogo Completo: Verbos, Parámetros y Medición SMART</span>
+              <span className="text-xs">{showVerbosTable ? "▲ Ocultar" : "▼ Desplegar Catálogo"}</span>
             </button>
 
             {showVerbosTable && (
-              <div className="p-4 bg-white text-xs text-slate-700 space-y-4 border-t border-teal-200 overflow-x-auto">
-                <p className="font-bold text-slate-800">
-                  Fórmula de Redacción: <span className="font-mono text-teal-700 font-semibold">[Verbo en infinitivo] + [Parámetro funcional] + [Criterio de logro / Magnitud] + [Plazo o condición]</span>
-                </p>
+              <div className="p-5 bg-white text-xs text-slate-700 space-y-4 border-t border-teal-200 overflow-x-auto">
+                <div className="p-3 bg-teal-50/60 rounded-xl border border-teal-200">
+                  <p className="font-bold text-teal-900 text-xs mb-1">
+                    Fórmula de Redacción para Objetivos Específicos:
+                  </p>
+                  <p className="font-mono text-teal-800 font-semibold">
+                    [Verbo en infinitivo] + [Parámetro/Variable fisiológica o motriz] + [Criterio de logro/Magnitud] + [Plazo o condición temporal]
+                  </p>
+                </div>
 
                 <table className="w-full border-collapse border border-slate-200 text-left text-xs">
                   <thead>
@@ -976,50 +944,66 @@ export default function FormularioPracticaDiseno() {
                       <th className="border border-slate-200 p-2.5">Dimensión CIF</th>
                       <th className="border border-slate-200 p-2.5">Verbos de Acción Sugeridos</th>
                       <th className="border border-slate-200 p-2.5">Parámetros / Variables Típicas</th>
-                      <th className="border border-slate-200 p-2.5">Criterios de Logro / Medición</th>
+                      <th className="border border-slate-200 p-2.5">Criterios de Logro / Medición SMART</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-200">
                     <tr>
-                      <td className="border border-slate-200 p-2.5 font-bold text-teal-900 bg-teal-50/50">
-                        Estructuras y Funciones
+                      <td className="border border-slate-200 p-2.5 font-bold text-teal-900 bg-teal-50/40">
+                        Estructuras y Funciones Corporales
                       </td>
                       <td className="border border-slate-200 p-2.5">
-                        Modular, Incrementar, Optimizar, Disminuir, Ganar, Desarrollar, Acondicionar, Favorecer.
+                        <ul className="list-disc list-inside space-y-0.5">
+                          <li><strong>Dolor/Síntomas:</strong> Modular, mitigar, atenuar, desensibilizar.</li>
+                          <li><strong>Movilidad:</strong> Incrementar, ganar, restablecer, ampliar, elongar.</li>
+                          <li><strong>Fuerza:</strong> Aumentar, desarrollar, fortalecer, potenciar, reclutar.</li>
+                          <li><strong>Control Motor:</strong> Optimizar, estabilizar, coordinar, reeducar.</li>
+                          <li><strong>Capacidad Aeróbica:</strong> Acondicionar, mejorar resistencia.</li>
+                        </ul>
                       </td>
                       <td className="border border-slate-200 p-2.5">
-                        Dolor (EVA/EN), ROM activo/pasivo, Fuerza muscular (MRC), Control motor dinámico, Equilibrio estático, Capacidad aeróbica.
+                        Dolor (EVA/EN), ROM activo/pasivo, Fuerza muscular (MRC / Dinamometría), Estabilidad lumbopélvica, Equilibrio estático unipodal, Flexibilidad miotendinosa, Tolerancia al esfuerzo.
                       </td>
                       <td className="border border-slate-200 p-2.5 italic text-slate-600">
-                        A ≤ 2/10 en reposo, en +20° de flexión, a M4 en cuádriceps, manteniendo apoyo unipodal 20s, a 4 semanas.
+                        Disminuir EVA a ≤ 2/10 en reposo; Incrementar ROM de flexión a +115°; Aumentar fuerza de cuádriceps a M4; Mantener apoyo unipodal &gt;20s sin oscilaciones, en 4 semanas.
                       </td>
                     </tr>
                     <tr>
-                      <td className="border border-slate-200 p-2.5 font-bold text-indigo-900 bg-indigo-50/50">
-                        Actividades (Tareas Motoras)
+                      <td className="border border-slate-200 p-2.5 font-bold text-indigo-900 bg-indigo-50/40">
+                        Actividades (Tareas Motoras y Funcionales)
                       </td>
                       <td className="border border-slate-200 p-2.5">
-                        Reeducar, Entrenar, Lograr, Ejecutar, Adquirir, Mejorar, Transferir, Prevenir.
+                        <ul className="list-disc list-inside space-y-0.5">
+                          <li><strong>Marcha:</strong> Reeducar, entrenar, prolongar, agilizar.</li>
+                          <li><strong>Transferencias:</strong> Adquirir, ejecutar, independizar, lograr.</li>
+                          <li><strong>Tareas complejas:</strong> Subir/bajar escaleras, agacharse, transportar.</li>
+                          <li><strong>Prevención:</strong> Prevenir caídas, evitar compensaciones.</li>
+                        </ul>
                       </td>
                       <td className="border border-slate-200 p-2.5">
-                        Marcha continua, Transferencias (sedente a bípedo), Subir/bajar escaleras, Agacharse, Alcance de objetos, Tiempo en TUG.
+                        Marcha continua (distancia/velocidad), Transferencia sedente-bípedo (test 30s), Subir escaleras alternando pies, Prueba Timed Up and Go (TUG), Agacharse a nivel de suelo, Destreza bimanual.
                       </td>
                       <td className="border border-slate-200 p-2.5 italic text-slate-600">
-                        Durante 500m continuos sin asistencia, en menos de 10s en TUG, subiendo 1 tramo de escaleras alternando pies.
+                        Caminar 500m continuos sin asistencia; Reducir tiempo en TUG a &lt;10s; Ejecutar 12 repeticiones en Chair Stand Test; Subir 1 piso de escaleras sin dolor limitante en 3 semanas.
                       </td>
                     </tr>
                     <tr>
-                      <td className="border border-slate-200 p-2.5 font-bold text-purple-900 bg-purple-50/50">
-                        Participación (Roles / Comunidad)
+                      <td className="border border-slate-200 p-2.5 font-bold text-purple-900 bg-purple-50/40">
+                        Participación (Roles Vitales y Comunidad)
                       </td>
                       <td className="border border-slate-200 p-2.5">
-                        Facilitar, Promover, Fomentar, Mantener, Capacitar, Reintegrar, Fortalecer.
+                        <ul className="list-disc list-inside space-y-0.5">
+                          <li><strong>Comunidad:</strong> Promover, facilitar, integrar, fomentar.</li>
+                          <li><strong>Autonomía:</strong> Mantener independencia, favorecer autogestión.</li>
+                          <li><strong>Rol Laboral/Hogar:</strong> Reintegrar, capacitar, fortalecer.</li>
+                          <li><strong>Educación:</strong> Empoderar en adherencia y autocuidado.</li>
+                        </ul>
                       </td>
                       <td className="border border-slate-200 p-2.5">
-                        Asistencia a talleres de envejecimiento activo, Autonomía en compras/trámites, Desempeño laboral, Tareas del hogar, Paseos comunitarios.
+                        Asistencia a talleres de envejecimiento activo, Autonomía en compras/trámites vecinales, Desempeño de jornada laboral, Labores del hogar sin fatiga, Paseos recreativos familiares.
                       </td>
                       <td className="border border-slate-200 p-2.5 italic text-slate-600">
-                        Con asistencia 2 veces por semana al taller comunitario de forma autónoma y segura al término del mes.
+                        Participar 2 veces por semana de forma autónoma en el taller de actividad física comunitaria; Realizar compras semanales de forma independiente al término del ciclo.
                       </td>
                     </tr>
                   </tbody>
@@ -1028,34 +1012,63 @@ export default function FormularioPracticaDiseno() {
             )}
           </div>
 
-          <div className="space-y-4">
-            {/* Problema Kinesiológico Principal */}
-            <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 space-y-2">
-              <Label required>Problema Kinesiológico Principal a Resolver</Label>
-              <p className="text-xs text-amber-900">
-                Identifiquen el problema central o limitación funcional prioritaria detectada en la persona. El Objetivo General debe formularse directamente para solucionar este problema.
-              </p>
+          <div className="space-y-5">
+            {/* GUÍA PEDAGÓGICA PARA EL PROBLEMA PRINCIPAL */}
+            <div className="bg-amber-50/90 border border-amber-200 rounded-2xl p-5 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Label required>Problema Kinesiológico Principal a Resolver</Label>
+                <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                  Enfoque Biopsicosocial
+                </span>
+              </div>
+
+              <div className="text-xs text-amber-950 space-y-1.5 leading-relaxed bg-white/80 p-3.5 rounded-xl border border-amber-200">
+                <p className="font-bold text-amber-900">
+                  ¿Cómo pensar el problema principal? (¡NO es solo el dolor ni el nombre médico!):
+                </p>
+                <p>
+                  Un error habitual es escribir: <em>&quot;El problema principal es el dolor de rodilla&quot;</em> o <em>&quot;Tiene artrosis&quot;</em>. Eso es solo el síntoma o el diagnóstico biomédico.
+                </p>
+                <p>
+                  En kinesiología el problema principal es el <strong>impacto funcional y biopsicosocial</strong> que esa condición genera en la vida de la persona: ¿Qué dejó de hacer? ¿Qué rol vital o autonomía cotidiana está amenazada? ¿Por qué acudió a kinesiología?
+                </p>
+                <p className="italic text-amber-800">
+                  Ejemplo: &quot;Pérdida progresiva de la autonomía para trasladarse al paradero y realizar sus compras debido a fatiga muscular en miembros inferiores y temor a caídas en desniveles.&quot;
+                </p>
+              </div>
+
               <FieldTA
                 label=""
                 required
                 rows={2}
                 value={caso.objetivos.problemaPrincipal}
                 onChange={(v) => setCaso({ ...caso, objetivos: { ...caso.objetivos, problemaPrincipal: v } })}
-                placeholder="Ej: Limitación de la autonomía en la marcha comunitaria y riesgo de caídas por disminución de fuerza en miembros inferiores y equilibrio dinámico..."
+                placeholder="Redacten el problema principal identificando el impacto funcional y biopsicosocial en la persona..."
               />
             </div>
 
-            {/* Objetivo General */}
-            <FieldTA
-              label="Objetivo General de Intervención (Solución al Problema Principal)"
-              required
-              rows={3}
-              value={caso.objetivos.objetivoGeneral}
-              onChange={(v) => setCaso({ ...caso, objetivos: { ...caso.objetivos, objetivoGeneral: v } })}
-              placeholder="Fórmula: [Verbo] + [Variable funcional principal] + [Criterio de éxito] + [Plazo temporal]..."
-            />
+            {/* OBJETIVO GENERAL TRIBUTA A PARTICIPACIÓN */}
+            <div className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-5 space-y-2.5">
+              <Label required>Objetivo General de Intervención (Solución al Problema Principal)</Label>
+              <div className="text-xs text-emerald-950 bg-white/80 p-3 rounded-xl border border-emerald-200 leading-relaxed">
+                <p className="font-semibold text-emerald-900">
+                  Fórmula: [Verbo en infinitivo] + [Logro funcional/fisiológico global] + <strong>PARA [Actividad / Participación / Rol vital]</strong> + [Plazo temporal]
+                </p>
+                <p className="mt-1 italic text-emerald-800 text-[11px]">
+                  Todo objetivo general kinesiológico debe tributar en última instancia a la <strong>Participación o Autonomía</strong> de la persona.
+                </p>
+              </div>
+              <FieldTA
+                label=""
+                required
+                rows={3}
+                value={caso.objetivos.objetivoGeneral}
+                onChange={(v) => setCaso({ ...caso, objetivos: { ...caso.objetivos, objetivoGeneral: v } })}
+                placeholder="Ej: Optimizar la capacidad funcional y fuerza en miembros inferiores PARA favorecer la marcha comunitaria autónoma y segura en sus talleres vecinales al término de 4 semanas..."
+              />
+            </div>
 
-            {/* Objetivos Específicos Priorizados */}
+            {/* OBJETIVOS ESPECÍFICOS PRIORIZADOS */}
             <div className="border-t border-slate-200 pt-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -1119,55 +1132,160 @@ export default function FormularioPracticaDiseno() {
           </div>
         </SectionCard>
 
-        {/* 8. Plan de Intervención Dosificado FITT */}
-        <SectionCard title="8. Plan de intervención propuesto (Prescripción FITT por dimensión CIF)">
-          <GuideBox title="Metodología de prescripción kinésica estructurada (Criterio 5)">
-            <p>Para cada dimensión CIF, deben especificar la técnica terapéutica y desglosar con precisión todos los parámetros de dosificación:</p>
-            <div className="mt-2 ml-2 space-y-1 text-slate-700">
-              <p>• <strong>Frecuencia (F):</strong> Cuántos días a la semana o veces por día.</p>
-              <p>• <strong>Intensidad (I):</strong> Nivel de esfuerzo (Escala de Borg / RPE 1-10), % de RM, carga o rango angular.</p>
-              <p>• <strong>Tiempo / Volumen (T):</strong> Series $\times$ Repeticiones, duración de trabajo y tiempo de descanso.</p>
-              <p>• <strong>Tipo (T):</strong> Modalidad específica (isométrico, concéntrico, tarea global, circuito, educación ergonómica).</p>
-              <p>• <strong>Progresión y Seguridad:</strong> Criterios para aumentar dificultad y banderas rojas / síntomas de alarma.</p>
+        {/* 8. Plan de Intervención Dosificado FITT-VP */}
+        <SectionCard title="8. Plan de intervención propuesto (Prescripción FITT-VP por Estrategia)">
+          <GuideBox title="Metodología de prescripción kinésica FITT-VP (Criterio 5 de Rúbrica)">
+            <p>
+              Pueden proponer <strong>una o más estrategias de intervención por cada objetivo específico</strong>.
+            </p>
+            <p className="mt-1 font-semibold text-blue-900">
+              Para cumplir plenamente la rúbrica (C5), asegúrense de que entre todas sus estrategias aborden las 3 dimensiones CIF:
+            </p>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <span
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                  countFunciones > 0 ? "bg-emerald-100 text-emerald-800 border border-emerald-300" : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                Funciones/Estructuras: {countFunciones} estrategia(s)
+              </span>
+              <span
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                  countActividades > 0 ? "bg-emerald-100 text-emerald-800 border border-emerald-300" : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                Actividades: {countActividades} estrategia(s)
+              </span>
+              <span
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                  countParticipacion > 0 ? "bg-emerald-100 text-emerald-800 border border-emerald-300" : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                Participación: {countParticipacion} estrategia(s)
+              </span>
             </div>
           </GuideBox>
 
           <div className="space-y-6">
-            <BoxDosificacionFITT
-              title="A. Prescripción para Funciones y Estructuras Corporales"
-              subtitle="Técnicas dirigidas a modulación del dolor, movilidad, fuerza muscular, equilibrio o capacidad aeróbica."
-              data={caso.planIntervencion.estructurasFunciones}
-              onChange={(updated) =>
-                setCaso({
-                  ...caso,
-                  planIntervencion: { ...caso.planIntervencion, estructurasFunciones: updated },
-                })
-              }
-            />
+            {caso.planIntervencion.estrategias.map((est, idx) => (
+              <div key={est.id} className="border border-slate-200 rounded-2xl p-5 bg-slate-50 space-y-4 relative">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-slate-900 text-white text-xs font-black px-2.5 py-0.5 rounded-full">
+                      Estrategia #{idx + 1}
+                    </span>
+                    <select
+                      value={est.dimensionCIF}
+                      onChange={(e) => updateEstrategiaFitt(est.id, "dimensionCIF", e.target.value)}
+                      className="text-xs font-semibold border border-slate-300 rounded-lg px-2.5 py-1 text-slate-800 outline-none bg-white"
+                    >
+                      <option value="Funciones y Estructuras">Funciones y Estructuras</option>
+                      <option value="Actividades">Actividades (Tareas Motoras)</option>
+                      <option value="Participación">Participación (Roles y Entorno)</option>
+                    </select>
+                  </div>
 
-            <BoxDosificacionFITT
-              title="B. Prescripción para Actividades (Tareas Motoras)"
-              subtitle="Entrenamiento de tareas funcionales: marcha, prevención de caídas, transferencias, escaleras, alcance."
-              data={caso.planIntervencion.actividades}
-              onChange={(updated) =>
-                setCaso({
-                  ...caso,
-                  planIntervencion: { ...caso.planIntervencion, actividades: updated },
-                })
-              }
-            />
+                  {caso.planIntervencion.estrategias.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeEstrategiaFitt(est.id)}
+                      className="text-xs text-red-500 hover:text-red-700 font-semibold self-end sm:self-auto"
+                    >
+                      Eliminar estrategia
+                    </button>
+                  )}
+                </div>
 
-            <BoxDosificacionFITT
-              title="C. Prescripción para Participación (Roles y Entorno)"
-              subtitle="Estrategias de educación, adaptación ergonómica/ambiental, envejecimiento activo y pautas domiciliarias."
-              data={caso.planIntervencion.participacion}
-              onChange={(updated) =>
-                setCaso({
-                  ...caso,
-                  planIntervencion: { ...caso.planIntervencion, participacion: updated },
-                })
-              }
-            />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <FieldInput
+                    label="Nombre de la Técnica / Modalidad terapéutica"
+                    required
+                    value={est.nombreEstrategia}
+                    onChange={(v) => updateEstrategiaFitt(est.id, "nombreEstrategia", v)}
+                    placeholder="Ej: Ejercicio de fuerza en cuádriceps, entrenamiento de transferencias, educación ergonómica..."
+                  />
+
+                  <div>
+                    <Label required>¿A qué Objetivo Específico tributa?</Label>
+                    <select
+                      value={est.objetivoRelacionado}
+                      onChange={(e) => updateEstrategiaFitt(est.id, "objetivoRelacionado", e.target.value)}
+                      className="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-teal-500 outline-none bg-white"
+                    >
+                      <option value="">Selecciona objetivo relacionado...</option>
+                      {caso.objetivos.especificos.map((obj, i) => (
+                        <option key={obj.id} value={`Objetivo #${i + 1}: ${obj.texto.slice(0, 40)}...`}>
+                          Prioridad #{i + 1} ({obj.dimensionCIF})
+                        </option>
+                      ))}
+                      <option value="Objetivo General">Al Objetivo General</option>
+                      <option value="Varios objetivos">A múltiples objetivos específicos</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Dosificación FITT-VP */}
+                <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
+                  <span className="font-bold text-slate-800 text-xs uppercase tracking-wider block">
+                    Parámetros de Dosificación FITT-VP:
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <FieldInput
+                      label="F · Frecuencia"
+                      required
+                      value={est.frecuencia}
+                      onChange={(v) => updateEstrategiaFitt(est.id, "frecuencia", v)}
+                      placeholder="Ej: 3 días/semana, 1 vez al día"
+                    />
+                    <FieldInput
+                      label="I · Intensidad"
+                      required
+                      value={est.intensidad}
+                      onChange={(v) => updateEstrategiaFitt(est.id, "intensidad", v)}
+                      placeholder="Ej: RPE 5-6 en escala Borg / 60% 1RM"
+                    />
+                    <FieldInput
+                      label="T · Tiempo / Duración"
+                      required
+                      value={est.tiempo}
+                      onChange={(v) => updateEstrategiaFitt(est.id, "tiempo", v)}
+                      placeholder="Ej: 30 minutos de sesión / 45s de trabajo"
+                    />
+                    <FieldInput
+                      label="T · Tipo de estímulo"
+                      required
+                      value={est.tipo}
+                      onChange={(v) => updateEstrategiaFitt(est.id, "tipo", v)}
+                      placeholder="Ej: Dinámico en cadena cerrada, aeróbico, circuito"
+                    />
+                    <FieldInput
+                      label="V · Volumen"
+                      required
+                      value={est.volumen}
+                      onChange={(v) => updateEstrategiaFitt(est.id, "volumen", v)}
+                      placeholder="Ej: 3 series de 10 reps, 60s descanso"
+                    />
+                    <FieldInput
+                      label="P · Progresión y Criterio de Avance"
+                      required
+                      value={est.progresion}
+                      onChange={(v) => updateEstrategiaFitt(est.id, "progresion", v)}
+                      placeholder="Ej: Aumentar 1 serie al tolerar con RPE < 5; detener si EVA > 4"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {caso.planIntervencion.estrategias.length < 8 && (
+              <button
+                type="button"
+                onClick={addEstrategiaFitt}
+                className="w-full py-3.5 border-2 border-dashed border-teal-300 text-teal-700 font-bold text-sm rounded-2xl hover:bg-teal-50 transition"
+              >
+                + Agregar otra Estrategia de Intervención ({caso.planIntervencion.estrategias.length}/8)
+              </button>
+            )}
           </div>
         </SectionCard>
 
