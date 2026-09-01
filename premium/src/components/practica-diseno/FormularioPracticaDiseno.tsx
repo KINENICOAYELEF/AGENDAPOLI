@@ -985,98 +985,187 @@ export default function FormularioPracticaDiseno() {
               onClick={() => setShowVerbosTable(!showVerbosTable)}
               className="w-full flex items-center justify-between px-4 py-3 bg-teal-50 hover:bg-teal-100 transition text-xs font-bold text-teal-800"
             >
-              <span>{showVerbosTable ? "Ocultar" : "Ver"} Tabla Guía Desglosada: Cómo Construir Objetivos Paso a Paso</span>
+              <span>{showVerbosTable ? "Ocultar" : "Ver"} Catálogo Completo: Cómo Construir Objetivos Paso a Paso</span>
               <span>{showVerbosTable ? "▲" : "▼"}</span>
             </button>
 
             {showVerbosTable && (
               <div className="p-4 bg-white text-xs text-slate-700 space-y-3 border-t border-teal-200 overflow-x-auto">
                 <p className="text-slate-600">
-                  Sigan las 4 columnas para armar la oración de cada objetivo específico:
+                  Seleccionen elementos de cada columna para armar con precisión técnica la redacción de cada objetivo específico:
                 </p>
 
-                <table className="w-full border-collapse border border-slate-200 text-left text-xs">
+                <table className="w-full border-collapse border border-slate-200 text-left text-xs min-w-[700px]">
                   <thead>
                     <tr className="bg-slate-100 text-slate-800 font-bold">
-                      <th className="border border-slate-200 p-2">Enfoque</th>
-                      <th className="border border-slate-200 p-2">1. Verbo de Acción</th>
-                      <th className="border border-slate-200 p-2">2. Parámetro Funcional</th>
-                      <th className="border border-slate-200 p-2">3. Criterio / Medición</th>
-                      <th className="border border-slate-200 p-2">4. Plazo / Condición</th>
-                      <th className="border border-slate-200 p-2 bg-slate-200/60">Ejemplo Completo Armado</th>
+                      <th className="border border-slate-200 p-2.5 w-1/5">1. Verbos de Acción Sugeridos</th>
+                      <th className="border border-slate-200 p-2.5 w-1/4">2. Parámetros / Variables Funcionales</th>
+                      <th className="border border-slate-200 p-2.5 w-1/5">3. Criterio de Logro / Medición</th>
+                      <th className="border border-slate-200 p-2.5 w-1/6">4. Plazo o Condición</th>
+                      <th className="border border-slate-200 p-2.5 bg-slate-200/60 w-1/4">Ejemplo Completo Armado</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200">
+                  <tbody className="divide-y divide-slate-200 text-[11px]">
                     <tr>
-                      <td className="border border-slate-200 p-2 font-bold text-teal-900 bg-teal-50/40">
-                        Dolor / Síntomas
+                      <td className="border border-slate-200 p-2">
+                        <strong className="text-teal-900 block font-semibold mb-1">Dolor / Sensibilidad:</strong>
+                        Modular, mitigar, atenuar, desensibilizar, regular, disminuir.
                       </td>
-                      <td className="border border-slate-200 p-2">Modular / Mitigar / Atenuar</td>
-                      <td className="border border-slate-200 p-2">el dolor patelofemoral anterior</td>
-                      <td className="border border-slate-200 p-2">a EVA ≤ 2/10 en reposo y carga</td>
-                      <td className="border border-slate-200 p-2">en un plazo de 2 semanas.</td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        Dolor nociceptivo anterior de rodilla, dolor lumbopélvico mecánico, hiperalgesia, molestia en reposo / carga, umbral de tolerancia dolorosa.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        a EVA ≤ 2/10, reducción de 3 puntos en EVA/EN, abolición del dolor en reposo, presión &gt; 4 kg/cm².
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-600">
+                        en 2 semanas / durante apoyo monopodal.
+                      </td>
                       <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
-                        &quot;Modular el dolor patelofemoral anterior a EVA ≤ 2/10 en reposo y carga en un plazo de 2 semanas.&quot;
+                        &quot;Modular el dolor nociceptivo anterior de rodilla a EVA ≤ 2/10 en actividades de apoyo monopodal en 2 semanas.&quot;
                       </td>
                     </tr>
                     <tr>
-                      <td className="border border-slate-200 p-2 font-bold text-teal-900 bg-teal-50/40">
-                        Fuerza Muscular
+                      <td className="border border-slate-200 p-2">
+                        <strong className="text-teal-900 block font-semibold mb-1">Movilidad / Flexibilidad:</strong>
+                        Incrementar, restablecer, ampliar, optimizar, elongar, recuperar.
                       </td>
-                      <td className="border border-slate-200 p-2">Incrementar / Desarrollar / Fortalecer</td>
-                      <td className="border border-slate-200 p-2">la fuerza de cuádriceps y glúteo medio</td>
-                      <td className="border border-slate-200 p-2">a grado M4+ en escala MRC</td>
-                      <td className="border border-slate-200 p-2">al término de 4 semanas.</td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        Rango de movimiento (ROM) articular activo/pasivo, extensibilidad miotendinosa de isquiotibiales/tríceps sural, juego articular accesorio, flexo-extensión fisiológica.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        a +115° en flexión activa (goniometría), Sit and Reach a +5 cm, simetría bilateral &gt; 90%.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-600">
+                        en 3 semanas de intervención.
+                      </td>
                       <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
-                        &quot;Incrementar la fuerza de cuádriceps y glúteo medio a grado M4+ en escala MRC al término de 4 semanas.&quot;
+                        &quot;Restablecer el rango articular activo de flexión de rodilla a +115° medido por goniometría en 3 semanas.&quot;
                       </td>
                     </tr>
                     <tr>
-                      <td className="border border-slate-200 p-2 font-bold text-teal-900 bg-teal-50/40">
-                        Movilidad / ROM
+                      <td className="border border-slate-200 p-2">
+                        <strong className="text-teal-900 block font-semibold mb-1">Fuerza / Potencia / Resistencia:</strong>
+                        Desarrollar, aumentar, fortalecer, potenciar, reclutar, acondicionar.
                       </td>
-                      <td className="border border-slate-200 p-2">Ganar / Restablecer / Ampliar</td>
-                      <td className="border border-slate-200 p-2">el rango activo de flexión de rodilla</td>
-                      <td className="border border-slate-200 p-2">a +115° sin compensaciones</td>
-                      <td className="border border-slate-200 p-2">en 3 semanas de intervención.</td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        Fuerza isométrica/dinámica de cuádriceps, glúteo medio y tríceps sural, potencia extensora de cadera, resistencia muscular local, torque articular.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        a grado M4+ en escala MRC, incremento del 15% en dinamometría, ejecución con 10RM progresivo.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-600">
+                        al término de 4 semanas de entrenamiento.
+                      </td>
                       <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
-                        &quot;Ganar el rango activo de flexión de rodilla a +115° sin compensaciones en 3 semanas de intervención.&quot;
+                        &quot;Desarrollar la fuerza isométrica y dinámica de cuádriceps y glúteo medio a grado M4+ en escala MRC en 4 semanas.&quot;
                       </td>
                     </tr>
                     <tr>
-                      <td className="border border-slate-200 p-2 font-bold text-indigo-900 bg-indigo-50/40">
-                        Marcha / Desplazamiento
+                      <td className="border border-slate-200 p-2">
+                        <strong className="text-teal-900 block font-semibold mb-1">Control Motor / Estabilidad:</strong>
+                        Optimizar, estabilizar, coordinar, reeducar, afianzar, alinear.
                       </td>
-                      <td className="border border-slate-200 p-2">Reeducar / Prolongar / Entrenar</td>
-                      <td className="border border-slate-200 p-2">la tolerancia a la marcha continua</td>
-                      <td className="border border-slate-200 p-2">durante 500 metros sin claudicación</td>
-                      <td className="border border-slate-200 p-2">al cabo de 4 semanas.</td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        Control lumbopélvico dinámico, alineación femorotibial en plano frontal, estabilidad unipodal estática/dinámica, propiocepción, balance postural.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        manteniendo apoyo unipodal &gt; 25s sin oscilaciones, evitando el colapso en valgo dinámico.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-600">
+                        durante descenso de escalón en 3 semanas.
+                      </td>
                       <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
-                        &quot;Prolongar la tolerancia a la marcha continua durante 500 metros sin claudicación al cabo de 4 semanas.&quot;
+                        &quot;Optimizar la estabilidad unipodal y control lumbopélvico manteniendo apoyo &gt; 25s sin oscilaciones en 3 semanas.&quot;
                       </td>
                     </tr>
                     <tr>
-                      <td className="border border-slate-200 p-2 font-bold text-indigo-900 bg-indigo-50/40">
-                        Transferencias / Tareas
+                      <td className="border border-slate-200 p-2">
+                        <strong className="text-teal-900 block font-semibold mb-1">Capacidad Aeróbica:</strong>
+                        Acondicionar, mejorar, elevar, prolongar, adaptar.
                       </td>
-                      <td className="border border-slate-200 p-2">Entrenar / Independizar / Lograr</td>
-                      <td className="border border-slate-200 p-2">la transición sedente a bípedo</td>
-                      <td className="border border-slate-200 p-2">logrando 12 reps en Chair Stand Test</td>
-                      <td className="border border-slate-200 p-2">en 3 semanas de programa.</td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        Capacidad cardiorrespiratoria, tolerancia al esfuerzo submáximo, resistencia aeróbica, recuperación de frecuencia cardíaca.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        alcanzando &gt; 450 metros en Test de Marcha de 6 Minutos (TM6M), manteniendo RPE ≤ 4 (Borg).
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-600">
+                        al término de 6 semanas de programa.
+                      </td>
                       <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
-                        &quot;Entrenar la transición sedente a bípedo logrando 12 reps en Chair Stand Test en 3 semanas de programa.&quot;
+                        &quot;Mejorar la tolerancia al esfuerzo alcanzando &gt; 450m en TM6M con RPE ≤ 4 al término de 6 semanas de programa.&quot;
                       </td>
                     </tr>
                     <tr>
-                      <td className="border border-slate-200 p-2 font-bold text-purple-900 bg-purple-50/40">
-                        Autonomía / Comunidad
+                      <td className="border border-slate-200 p-2">
+                        <strong className="text-indigo-900 block font-semibold mb-1">Marcha y Locomoción:</strong>
+                        Reeducar, prolongar, agilizar, perfeccionar, entrenar.
                       </td>
-                      <td className="border border-slate-200 p-2">Favorecer / Fomentar / Promover</td>
-                      <td className="border border-slate-200 p-2">la autonomía en traslados comunitarios</td>
-                      <td className="border border-slate-200 p-2">asistiendo de forma autónoma y segura</td>
-                      <td className="border border-slate-200 p-2">2 veces por semana al término del ciclo.</td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        Patrón cinemático de marcha, simetría del paso, fase de apoyo monopodal, cadencia y velocidad de marcha, desplazamiento en desniveles.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        velocidad de marcha ≥ 1.0 m/s, desplazamiento continuo de 500 metros sin asistencia ni claudicación.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-600">
+                        al cabo de 4 semanas.
+                      </td>
                       <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
-                        &quot;Favorecer la autonomía en traslados comunitarios asistiendo de forma autónoma y segura 2 veces por semana.&quot;
+                        &quot;Reeducar el patrón cinemático de marcha logrando 500m continuos sin asistencia ni claudicación en 4 semanas.&quot;
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-200 p-2">
+                        <strong className="text-indigo-900 block font-semibold mb-1">Transferencias / Tareas Motoras:</strong>
+                        Entrenar, independizar, ejecutar, perfeccionar, agilizar.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        Transición sedente a bípedo (sit-to-stand), transferencias piso-bípedo, agacharse a nivel de suelo, tiempo en Timed Up and Go (TUG), subir/bajar peldaños.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        ejecutando ≥ 12 repeticiones en Chair Stand Test en 30s, reduciendo tiempo en TUG a &lt; 10 segundos.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-600">
+                        en 3 semanas de entrenamiento funcional.
+                      </td>
+                      <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
+                        &quot;Entrenar la transición sedente a bípedo logrando ≥ 12 repeticiones en Chair Stand Test en 3 semanas de entrenamiento.&quot;
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-200 p-2">
+                        <strong className="text-indigo-900 block font-semibold mb-1">Prevención de Caídas:</strong>
+                        Afianzar, desarrollar, estimular, entrenar, potenciar.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        Estrategia de paso compensatorio, reacciones de enderezamiento postural ante perturbaciones, velocidad de reacción protectora, confianza en equilibrio.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        ejecutando paso protector eficaz ante perturbación externa, reduciendo puntaje de temor a caer (FES-I).
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-600">
+                        en 4 semanas de trabajo multimodal.
+                      </td>
+                      <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
+                        &quot;Afianzar la estrategia de paso compensatorio y reacciones de enderezamiento ante perturbaciones en 4 semanas.&quot;
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-200 p-2">
+                        <strong className="text-purple-900 block font-semibold mb-1">Participación / Autonomía:</strong>
+                        Favorecer, promover, integrar, reintegrar, facilitar, empoderar.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        Autonomía en transporte público y compras vecinales, asistencia a talleres de envejecimiento activo, rol laboral activo, autogestión de ejercicio domiciliario.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-700">
+                        asistiendo de forma autónoma y segura 2 veces por semana al taller, realizando trámites cotidianos sin asistencia.
+                      </td>
+                      <td className="border border-slate-200 p-2 text-slate-600">
+                        al término del ciclo de intervención.
+                      </td>
+                      <td className="border border-slate-200 p-2 italic text-slate-800 bg-slate-50">
+                        &quot;Favorecer la autonomía en traslados comunitarios asistiendo de forma autónoma y segura 2 veces por semana al término del ciclo.&quot;
                       </td>
                     </tr>
                   </tbody>
