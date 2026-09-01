@@ -14,7 +14,7 @@ import type {
   EstadoEntregaDiseno,
 } from "@/types/practica-diseno";
 
-// ── Criterios de la Rúbrica Práctica Diseño Intervención (UMCE) ──────────────
+// ── Criterios de la Rúbrica Práctica Diseño Intervención ───────────────────
 interface CriterioConfig {
   key: keyof PuntajesCriteriosDiseno;
   label: string;
@@ -66,7 +66,7 @@ const CRITERIOS_DISENO: CriterioConfig[] = [
   {
     key: "c4",
     label: "C4 · Objetivos de Intervención (CIF)",
-    desc: "Relación con enunciado diagnóstico, objetivos 'alcanzables', planteamiento de objetivo general y específicos acordes a dimensiones CIF.",
+    desc: "Relación con enunciado diagnóstico, objetivos alcanzables, planteamiento de objetivo general y específicos acordes a dimensiones CIF.",
     max: 5,
     options: [
       { val: 1, label: "0/4 Incoherentes a CIF o no alcanzables" },
@@ -82,9 +82,9 @@ const CRITERIOS_DISENO: CriterioConfig[] = [
     desc: "Coherente con objetivos propuestos y considera al menos una estrategia de intervención para cada dimensión CIF.",
     max: 3,
     options: [
-      { val: 1, label: "Incoherente Y no considera estrategias CIF" },
-      { val: 2, label: "Coherente O considera estrategias CIF (1 de 2)" },
-      { val: 3, label: "Coherente Y considera al menos 1 estrategia por dimensión CIF (2 de 2)" },
+      { val: 1, label: "Incoherente y no considera estrategias CIF" },
+      { val: 2, label: "Coherente o considera estrategias CIF (1 de 2)" },
+      { val: 3, label: "Coherente y considera al menos 1 estrategia por dimensión CIF (2 de 2)" },
     ],
   },
   {
@@ -135,7 +135,11 @@ function ScoreSelector({
                   : "bg-white border-slate-300 text-slate-600 hover:border-teal-400 hover:text-teal-700"
               }`}
             >
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-black ${active ? "bg-white text-teal-700" : "bg-slate-100 text-slate-600"}`}>
+              <span
+                className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-black ${
+                  active ? "bg-white text-teal-700" : "bg-slate-100 text-slate-600"
+                }`}
+              >
                 {opt.val}
               </span>
               <span>{opt.label}</span>
@@ -204,7 +208,7 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
     <div className="space-y-6 text-sm text-slate-700">
       {/* 1. Datos Persona */}
       <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">👤 Datos de la Persona</h4>
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">Datos de la Persona</h4>
         <div className="grid grid-cols-2 gap-2 text-xs">
           <p><strong>Nombre:</strong> {caso.datosUsuaria.nombre}</p>
           <p><strong>Edad:</strong> {caso.datosUsuaria.edad}</p>
@@ -218,7 +222,7 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
 
       {/* 2. Anamnesis e Interpretación */}
       <div className="space-y-2">
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">📝 Anamnesis & Interpretación</h4>
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Anamnesis e Interpretación</h4>
         <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs whitespace-pre-wrap">
           {caso.anamnesis}
         </div>
@@ -230,7 +234,7 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
       {/* 3. Evaluaciones */}
       <div>
         <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">
-          📊 Evaluaciones ({caso.evaluaciones.length})
+          Evaluaciones ({caso.evaluaciones.length})
         </h4>
         <div className="space-y-2">
           {caso.evaluaciones.map((ev, idx) => (
@@ -246,9 +250,21 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
         </div>
       </div>
 
-      {/* 4. Matriz CIF */}
+      {/* 4. Hallazgos */}
       <div>
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">🌐 Clasificación CIF</h4>
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">
+          Hallazgos Principales
+        </h4>
+        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5">
+          <p><strong>1.</strong> {caso.hallazgo1}</p>
+          <p><strong>2.</strong> {caso.hallazgo2}</p>
+          <p><strong>3.</strong> {caso.hallazgo3}</p>
+        </div>
+      </div>
+
+      {/* 5. Matriz CIF */}
+      <div>
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">Clasificación CIF</h4>
         <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
           <CifRow label="Estructuras Corporales" value={caso.cif.estructurasCorporales} />
           <CifRow label="Funciones Corporales" value={caso.cif.funcionesCorporales} />
@@ -259,9 +275,9 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
         </div>
       </div>
 
-      {/* 5. Enunciado Diagnóstico y Objetivos CIF */}
+      {/* 6. Diagnóstico y Objetivos */}
       <div className="space-y-3">
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">🎯 Enunciado Diagnóstico & Objetivos</h4>
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Diagnóstico y Objetivos</h4>
         <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-200 text-xs text-indigo-900 whitespace-pre-wrap">
           <strong>Enunciado Diagnóstico:</strong> {caso.enunciadoDiagnostico}
         </div>
@@ -274,9 +290,9 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
         </div>
       </div>
 
-      {/* 6. Plan de Intervención */}
+      {/* 7. Plan de Intervención */}
       <div>
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">🛠️ Plan de Intervención (Estrategias CIF)</h4>
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">Plan de Intervención (Estrategias CIF)</h4>
         <div className="bg-amber-50/70 p-3 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-2">
           <p><strong>Estrategias Estructuras/Funciones:</strong> {caso.planIntervencion.estructurasFunciones}</p>
           <p><strong>Estrategias Actividades:</strong> {caso.planIntervencion.actividades}</p>
@@ -284,12 +300,12 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
         </div>
       </div>
 
-      {/* 7. Pronóstico Incipiente */}
+      {/* 8. Pronóstico Incipiente */}
       <div>
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">🔮 Pronóstico Incipiente Final</h4>
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">Pronóstico Incipiente Final</h4>
         <div className="bg-purple-50 p-3 rounded-xl border border-purple-200 text-xs text-purple-900 space-y-2">
           <p><strong>Fundamentación:</strong> {caso.pronostico.fundamentacion}</p>
-          <p><strong>Relación Diagnóstico & Plan:</strong> {caso.pronostico.relacionDiagnosticoEIntervencion}</p>
+          <p><strong>Relación Diagnóstico y Plan:</strong> {caso.pronostico.relacionDiagnosticoEIntervencion}</p>
           <div className="pt-1">
             <strong>Factores Pronósticos Declarados:</strong>
             <ul className="list-disc list-inside mt-1 space-y-0.5 text-purple-800">
@@ -301,9 +317,9 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
         </div>
       </div>
 
-      {/* 8. Autoevaluación */}
+      {/* 9. Autoevaluación */}
       <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
-        <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[11px] mb-1">🧠 Autoevaluación del Estudiante</h4>
+        <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[11px] mb-1">Autoevaluación del Estudiante</h4>
         <p><strong>Dificultad principal:</strong> {caso.autoevaluacion.mayorDificultad}</p>
         <p><strong>Información faltante:</strong> {caso.autoevaluacion.informacionFaltante}</p>
         <p><strong>Mejoras propuestas:</strong> {caso.autoevaluacion.mejoras}</p>
@@ -353,7 +369,6 @@ export default function PanelDocenteDiseno() {
 
   const entregaSeleccionada = entregas.find((e) => e.id === selectedId);
 
-  // Al seleccionar entrega, cargar su revisión previa si existe
   useEffect(() => {
     if (entregaSeleccionada?.revision) {
       setPuntajes(entregaSeleccionada.revision.puntajes);
@@ -418,26 +433,25 @@ export default function PanelDocenteDiseno() {
           <div className="inline-block bg-teal-500/30 text-teal-300 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2">
             Panel de Evaluación Docente
           </div>
-          <h1 className="text-2xl font-extrabold">Práctica Diseño de Intervención (UMCE)</h1>
+          <h1 className="text-2xl font-extrabold">Práctica Diseño de Intervención</h1>
           <p className="text-slate-400 text-xs mt-1">
-            Evaluación longitudinal con Rúbrica Oficial de 28 Puntos (Escala Exigencia 60%).
+            Evaluación longitudinal con Rúbrica Oficial de 28 Puntos (Escala de Exigencia 60%).
           </p>
         </div>
         <button
           type="button"
           onClick={cargarEntregas}
-          className="self-start md:self-auto px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition flex items-center gap-2"
+          className="self-start md:self-auto px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition"
         >
-          <span>🔄</span> Actualizar Entregas ({entregas.length})
+          Actualizar Entregas ({entregas.length})
         </button>
       </div>
 
       {entregas.length === 0 ? (
         <div className="bg-white rounded-3xl p-12 text-center border border-slate-200 shadow-sm max-w-lg mx-auto">
-          <span className="text-4xl mb-3 block">📭</span>
           <h3 className="text-lg font-bold text-slate-800 mb-1">No hay entregas registradas aún</h3>
           <p className="text-slate-500 text-xs leading-relaxed">
-            Las entregas enviadas por los estudiantes a través del formulario de Práctica Diseño aparecerán aquí para tu revisión.
+            Las entregas enviadas por los estudiantes a través del formulario de Práctica Diseño aparecerán aquí para su revisión.
           </p>
         </div>
       ) : (
@@ -528,8 +542,8 @@ export default function PanelDocenteDiseno() {
 
               {/* Rúbrica de Evaluación Docente */}
               <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
-                <h3 className="text-base font-bold text-slate-800 border-b border-slate-200 pb-3 flex items-center gap-2">
-                  <span>📐</span> Evaluación por Rúbrica UMCE (28 Puntos Máximo)
+                <h3 className="text-base font-bold text-slate-800 border-b border-slate-200 pb-3">
+                  Evaluación por Rúbrica (28 Puntos Máximo)
                 </h3>
 
                 <div>
@@ -546,7 +560,7 @@ export default function PanelDocenteDiseno() {
                 {/* Comentario Docente */}
                 <div>
                   <label className="block text-sm font-bold text-slate-800 mb-2">
-                    💬 Retroalimentación Pedagógica Docente
+                    Retroalimentación Pedagógica Docente
                   </label>
                   <textarea
                     rows={4}
@@ -566,8 +580,8 @@ export default function PanelDocenteDiseno() {
                       onChange={(e) => setEstadoRevision(e.target.value as EstadoEntregaDiseno)}
                       className="text-xs font-semibold border border-slate-300 rounded-xl px-3 py-2 text-slate-800 outline-none bg-slate-50"
                     >
-                      <option value="revisado">✅ Revisado / Evaluado</option>
-                      <option value="requiere_correccion">⚠️ Requiere Corrección</option>
+                      <option value="revisado">Revisado / Evaluado</option>
+                      <option value="requiere_correccion">Requiere Corrección</option>
                     </select>
                   </div>
 
@@ -583,25 +597,22 @@ export default function PanelDocenteDiseno() {
                         Guardando...
                       </>
                     ) : (
-                      <>
-                        <span>Guardar Calificación</span>
-                        <span>💾</span>
-                      </>
+                      <span>Guardar Calificación</span>
                     )}
                   </button>
                 </div>
 
                 {exitoGuardar && (
                   <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-xs font-bold text-center">
-                    ✓ ¡Evaluación guardada exitosamente!
+                    Evaluación guardada exitosamente.
                   </div>
                 )}
               </div>
 
               {/* Detalle del Informe Entregado por el Estudiante */}
               <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-base font-bold text-slate-800 border-b border-slate-200 pb-3 flex items-center gap-2">
-                  <span>📋</span> Informe Entregado por la Dupla
+                <h3 className="text-base font-bold text-slate-800 border-b border-slate-200 pb-3">
+                  Informe Entregado por la Dupla
                 </h3>
 
                 <VistaCasoDiseno caso={entregaSeleccionada.caso} />
