@@ -68,11 +68,6 @@ export interface CasoDisenoIntervencion {
   objetivos: ObjetivosCIF;
   planIntervencion: EstrategiasCIF;
   pronostico: PronosticoIncipiente;
-  autoevaluacion: {
-    mayorDificultad: string;
-    informacionFaltante: string;
-    mejoras: string;
-  };
 }
 
 export type EstadoEntregaDiseno = 'entregado' | 'revisado' | 'requiere_correccion';
@@ -160,6 +155,5 @@ export function casoDisenoVacio(): CasoDisenoIntervencion {
     objetivos: { objetivoGeneral: '', estructurasFunciones: '', actividades: '', participacion: '' },
     planIntervencion: { estructurasFunciones: '', actividades: '', participacion: '' },
     pronostico: { fundamentacion: '', relacionDiagnosticoEIntervencion: '', factorPronostico1: '', factorPronostico2: '', factorPronostico3: '' },
-    autoevaluacion: { mayorDificultad: '', informacionFaltante: '', mejoras: '' },
   };
 }

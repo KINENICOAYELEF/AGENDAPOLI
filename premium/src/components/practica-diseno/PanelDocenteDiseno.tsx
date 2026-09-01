@@ -14,9 +14,10 @@ import type {
   EstadoEntregaDiseno,
 } from "@/types/practica-diseno";
 
-// ── Criterios de la Rúbrica Práctica Diseño Intervención ───────────────────
+// ── Criterios Exactos de la Rúbrica Oficial (28 Puntos Totales) ─────────────
 interface CriterioConfig {
   key: keyof PuntajesCriteriosDiseno;
+  categoria: string;
   label: string;
   desc: string;
   max: number;
@@ -26,78 +27,84 @@ interface CriterioConfig {
 const CRITERIOS_DISENO: CriterioConfig[] = [
   {
     key: "c1",
-    label: "C1 · Requerimientos Formales Solicitados",
-    desc: "Responsabilidad, puntualidad, uso de uniforme institucional, respeto por las normas de la institución.",
+    categoria: "Aspectos Generales Individuales",
+    label: "C1 · Requerimientos Formales Solicitados desde la Institución",
+    desc: "Cumple con los requerimientos formales: responsabilidad, puntualidad, uso de uniforme institucional y respeto por las normas de la institución.",
     max: 5,
     options: [
-      { val: 1, label: "0/4 No cumple formalidades" },
-      { val: 2, label: "1/4 Cumple 1 aspecto formal" },
-      { val: 3, label: "2/4 Cumple 2 aspectos formales" },
-      { val: 4, label: "3/4 Cumple 3 aspectos formales" },
-      { val: 5, label: "4/4 Cumple todos los aspectos formales" },
+      { val: 1, label: "1 pt (0/4): No cumple con los requerimientos formales solicitados." },
+      { val: 2, label: "2 pts (1/4): Cumple con uno (1/4) de los requerimientos formales." },
+      { val: 3, label: "3 pts (2/4): Cumple con dos (2/4) de los requerimientos formales." },
+      { val: 4, label: "4 pts (3/4): Cumple con tres (3/4) de los requerimientos formales." },
+      { val: 5, label: "5 pts (4/4): Cumple con todos los requerimientos formales (responsabilidad, puntualidad, uniforme, respeto a normas)." },
     ],
   },
   {
     key: "c2",
+    categoria: "Aspectos Generales Individuales",
     label: "C2 · Actitud, Trato Empático y Confidencialidad",
-    desc: "Proactividad en proceso formativo, relación empática y respetuosa con usuario, lenguaje formal/pertinente y resguardo de confidencialidad.",
+    desc: "Mostrar proactividad en su formación, manejo empático de la relación usuario-tratante, uso de lenguaje formal acorde y resguardo riguroso de la confidencialidad.",
     max: 5,
     options: [
-      { val: 1, label: "0/4 No cumple aspectos actitudinales" },
-      { val: 2, label: "1/4 Demuestra 1 componente" },
-      { val: 3, label: "2/4 Demuestra 2 componentes" },
-      { val: 4, label: "3/4 Demuestra 3 componentes" },
-      { val: 5, label: "4/4 Demuestra todos los componentes (4/4)" },
+      { val: 1, label: "1 pt (0/4): No demuestra proactividad, ni relación empática, ni lenguaje formal, ni resguardo de confidencialidad." },
+      { val: 2, label: "2 pts (1/4): Demuestra uno (1/4) de los componentes requeridos." },
+      { val: 3, label: "3 pts (2/4): Demuestra dos (2/4) de los componentes requeridos." },
+      { val: 4, label: "4 pts (3/4): Demuestra tres (3/4) de los componentes requeridos." },
+      { val: 5, label: "5 pts (4/4): Demuestra proactividad, empatía y respeto, lenguaje formal y resguardo riguroso de confidencialidad." },
     ],
   },
   {
     key: "c3",
+    categoria: "Aspectos de Manejo Clínico Grupales",
     label: "C3 · Evaluaciones Desarrolladas en el Proceso",
-    desc: "Evaluaciones pertinentes, correcta ejecución, interpretación correcta de resultados y tiempo oportuno.",
+    desc: "Las evaluaciones desarrolladas en el proceso son pertinentes, las ejecuta correctamente y los resultados los logra interpretar de manera correcta y oportuna.",
     max: 5,
     options: [
-      { val: 1, label: "0/4 No pertinentes ni ejecutadas/interpretadas" },
-      { val: 2, label: "1/4 Considera 1 de 4 elementos" },
-      { val: 3, label: "2/4 Considera 2 de 4 elementos" },
-      { val: 4, label: "3/4 Considera 3 de 4 elementos" },
-      { val: 5, label: "4/4 Considera 4/4 elementos a cabalidad" },
+      { val: 1, label: "1 pt (0/4): No son pertinentes, no se ejecutan correctamente, no logra interpretar resultados de manera correcta ni oportuna." },
+      { val: 2, label: "2 pts (1/4): Consideran 1 de 4 elementos (pertinencia, correcta ejecución, interpretación correcta, tiempo oportuno)." },
+      { val: 3, label: "3 pts (2/4): Consideran 2 de 4 elementos." },
+      { val: 4, label: "4 pts (3/4): Consideran 3 de 4 elementos." },
+      { val: 5, label: "5 pts (4/4): Consideran los 4/4 elementos a cabalidad (pertinentes, correcta ejecución, interpretación correcta y oportuna)." },
     ],
   },
   {
     key: "c4",
-    label: "C4 · Objetivos de Intervención (CIF)",
-    desc: "Relación con enunciado diagnóstico, objetivos alcanzables, planteamiento de objetivo general y específicos acordes a dimensiones CIF.",
+    categoria: "Aspectos de Manejo Clínico Grupales",
+    label: "C4 · Objetivos de Intervención (Dimensiones CIF)",
+    desc: "Los objetivos se relacionan con el enunciado diagnóstico (clínico o situacional), son alcanzables, y plantean objetivo general y objetivos específicos acordes a dimensiones CIF.",
     max: 5,
     options: [
-      { val: 1, label: "0/4 Incoherentes a CIF o no alcanzables" },
-      { val: 2, label: "1/4 Relaciona 1 de 4 componentes" },
-      { val: 3, label: "2/4 Relaciona 2 de 4 componentes" },
-      { val: 4, label: "3/4 Relaciona 3 de 4 componentes" },
-      { val: 5, label: "4/4 Relaciona 4/4 componentes correctamente" },
+      { val: 1, label: "1 pt (0/4): No se relacionan con el diagnóstico, no son alcanzables y son incoherentes con dimensiones CIF." },
+      { val: 2, label: "2 pts (1/4): Se relacionan con 1 de los 4 componentes (relación con diagnóstico, alcanzables, objetivo general, específicos acordes a CIF)." },
+      { val: 3, label: "3 pts (2/4): Se relacionan con 2 de los 4 componentes." },
+      { val: 4, label: "4 pts (3/4): Se relacionan con 3 de los 4 componentes." },
+      { val: 5, label: "5 pts (4/4): Se relacionan con los 4 componentes requeridos a cabalidad." },
     ],
   },
   {
     key: "c5",
-    label: "C5 · Plan de Intervención Propuesto",
-    desc: "Coherente con objetivos propuestos y considera al menos una estrategia de intervención para cada dimensión CIF.",
+    categoria: "Aspectos de Manejo Clínico Grupales",
+    label: "C5 · Plan de Intervención Propuesto (Estrategias CIF)",
+    desc: "El plan de intervención propuesto es coherente con objetivos propuestos y considera al menos una estrategia de intervención para cada dimensión CIF.",
     max: 3,
     options: [
-      { val: 1, label: "Incoherente y no considera estrategias CIF" },
-      { val: 2, label: "Coherente o considera estrategias CIF (1 de 2)" },
-      { val: 3, label: "Coherente y considera al menos 1 estrategia por dimensión CIF (2 de 2)" },
+      { val: 1, label: "1 pt: No es coherente con objetivos propuestos y no considera estrategias para cada dimensión CIF." },
+      { val: 2, label: "2 pts: Es coherente con objetivos propuestos O considera al menos una estrategia para cada dimensión CIF." },
+      { val: 3, label: "3 pts: Es coherente con objetivos propuestos Y considera al menos una estrategia de intervención para cada dimensión CIF." },
     ],
   },
   {
     key: "c6",
-    label: "C6 · Pronóstico (Incipiente) Final",
-    desc: "Fundamentado, relación con diagnóstico y plan de intervención propuesta, y declaración de al menos 3 factores pronósticos.",
+    categoria: "Aspectos de Manejo Clínico Grupales",
+    label: "C6 · Pronóstico (Incipiente) Final y Factores Pronósticos",
+    desc: "El pronóstico final es fundamentado y se relaciona con diagnóstico e intervención propuesta. Consideran al menos 3 factores pronósticos.",
     max: 5,
     options: [
-      { val: 1, label: "0/4 Sin fundamentación ni factores" },
-      { val: 2, label: "1/4 Cumple 1 de 4 características" },
-      { val: 3, label: "2/4 Cumple 2 de 4 características" },
-      { val: 4, label: "3/4 Cumple 3 de 4 características" },
-      { val: 5, label: "4/4 Cumple 4/4 características (mínimo 3 factores)" },
+      { val: 1, label: "1 pt (0/4): No es fundamentado, no se relaciona con diagnóstico ni con intervención, y no considera factores pronósticos." },
+      { val: 2, label: "2 pts (1/4): Considera 1 de las 4 características (fundamentado, relación con diagnóstico, relación con intervención, al menos 3 factores)." },
+      { val: 3, label: "3 pts (2/4): Considera 2 de las 4 características." },
+      { val: 4, label: "4 pts (3/4): Considera 3 de las 4 características." },
+      { val: 5, label: "5 pts (4/4): Cumple las 4 características (fundamentado, coherente con diagnóstico/intervención y declara al menos 3 factores pronósticos)." },
     ],
   },
 ];
@@ -112,16 +119,17 @@ function ScoreSelector({
   onChange: (v: number) => void;
 }) {
   return (
-    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4">
+    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-5">
       <div className="flex items-center justify-between mb-1">
-        <h4 className="font-bold text-slate-800 text-sm">{criterio.label}</h4>
+        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{criterio.categoria}</span>
         <span className="text-xs font-extrabold text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full border border-teal-200">
-          Max: {criterio.max} pts
+          Máx: {criterio.max} pts
         </span>
       </div>
-      <p className="text-xs text-slate-500 mb-3">{criterio.desc}</p>
+      <h4 className="font-bold text-slate-800 text-sm mb-1">{criterio.label}</h4>
+      <p className="text-xs text-slate-500 mb-3 leading-relaxed">{criterio.desc}</p>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="space-y-2">
         {criterio.options.map((opt) => {
           const active = value === opt.val;
           return (
@@ -129,20 +137,20 @@ function ScoreSelector({
               key={opt.val}
               type="button"
               onClick={() => onChange(opt.val)}
-              className={`px-3 py-2 rounded-xl text-xs font-bold border transition text-left flex items-center gap-2 ${
+              className={`w-full p-2.5 rounded-xl text-xs font-medium border transition text-left flex items-start gap-2.5 ${
                 active
-                  ? "bg-teal-600 border-teal-600 text-white shadow-md"
-                  : "bg-white border-slate-300 text-slate-600 hover:border-teal-400 hover:text-teal-700"
+                  ? "bg-teal-600 border-teal-600 text-white shadow-md font-semibold"
+                  : "bg-white border-slate-200 text-slate-700 hover:border-teal-400 hover:text-teal-800"
               }`}
             >
               <span
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-black ${
+                className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black shrink-0 mt-0.5 ${
                   active ? "bg-white text-teal-700" : "bg-slate-100 text-slate-600"
                 }`}
               >
                 {opt.val}
               </span>
-              <span>{opt.label}</span>
+              <span className="leading-snug">{opt.label}</span>
             </button>
           );
         })}
@@ -208,7 +216,7 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
     <div className="space-y-6 text-sm text-slate-700">
       {/* 1. Datos Persona */}
       <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">Datos de la Persona</h4>
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">1. Datos de la Persona</h4>
         <div className="grid grid-cols-2 gap-2 text-xs">
           <p><strong>Nombre:</strong> {caso.datosUsuaria.nombre}</p>
           <p><strong>Edad:</strong> {caso.datosUsuaria.edad}</p>
@@ -222,28 +230,30 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
 
       {/* 2. Anamnesis e Interpretación */}
       <div className="space-y-2">
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Anamnesis e Interpretación</h4>
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">2. Anamnesis e Interpretación</h4>
         <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs whitespace-pre-wrap">
+          <p className="font-semibold text-slate-700 mb-1">Anamnesis próxima y remota:</p>
           {caso.anamnesis}
         </div>
         <div className="bg-blue-50/70 p-3 rounded-xl border border-blue-200 text-xs text-blue-900 whitespace-pre-wrap">
-          <strong>Interpretación:</strong> {caso.interpretacionAnamnesis}
+          <p className="font-semibold text-blue-800 mb-1">Interpretación de la anamnesis:</p>
+          {caso.interpretacionAnamnesis}
         </div>
       </div>
 
-      {/* 3. Evaluaciones */}
+      {/* 3. Evaluaciones (Para Criterio C3) */}
       <div>
         <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">
-          Evaluaciones ({caso.evaluaciones.length})
+          3. Evaluaciones Clínicas ({caso.evaluaciones.length}) — Relevante para C3
         </h4>
         <div className="space-y-2">
           {caso.evaluaciones.map((ev, idx) => (
             <div key={ev.id} className="bg-white p-3 rounded-xl border border-slate-200 text-xs space-y-1">
               <p className="font-bold text-slate-800">{idx + 1}. {ev.nombre || "Sin nombre"}</p>
-              <p className="text-slate-600"><strong>Justificación:</strong> {ev.razon}</p>
-              <p className="text-slate-600"><strong>Resultado:</strong> {ev.resultado}</p>
-              <p className="text-teal-800 bg-teal-50 p-1.5 rounded-lg border border-teal-100">
-                <strong>Interpretación Oportuna:</strong> {ev.interpretacion}
+              <p className="text-slate-600"><strong>Justificación clínica (Pertinencia):</strong> {ev.razon}</p>
+              <p className="text-slate-600"><strong>Resultado obtenido (Ejecución):</strong> {ev.resultado}</p>
+              <p className="text-teal-900 bg-teal-50 p-2 rounded-lg border border-teal-100">
+                <strong>Interpretación oportuna:</strong> {ev.interpretacion}
               </p>
             </div>
           ))}
@@ -253,7 +263,7 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
       {/* 4. Hallazgos */}
       <div>
         <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">
-          Hallazgos Principales
+          4. Hallazgos Principales
         </h4>
         <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5">
           <p><strong>1.</strong> {caso.hallazgo1}</p>
@@ -264,7 +274,7 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
 
       {/* 5. Matriz CIF */}
       <div>
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">Clasificación CIF</h4>
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">5. Clasificación CIF</h4>
         <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
           <CifRow label="Estructuras Corporales" value={caso.cif.estructurasCorporales} />
           <CifRow label="Funciones Corporales" value={caso.cif.funcionesCorporales} />
@@ -275,54 +285,86 @@ function VistaCasoDiseno({ caso }: { caso: CasoDisenoIntervencion }) {
         </div>
       </div>
 
-      {/* 6. Diagnóstico y Objetivos */}
-      <div className="space-y-3">
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Diagnóstico y Objetivos</h4>
+      {/* 6. Diagnóstico */}
+      <div className="space-y-2">
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">6. Diagnóstico Kinesiológico Incipiente</h4>
         <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-200 text-xs text-indigo-900 whitespace-pre-wrap">
-          <strong>Enunciado Diagnóstico:</strong> {caso.enunciadoDiagnostico}
+          {caso.enunciadoDiagnostico}
         </div>
-        <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-xs text-emerald-900 space-y-2">
-          <p><strong>Objetivo General:</strong> {caso.objetivos.objetivoGeneral}</p>
+      </div>
+
+      {/* 7. Objetivos CIF (Para Criterio C4) */}
+      <div className="space-y-2">
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">
+          7. Objetivos de Intervención — Relevante para C4
+        </h4>
+        <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200 text-xs text-emerald-900 space-y-2.5">
+          <div>
+            <span className="font-bold uppercase text-[10px] text-emerald-800 tracking-wider">Objetivo General:</span>
+            <p className="mt-0.5">{caso.objetivos.objetivoGeneral}</p>
+          </div>
           <hr className="border-emerald-200" />
-          <p><strong>Esp. Estructuras/Funciones:</strong> {caso.objetivos.estructurasFunciones}</p>
-          <p><strong>Esp. Actividades:</strong> {caso.objetivos.actividades}</p>
-          <p><strong>Esp. Participación:</strong> {caso.objetivos.participacion}</p>
+          <div>
+            <span className="font-bold uppercase text-[10px] text-emerald-800 tracking-wider">Esp. Estructuras y Funciones:</span>
+            <p className="mt-0.5">{caso.objetivos.estructurasFunciones}</p>
+          </div>
+          <div>
+            <span className="font-bold uppercase text-[10px] text-emerald-800 tracking-wider">Esp. Actividades:</span>
+            <p className="mt-0.5">{caso.objetivos.actividades}</p>
+          </div>
+          <div>
+            <span className="font-bold uppercase text-[10px] text-emerald-800 tracking-wider">Esp. Participación:</span>
+            <p className="mt-0.5">{caso.objetivos.participacion}</p>
+          </div>
         </div>
       </div>
 
-      {/* 7. Plan de Intervención */}
+      {/* 8. Plan de Intervención (Para Criterio C5) */}
       <div>
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">Plan de Intervención (Estrategias CIF)</h4>
-        <div className="bg-amber-50/70 p-3 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-2">
-          <p><strong>Estrategias Estructuras/Funciones:</strong> {caso.planIntervencion.estructurasFunciones}</p>
-          <p><strong>Estrategias Actividades:</strong> {caso.planIntervencion.actividades}</p>
-          <p><strong>Estrategias Participación:</strong> {caso.planIntervencion.participacion}</p>
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">
+          8. Plan de Intervención (Estrategias CIF) — Relevante para C5
+        </h4>
+        <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-2.5">
+          <div>
+            <span className="font-bold uppercase text-[10px] text-amber-800 tracking-wider">Estrategias Estructuras/Funciones (Técnicas + FITT):</span>
+            <p className="mt-0.5 whitespace-pre-wrap">{caso.planIntervencion.estructurasFunciones}</p>
+          </div>
+          <hr className="border-amber-200" />
+          <div>
+            <span className="font-bold uppercase text-[10px] text-amber-800 tracking-wider">Estrategias Actividades (Entrenamiento de Tareas):</span>
+            <p className="mt-0.5 whitespace-pre-wrap">{caso.planIntervencion.actividades}</p>
+          </div>
+          <hr className="border-amber-200" />
+          <div>
+            <span className="font-bold uppercase text-[10px] text-amber-800 tracking-wider">Estrategias Participación (Ergonomía / Familia / Domicilio):</span>
+            <p className="mt-0.5 whitespace-pre-wrap">{caso.planIntervencion.participacion}</p>
+          </div>
         </div>
       </div>
 
-      {/* 8. Pronóstico Incipiente */}
+      {/* 9. Pronóstico Incipiente (Para Criterio C6) */}
       <div>
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">Pronóstico Incipiente Final</h4>
-        <div className="bg-purple-50 p-3 rounded-xl border border-purple-200 text-xs text-purple-900 space-y-2">
-          <p><strong>Fundamentación:</strong> {caso.pronostico.fundamentacion}</p>
-          <p><strong>Relación Diagnóstico y Plan:</strong> {caso.pronostico.relacionDiagnosticoEIntervencion}</p>
+        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">
+          9. Pronóstico Incipiente Final — Relevante para C6
+        </h4>
+        <div className="bg-purple-50 p-4 rounded-xl border border-purple-200 text-xs text-purple-900 space-y-2.5">
+          <div>
+            <span className="font-bold uppercase text-[10px] text-purple-800 tracking-wider">Fundamentación Fisiopatológica/Funcional:</span>
+            <p className="mt-0.5 whitespace-pre-wrap">{caso.pronostico.fundamentacion}</p>
+          </div>
+          <div>
+            <span className="font-bold uppercase text-[10px] text-purple-800 tracking-wider">Relación con Diagnóstico e Intervención:</span>
+            <p className="mt-0.5 whitespace-pre-wrap">{caso.pronostico.relacionDiagnosticoEIntervencion}</p>
+          </div>
           <div className="pt-1">
-            <strong>Factores Pronósticos Declarados:</strong>
-            <ul className="list-disc list-inside mt-1 space-y-0.5 text-purple-800">
+            <span className="font-bold uppercase text-[10px] text-purple-800 tracking-wider">Factores Pronósticos Declarados (Mínimo 3):</span>
+            <ul className="list-disc list-inside mt-1 space-y-1 text-purple-900 font-medium">
               <li>{caso.pronostico.factorPronostico1}</li>
               <li>{caso.pronostico.factorPronostico2}</li>
               <li>{caso.pronostico.factorPronostico3}</li>
             </ul>
           </div>
         </div>
-      </div>
-
-      {/* 9. Autoevaluación */}
-      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
-        <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[11px] mb-1">Autoevaluación del Estudiante</h4>
-        <p><strong>Dificultad principal:</strong> {caso.autoevaluacion.mayorDificultad}</p>
-        <p><strong>Información faltante:</strong> {caso.autoevaluacion.informacionFaltante}</p>
-        <p><strong>Mejoras propuestas:</strong> {caso.autoevaluacion.mejoras}</p>
       </div>
     </div>
   );
@@ -334,7 +376,7 @@ export default function PanelDocenteDiseno() {
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Estado de evaluación para la entrega seleccionada
+  // Estado de evaluación para la entrega seleccionada (6 criterios de la rúbrica)
   const [puntajes, setPuntajes] = useState<PuntajesCriteriosDiseno>({
     c1: 5,
     c2: 5,
@@ -381,7 +423,7 @@ export default function PanelDocenteDiseno() {
     }
   }, [entregaSeleccionada]);
 
-  // Cálculo en tiempo real de notas sobre 28 pts
+  // Cálculo en tiempo real de notas sobre 28 pts con umbral 60%
   const puntajeTotal = puntajes.c1 + puntajes.c2 + puntajes.c3 + puntajes.c4 + puntajes.c5 + puntajes.c6;
   const { nota, porcentaje, aprobado } = calcularNotaDiseno(puntajeTotal);
 
@@ -433,9 +475,9 @@ export default function PanelDocenteDiseno() {
           <div className="inline-block bg-teal-500/30 text-teal-300 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2">
             Panel de Evaluación Docente
           </div>
-          <h1 className="text-2xl font-extrabold">Práctica Diseño de Intervención</h1>
+          <h1 className="text-2xl font-extrabold">Práctica: Diseño de Intervención</h1>
           <p className="text-slate-400 text-xs mt-1">
-            Evaluación longitudinal con Rúbrica Oficial de 28 Puntos (Escala de Exigencia 60%).
+            Rúbrica de 28 Puntos (Escala de Exigencia 60% — Nota 4.0 con 16.8 puntos).
           </p>
         </div>
         <button
@@ -542,9 +584,14 @@ export default function PanelDocenteDiseno() {
 
               {/* Rúbrica de Evaluación Docente */}
               <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
-                <h3 className="text-base font-bold text-slate-800 border-b border-slate-200 pb-3">
-                  Evaluación por Rúbrica (28 Puntos Máximo)
-                </h3>
+                <div className="border-b border-slate-200 pb-3 flex items-center justify-between">
+                  <h3 className="text-base font-bold text-slate-800">
+                    Rúbrica de Evaluación (28 Puntos Totales)
+                  </h3>
+                  <span className="text-xs text-slate-500 font-semibold">
+                    Escala 60% (16.8 pts = 4.0)
+                  </span>
+                </div>
 
                 <div>
                   {CRITERIOS_DISENO.map((crit) => (
@@ -566,7 +613,7 @@ export default function PanelDocenteDiseno() {
                     rows={4}
                     value={comentarioDocente}
                     onChange={(e) => setComentarioDocente(e.target.value)}
-                    placeholder="Escribe comentarios, observaciones sobre los objetivos CIF, estrategias seleccionadas o sugerencias pedagógicas..."
+                    placeholder="Escribe comentarios pedagógicos sobre la coherencia del diagnóstico, la formulación de objetivos CIF, la dosificación de las estrategias o el pronóstico..."
                     className="w-full p-4 border border-slate-300 rounded-2xl text-sm text-slate-800 focus:ring-2 focus:ring-teal-500 outline-none"
                   />
                 </div>
@@ -612,7 +659,7 @@ export default function PanelDocenteDiseno() {
               {/* Detalle del Informe Entregado por el Estudiante */}
               <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
                 <h3 className="text-base font-bold text-slate-800 border-b border-slate-200 pb-3">
-                  Informe Entregado por la Dupla
+                  Informe Entregado por el Estudiante / Dupla
                 </h3>
 
                 <VistaCasoDiseno caso={entregaSeleccionada.caso} />
