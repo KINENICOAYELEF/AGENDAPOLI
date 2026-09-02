@@ -51,11 +51,11 @@ export interface EstrategiaFittVP {
   nombreEstrategia: string;
   objetivoRelacionado: string; // Objetivo(s) a los que tributa
   frecuencia: string;         // F: Frecuencia (ej. 3 veces por semana)
-  intensidad: string;         // I: Intensidad (ej. RPE 5-6 Borg, 60% 1RM, peso en kg)
+  intensidad: string;         // I: Intensidad (ej. RPE 4-6 Borg, Talk test, etc.)
   tiempo: string;             // T: Tiempo / Duración (ej. 30 minutos de sesión / 40s de trabajo)
   tipo: string;               // T: Tipo de estímulo (ej. Ejercicio de fuerza, equilibrio, circuito motor)
   volumen: string;            // V: Volumen (ej. 3 series de 10 repeticiones, descanso 60s)
-  progresion: string;         // P: Progresión y Criterios de Seguridad (ej. Aumentar repeticiones si RPE < 5, suspender si dolor > 3)
+  progresion: string;         // P: Progresión y Criterios de Seguridad (ej. Aumentar reps si RPE ≤ 3, suspender si EVA > 4)
 }
 
 export interface PlanIntervencionFittVP {
@@ -99,7 +99,9 @@ export interface ArchivoAdjunto {
 export interface EntregaPracticaDiseno {
   id?: string;
   estudiante: DatosEstudianteDupla;
-  caso: CasoDisenoIntervencion;
+  caso1: CasoDisenoIntervencion;
+  caso2: CasoDisenoIntervencion;
+  caso?: CasoDisenoIntervencion; // Retrocompatibilidad
   archivosAdjuntos?: ArchivoAdjunto[];
   estado: EstadoEntregaDiseno;
   creadoEn: string; // ISO timestamp
@@ -190,7 +192,6 @@ export function casoDisenoVacio(): CasoDisenoIntervencion {
       especificos: [
         { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '1', prioridad: 1, texto: '' },
         { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '2', prioridad: 2, texto: '' },
-        { id: typeof crypto !== 'undefined' ? crypto.randomUUID() : '3', prioridad: 3, texto: '' },
       ],
     },
     planIntervencion: {

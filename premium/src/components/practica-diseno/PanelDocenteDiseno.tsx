@@ -471,6 +471,7 @@ export default function PanelDocenteDiseno() {
   const [estadoRevision, setEstadoRevision] = useState<EstadoEntregaDiseno>("revisado");
   const [guardando, setGuardando] = useState(false);
   const [exitoGuardar, setExitoGuardar] = useState(false);
+  const [casoTabDocente, setCasoTabDocente] = useState<1 | 2>(1);
 
   const cargarEntregas = useCallback(async () => {
     setLoading(true);
@@ -740,11 +741,43 @@ export default function PanelDocenteDiseno() {
 
               {/* Detalle del Informe Entregado por el Estudiante */}
               <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-base font-bold text-slate-800 border-b border-slate-200 pb-3">
-                  Informe Entregado por el Estudiante / Dupla
-                </h3>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                  <h3 className="text-base font-bold text-slate-800">
+                    Informe Entregado por la Dupla
+                  </h3>
+                  <div className="flex gap-2 bg-slate-100 p-1 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setCasoTabDocente(1)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                        casoTabDocente === 1
+                          ? "bg-teal-600 text-white shadow-sm"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Caso #1 {entregaSeleccionada.caso1?.datosUsuaria?.nombre ? `(${entregaSeleccionada.caso1.datosUsuaria.nombre})` : ""}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCasoTabDocente(2)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                        casoTabDocente === 2
+                          ? "bg-teal-600 text-white shadow-sm"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Caso #2 {entregaSeleccionada.caso2?.datosUsuaria?.nombre ? `(${entregaSeleccionada.caso2.datosUsuaria.nombre})` : ""}
+                    </button>
+                  </div>
+                </div>
 
-                <VistaCasoDiseno caso={entregaSeleccionada.caso} />
+                <VistaCasoDiseno
+                  caso={
+                    casoTabDocente === 1
+                      ? (entregaSeleccionada.caso1 || entregaSeleccionada.caso!)
+                      : (entregaSeleccionada.caso2 || entregaSeleccionada.caso1 || entregaSeleccionada.caso!)
+                  }
+                />
               </div>
             </div>
           )}
