@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "render:am-pdf": "node scripts/render-adulto-mayor-pdf.mjs",
-    "test": "node --test tests/stabilization.test.js && tsc --noEmit"
+    "test": "node --test tests/stabilization.test.js tests/station-voice.test.js && tsc --noEmit"
   },
   "dependencies": {
     "@google/genai": "^1.43.0",
@@ -48,6 +48,7 @@
     "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "react-test-renderer": "^19.2.3",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

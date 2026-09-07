@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, type Transaction, type Firestore, type UpdateData, type DocumentData } from 'firebase-admin/firestore';
 import { requireTeacher, getAdminDb } from '@/lib/server/firebaseAdmin';
 import { stationApiError, stationApiSuccess } from '@/lib/simulador-estaciones/api';
 import {
@@ -33,7 +33,12 @@ export async function PATCH(request: Request, context: RouteContext) {
     const auth = await requireTeacher(request.headers.get('authorization'));
     const { sessionId } = await context.params;
     const input = SessionPatchSchema.parse(await request.json());
-    const existing = await getStoredStationSession(sessionId);
+    const db = getAdminDb() as Firestore;
+    const ref = db.collection(STATION_SESSION_COLLECTION).doc(sessionId);
+    await db.runTransaction(async (transaction: Transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) throw new Error('NOT_FOUND: No existe esta sesión');
+    const existing = { id: snapshot.id, ...snapshot.data() } as Awaited<ReturnType<typeof getStoredStationSession>>;
     if (existing.ownerId !== auth.uid) throw new Error('FORBIDDEN: Esta sesión pertenece a otra cuenta');
     if (['COMPLETED', 'ABANDONED'].includes(existing.status)) {
       throw new Error('INCOMPLETE: La sesión ya está cerrada y no admite cambios');
@@ -110,9 +115,11 @@ export async function PATCH(request: Request, context: RouteContext) {
         ...(existing.liveResumeHandles || {}),
         [station]: input.resumeHandle,
       };
+      update[`liveResumeVersions.${station}`] = input.resumePromptVersion || '';
     }
 
-    await getAdminDb().collection(STATION_SESSION_COLLECTION).doc(sessionId).update(update);
+    transaction.update(ref, update as UpdateData<DocumentData>);
+    });
     const session = await getStationSessionForOwner(sessionId, auth.uid);
     return stationApiSuccess({ session });
   } catch (error) {

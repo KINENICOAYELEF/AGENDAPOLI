@@ -3,6 +3,7 @@ import { jsonrepair } from 'jsonrepair';
 import { HIGH_VOLUME_CASCADE, callGeminiCascade } from '@/lib/ai/modelQuotas';
 import { SimCaseSchema, type SimCaseType } from '@/lib/ai/simuladorSchemas';
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
+import { projectStationIntake } from './intake';
 import {
   StationSimulationEvaluationSchema,
   STATION_DEFINITIONS,
@@ -23,6 +24,7 @@ import {
 } from './prompts';
 
 export const STATION_SESSION_COLLECTION = 'voice_station_sessions';
+export const STATION_PROMPT_VERSION = 'patient-intake-script-v2';
 export const STATION_LIVE_MODELS = [
   'gemini-3.1-flash-live-preview',
   'gemini-2.5-flash-native-audio-preview-12-2025',
@@ -36,6 +38,7 @@ type StoredSession = {
   region: string;
   difficulty: string;
   startingNotes: string;
+  knownDiagnosis?: string;
   seed: string;
   status: string;
   currentStation: StationKey;
@@ -44,7 +47,9 @@ type StoredSession = {
   planningDraft: PlanningDraft;
   visibleCase: Record<string, unknown>;
   fullCase: SimCaseType;
+  promptVersion?: string;
   liveResumeHandles?: Partial<Record<StationKey, string>>;
+  liveResumeVersions?: Partial<Record<StationKey, string>>;
   modelTrace?: PublicStationSession['modelTrace'];
   evaluation?: StationSimulationEvaluation;
   createdAt: Timestamp;
@@ -85,6 +90,7 @@ export async function generateStationCase(params: {
   region: string;
   difficulty: string;
   startingNotes: string;
+  knownDiagnosis?: string;
   seed: string;
 }): Promise<{ caseData: SimCaseType; model: string }> {
   const result = await callStructuredWithFallback({
@@ -110,6 +116,7 @@ export async function createStationSession(params: {
   region: string;
   difficulty: string;
   startingNotes: string;
+  knownDiagnosis?: string;
 }) {
   const db = getAdminDb();
   const ref = db.collection(STATION_SESSION_COLLECTION).doc();
@@ -125,6 +132,7 @@ export async function createStationSession(params: {
     stations: createEmptyStations(),
     planningDraft: createEmptyPlanningDraft(),
     visibleCase: {},
+    promptVersion: STATION_PROMPT_VERSION,
     createdAt: now,
     updatedAt: now,
   });
@@ -134,6 +142,7 @@ export async function createStationSession(params: {
       region: params.region,
       difficulty: params.difficulty,
       startingNotes: params.startingNotes,
+      knownDiagnosis: params.knownDiagnosis,
       seed,
     });
     await ref.update({
@@ -197,16 +206,7 @@ function timestampToIso(value?: Timestamp) {
 function toPublicVisibleCase(session: StoredSession) {
   const source = session.visibleCase || session.fullCase?.ficha_visible || {};
   const visible = source as Record<string, unknown>;
-  // La ficha pública solo identifica a la persona simulada. La evolución,
-  // comportamiento, derivación diagnóstica y limitaciones se deben descubrir
-  // durante la entrevista, igual que en el examen real.
-  return {
-    nombre: String(visible.nombre || 'Caso simulado'),
-    edad: String(visible.edad || ''),
-    sexo: String(visible.sexo || ''),
-    ocupacion: String(visible.ocupacion || ''),
-    deporte_actividad: String(visible.deporte_actividad || ''),
-  };
+  return projectStationIntake(session.region, visible, session.knownDiagnosis);
 }
 
 export function toPublicSession(session: StoredSession & { id: string }): PublicStationSession {

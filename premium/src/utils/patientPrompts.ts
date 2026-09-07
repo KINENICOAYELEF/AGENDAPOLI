@@ -21,7 +21,8 @@ export const generateDynamicPatientPrompt = (
     area: string, 
     dificultad: string, 
     customGoal?: string,
-    fichaPaciente?: FichaPaciente // Added for integration with Polideportivo
+    fichaPaciente?: FichaPaciente,
+    options?: { immutableCase?: boolean }
 ): string => {
     let pacienteContext = '';
     if (fichaPaciente) {
@@ -66,12 +67,12 @@ Tú NO eres un profesional de la salud, por lo que NUNCA debes dar consejos méd
    - Mantén un tono respetuoso y educado, pero NO exageres con modismos vulgares (está prohibido usar "po", "cachai", "weón", "conchetumadre", etc.).
 
 6. COHERENCIA TOTAL:
-   - Al inicio, decide internamente tu historia y mantén los datos coherentes (mecanismo de lesión específico, localización e intensidad, factores agravantes/aliviantes).
+   - ${options?.immutableCase ? 'La historia ya está definida en el caso adjunto. No la inventes ni la cambies. Si un dato no está definido, di que no lo sabes o no lo recuerdas; nunca supongas que es normal o negativo.' : 'Al inicio, decide internamente tu historia y mantén los datos coherentes (mecanismo de lesión específico, localización e intensidad, factores agravantes/aliviantes).'}
    - Revela solo lo que te pregunten. Si te repiten la misma pregunta varias veces (ej: "¿Dónde te duele?"), muestra cansancio declarativo sin preguntar: "Como le acabo de decir, el dolor es en la espalda baja."
 
 === CONFIGURACIÓN ===
 
-DIFICULTAD: ${dificultad === 'basico' ? 'Cooperador y amigable. Respondes exactamente lo que te piden, con respuestas de longitud normal.' : dificultad === 'avanzado' ? 'Difícil: Inespecífico. A veces respondes muy corto (monosílabos), a veces te vas por las ramas contando cosas de tu vida que no importan, o esquivas la pregunta.' : 'Realista: Hablas natural. A veces te explayas dando información extra sobre cómo te afecta en tu vida diaria, y otras veces vas al grano. Tienes dudas pero las expresas sin usar signos de interrogación (ej: "ojalá me entienda...").'}
+DIFICULTAD: ${options?.immutableCase ? 'Cooperador y natural. Responde lo preguntado sin añadir síntomas, intensidad, cualidades ni cambios que no estén expresamente definidos en el caso. No extiendas una pregunta sobre el inicio a los agravantes, aliviantes o intensidad si no los preguntaron. La dificultad depende de interpretar datos, no de tu disposición a responder.' : dificultad === 'basico' ? 'Cooperador y amigable. Respondes exactamente lo que te piden, con respuestas de longitud normal.' : dificultad === 'avanzado' ? 'Difícil: Inespecífico. A veces respondes muy corto (monosílabos), a veces te vas por las ramas contando cosas de tu vida que no importan, o esquivas la pregunta.' : 'Realista: Hablas natural. A veces te explayas dando información extra sobre cómo te afecta en tu vida diaria, y otras veces vas al grano. Tienes dudas pero las expresas sin usar signos de interrogación (ej: "ojalá me entienda...").'}
 
 ZONA: ${area === 'aleatoria' ? 'Elige cualquier zona musculoesquelética' : area}
 ${pacienteContext}`;

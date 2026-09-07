@@ -1,4 +1,5 @@
 import type { SimCaseType } from '@/lib/ai/simuladorSchemas';
+import { generateDynamicPatientPrompt } from '@/utils/patientPrompts';
 import type { PlanningDraft, StationKey, StationProgress } from './types';
 
 export const STATION_SIMULATOR_CASE_PROMPT = `
@@ -21,7 +22,9 @@ ESTRUCTURA JSON EXACTA OBLIGATORIA:
 {
   "ficha_visible": {
     "nombre": "string", "edad": "string", "sexo": "string", "ocupacion": "string",
-    "deporte_actividad": "string", "motivo_consulta": "string", "derivacion": "string", "tiempo_evolucion": "string"
+    "deporte_actividad": "string",
+    "resumen_ingreso": "string breve con el motivo general conocido antes de evaluar, sin atribuirlo a secretaria, WhatsApp ni otro canal",
+    "motivo_consulta": "string", "derivacion": "string", "tiempo_evolucion": "string"
   },
   "perfil_secreto": {
     "historia_completa": "string extenso con la verdad completa del caso",
@@ -29,7 +32,16 @@ ESTRUCTURA JSON EXACTA OBLIGATORIA:
     "datos_ocultos": [{ "dato": "string", "solo_si_preguntan": "string" }],
     "antecedentes_relevantes": ["string"],
     "medicamentos": ["string"],
-    "bps_oculto": { "sueno": "string", "estres": "string", "miedos": "string", "expectativa_real": "string" }
+    "bps_oculto": { "sueno": "string", "estres": "string", "miedos": "string", "expectativa_real": "string" },
+    "guion_conversacional": {
+      "forma_de_hablar": "string",
+      "respuesta_al_saludo": "string breve",
+      "respuesta_a_pregunta_abierta": "string breve: síntoma principal y como máximo un impacto",
+      "informacion_espontanea_maxima": ["datos que puede decir ante una pregunta abierta sin recitar la historia"],
+      "datos_que_no_sabe_o_no_recuerda": ["string"],
+      "manejo_de_preguntas_multiples": "string",
+      "reglas_de_consistencia": ["string"]
+    }
   },
   "hallazgos_todos_modulos": {
     "observacion_movimiento_inicial": "string", "rango_movimiento_analitico": "string",
@@ -54,6 +66,7 @@ export function buildCaseGenerationPrompt(params: {
   region: string;
   difficulty: string;
   startingNotes: string;
+  knownDiagnosis?: string;
   seed: string;
 }) {
   return `
@@ -61,8 +74,17 @@ REGIÓN ELEGIDA: ${params.region}
 DIFICULTAD: ${params.difficulty}
 SEMILLA ÚNICA: ${params.seed}
 PREFERENCIAS BREVES DEL DOCENTE: ${params.startingNotes || 'Ninguna; elige al azar una condición apropiada.'}
+DIAGNÓSTICO PREVIO APORTADO MANUALMENTE: ${params.knownDiagnosis || 'Ninguno. La persona no conoce un diagnóstico previo.'}
 
-Genera un caso diferente a los ejemplos típicos más obvios. La derivación puede traer un diagnóstico médico, una sospecha o no traer diagnóstico, según el caso. La dificultad debe provenir de integrar datos y tomar decisiones, no de ocultar arbitrariamente información esencial.`;
+Genera un caso diferente a los ejemplos típicos más obvios. Solo incorpora un diagnóstico previo conocido por la persona si fue APORTADO MANUALMENTE arriba; en otro caso usa "Sin diagnóstico previo" en derivación. La hipótesis interna de la rúbrica nunca es un diagnóstico conocido por el paciente. La dificultad debe provenir de integrar datos y tomar decisiones, no de ocultar arbitrariamente información esencial.
+
+REGLAS DEL RESUMEN DE INGRESO VISIBLE:
+- Redáctalo como un registro neutro de los datos disponibles antes de evaluar, no como mensaje, diálogo ni cita textual.
+- Debe indicar el motivo general: por ejemplo, dolor en una región y una limitación cotidiana principal si esta ya era conocida.
+- No atribuyas la información a una secretaria, WhatsApp, llamada, familiar ni canal alguno.
+- No incluyas diagnóstico, hipótesis, clasificación, prueba clínica ni interpretación generada por ti.
+- Solo puedes mencionar un diagnóstico en el resumen visible si las PREFERENCIAS BREVES lo escriben expresamente y señalan que era conocido antes de la evaluación.
+- Mantén el resumen incompleto pero útil: una o dos frases, sin entregar la caracterización clínica que corresponde obtener al estudiante.`;
 }
 
 function caseContext(caseData: SimCaseType) {
@@ -86,6 +108,7 @@ function liveCaseContext(station: StationKey, caseData: SimCaseType) {
   const patientContext = `
 CASO INMUTABLE PARA INTERACCIÓN:
 Identidad administrativa: ${JSON.stringify(identity)}
+Resumen de ingreso que el estudiante ya vio: ${JSON.stringify(caseData.ficha_visible.resumen_ingreso || '')}
 Historia, personalidad y datos que solo se entregan si preguntan: ${JSON.stringify(caseData.perfil_secreto)}
 `;
   if (station === 'ANAMNESIS_PROXIMA' || station === 'ANAMNESIS_REMOTA') {
@@ -104,15 +127,15 @@ REGLAS INTRANSABLES:
 - Esto es un examen, no una tutoría. No des pistas, feedback, diagnóstico, próximos pasos ni respuestas modelo durante la estación.
 - Habla en español chileno claro y natural, sin caricaturizar.
 - Nunca menciones que eres IA, un modelo, una simulación ni agregues disclaimers médicos.
-- No inventes datos fuera del caso. Si algo no está definido, responde de forma clínicamente neutra y coherente, sin resolverle el razonamiento.
+- No inventes datos fuera del caso. Si un antecedente no está definido, la persona no lo recuerda o no lo sabe. Si falta el resultado de una prueba, informa "No hay un resultado disponible de esa medición"; nunca lo conviertas en normal o negativo.
 - Si no entiendes el audio, pide UNA repetición breve. No adivines ni penalices por transcripción defectuosa.
 - No confirmes cada frase del estudiante. Mantén una conversación clínica normal.
-- Responde una sola vez a cada intervención útil del estudiante. Si oyes un eco o una repetición casi idéntica, no reinicies tu respuesta ni repitas la historia.
-- Nunca inviertas los roles: no preguntes al estudiante qué cree, cuál sería el diagnóstico ni qué desea evaluar. Tampoco sugieras la próxima pregunta.
+- Contesta también preguntas reformuladas o repetidas: el estudiante puede estar comprobando un dato o recuperándose de un fallo de audio. No ignores una intervención porque se parezca a una anterior.
+- En rol de PACIENTE no inviertas los roles: no preguntes al estudiante qué cree, cuál sería el diagnóstico ni qué desea evaluar. Esta regla NO limita las preguntas de la comisión en DEFENSA.
 - No reveles hipótesis, diagnósticos, diferenciales, pruebas ni decisiones clínicas por iniciativa propia. Un diagnóstico escrito en la derivación no equivale a la verdad del caso.
 - En rol de paciente, usa lenguaje cotidiano y limita cada respuesta a lo estrictamente preguntado, normalmente una o dos frases. Solo usa un término médico si la persona realmente lo conoce y el estudiante pregunta específicamente por esa información.
-- Después de responder, guarda silencio y espera la siguiente pregunta. No cierres cada respuesta con una pregunta de cortesía.
-- Cuando el sistema anuncie el cierre, confirma solo 3 a 6 datos críticos que entendiste. Permite corregir errores de escucha, pero no agregar contenido clínico nuevo fuera de tiempo. Haz un solo ciclo de confirmación.
+- Como PACIENTE, después de responder espera la siguiente pregunta sin una pregunta de cortesía. Como COMISIÓN, sigue la dinámica propia de la estación.
+- Cuando el sistema anuncie el cierre, deja el personaje y actúa como registrador neutral. Resume hasta seis datos realmente dichos EN ESTA ETAPA, respetando quién los expresó. Nunca agregues datos de la historia privada, aunque sean verdaderos. Permite corregir errores de escucha, sin agregar contenido clínico nuevo. Haz un solo ciclo de confirmación.
 - Los errores críticos de seguridad se registran, pero la estación continúa.
 - Sé breve para no consumir el tiempo del estudiante con respuestas innecesariamente largas.
 `;
@@ -124,10 +147,22 @@ export function buildLiveStationPrompt(params: {
   planningDraft?: PlanningDraft;
 }) {
   const prior = Object.entries(params.priorProgress)
-    .map(([key, value]) => `${key}: ${value?.semanticConfirmation?.summary || value?.semanticSummary || transcriptToText(value?.transcript || [])}`)
+    .map(([key, value]) => `${key}:\nResumen: ${value?.semanticConfirmation?.summary || value?.semanticSummary || ''}\nRegistro literal: ${transcriptToText(value?.transcript || [])}`)
     .join('\n');
 
-  const base = `${COMMON_LIVE_RULES}\n${liveCaseContext(params.station, params.caseData)}\nCONTEXTO YA REGISTRADO EN ESTACIONES PREVIAS:\n${prior || 'Ninguno.'}`;
+  const isInterview = params.station === 'ANAMNESIS_PROXIMA' || params.station === 'ANAMNESIS_REMOTA';
+  // Reutiliza la identidad y dinámica del OSCE existente. Solo cambia la
+  // fuente de los datos: aquí es un caso fijo y no una historia improvisada.
+  const rolePrompt = isInterview
+    ? generateDynamicPatientPrompt('musculoesquelética', 'intermedio', undefined, params.caseData.ficha_visible, { immutableCase: true })
+    : COMMON_LIVE_RULES;
+  const base = `${rolePrompt}
+PROTOCOLO DE CONTINUIDAD (instrucciones internas, no las recites):
+- Responde preguntas equivalentes o reformuladas sin exigir palabras exactas. Si no entiendes el audio, pide una repetición breve.
+- El caso y los datos ya expresados permanecen iguales al reconectar. No saludes ni reinicies si la conversación ya comenzó.
+- La dificultad depende del razonamiento del estudiante, no de hacerte evasivo ni de ignorar preguntas.
+- Solo ante [CONTROL DEL EXAMEN — CIERRE], deja el personaje y resume como registrador neutral lo efectivamente dicho en esta etapa. No agregues información privada no conversada. Distingue preguntas, respuestas y propuestas.
+${liveCaseContext(params.station, params.caseData)}\nCONTEXTO YA REGISTRADO (NO RECITAR):\n${prior || 'Ninguno.'}`;
 
   const stationRules: Record<StationKey, string> = {
     ANAMNESIS_PROXIMA: `
@@ -138,7 +173,7 @@ ROL: eres la misma persona atendida, sin reiniciar ni presentarte de nuevo.
 Responde sobre antecedentes personales y familiares relevantes, medicamentos, exámenes, tratamientos previos, actividad, trabajo, sueño, estrés, creencias, miedos, barreras, apoyo y contexto. Si el estudiante repite una pregunta ya contestada, responde de forma coherente y breve, sin repetir toda la historia. No entregues información que no preguntó ni vuelvas a la anamnesis próxima por iniciativa propia.`,
     EXAMEN_FISICO: `
 ROL: eres paciente y examinador operacional.
-El estudiante debe DECIR qué observa o evalúa, cómo lo haría y qué resultado busca interpretar. Devuelve únicamente el hallazgo correspondiente del caso. Puedes describir observación, movimiento, rango, fuerza/carga, palpación, control, pruebas clínicas y función. No sugieras pruebas ni una secuencia. Si solicita una prueba improcedente, describe que la ejecuta y entrega un resultado neutro o coherente, sin explicarle el error. Ante una maniobra insegura, indica que se detiene por seguridad y continúa el examen.`,
+El estudiante describe qué observa o evalúa y cómo lo haría. Una solicitud comprensible basta: no exijas una frase exacta ni una interpretación anticipada para dar el resultado. Devuelve únicamente el hallazgo correspondiente del caso, en lenguaje descriptivo y con sus unidades si existen. No sugieras pruebas ni una secuencia. Si solicita una prueba no definida, indica que no hay un resultado disponible; no inventes un negativo. Ante una maniobra insegura, indica que se detiene por seguridad y continúa el examen.`,
     INTERVENCIONES: `
 ROL: eres paciente y comisión observadora.
 El estudiante debe presentar dos intervenciones y una progresión para una de ellas, con objetivo, ejecución, parámetros completos de dosis, criterio de respuesta y fundamento fisiológico/teórico. Formula solo preguntas operativas indispensables como "¿cómo la dosificarías?" cuando el estudiante omite una categoría completa; no completes la respuesta ni enseñes. Mantén el caso en la fase e irritabilidad definidas.`,
@@ -154,14 +189,15 @@ Realiza preguntas una a una durante toda la estación. Combina: coherencia entre
   const outputContract: Partial<Record<StationKey, string>> = {
     ANAMNESIS_PROXIMA: `
 CONTRATO OBLIGATORIO DE CADA RESPUESTA DEL PACIENTE:
-- Responde únicamente la pregunta formulada, normalmente entre 5 y 30 palabras.
-- No termines con una pregunta. Están prohibidas expresiones como "¿qué cree que pueda ser?", "¿qué necesita saber?" o cualquier sugerencia de cómo continuar.
-- Ante el saludo, saluda brevemente y espera. Ante "motivo de consulta", menciona solo el síntoma principal en lenguaje cotidiano; no agregues duración, desencadenantes, limitaciones ni derivación salvo que se pregunten.
-- No pronuncies diagnósticos, hipótesis ni nombres de pruebas aunque estén en el caso interno.
+- Responde de forma completa lo preguntado, habitualmente en una a tres frases; no cortes información relevante por un límite artificial de palabras.
+- No termines con preguntas ni coletillas interrogativas: tampoco "¿sabe?", "¿cierto?" o "¿me entiende?". No digas "¿qué cree que pueda ser?" ni "¿qué necesita saber?". La única excepción es pedir repetir un audio que no entendiste.
+- Usa el guion conversacional del caso como pauta obligatoria de vocabulario, extensión y datos que la persona conoce.
+- Ante el saludo, saluda brevemente y espera. Ante una pregunta abierta por el motivo, menciona el síntoma principal y como máximo un impacto cotidiano; no recites el resumen de ingreso ni agregues la historia completa.
+- No reveles hipótesis de la rúbrica. Si preguntan por un diagnóstico conocido, solo relata lo que el caso define que la persona sabe, sin validarlo.
 - Si la intervención no contiene una pregunta clínica, responde de manera social mínima y espera en silencio.`,
     ANAMNESIS_REMOTA: `
 CONTRATO OBLIGATORIO DE CADA RESPUESTA DEL PACIENTE:
-- Responde únicamente el antecedente o factor contextual preguntado, normalmente entre 5 y 30 palabras.
+- Responde de forma completa el antecedente o factor contextual preguntado, sin recitar los demás antecedentes.
 - No termines con una pregunta ni sugieras otro antecedente que el estudiante debería explorar.
 - No vuelvas a contar el motivo actual ni pronuncies hipótesis diagnósticas.`,
   };

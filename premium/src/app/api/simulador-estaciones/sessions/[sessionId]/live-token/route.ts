@@ -4,6 +4,7 @@ import { getAdminDb, requireTeacher } from '@/lib/server/firebaseAdmin';
 import { stationApiError, stationApiSuccess } from '@/lib/simulador-estaciones/api';
 import {
   STATION_LIVE_MODELS,
+  STATION_PROMPT_VERSION,
   STATION_SESSION_COLLECTION,
   buildStationInstruction,
   getStoredStationSession,
@@ -52,8 +53,12 @@ export async function POST(request: Request, context: RouteContext) {
     const candidates = preferred.length > 0 ? preferred : [...STATION_LIVE_MODELS];
     let token: Awaited<ReturnType<typeof ai.authTokens.create>> | null = null;
     let selectedModel = candidates[0];
+    let selectedResumed = false;
     let lastError: unknown;
     for (const model of candidates) {
+      const canResumeCurrentPrompt = Boolean(resumeHandle
+        && session.liveResumeVersions?.[station] === `${STATION_PROMPT_VERSION}:${model}`
+        && excludedModels.size === 0);
       try {
         token = await ai.authTokens.create({
           config: {
@@ -86,7 +91,7 @@ export async function POST(request: Request, context: RouteContext) {
                 // Un handle pertenece a la sesión/modelo que lo emitió. Si el
                 // cliente pidió cambiar de modelo por falla, reconstruimos el
                 // contexto desde el checkpoint en vez de reutilizarlo.
-                sessionResumption: resumeHandle && excludedModels.size === 0 ? { handle: resumeHandle } : {},
+                sessionResumption: canResumeCurrentPrompt ? { handle: resumeHandle } : {},
                 contextWindowCompression: {
                   triggerTokens: '12000',
                   slidingWindow: { targetTokens: '8000' },
@@ -97,6 +102,7 @@ export async function POST(request: Request, context: RouteContext) {
           },
         });
         selectedModel = model;
+        selectedResumed = canResumeCurrentPrompt;
         break;
       } catch (error) {
         lastError = error;
@@ -109,9 +115,10 @@ export async function POST(request: Request, context: RouteContext) {
     });
     return stationApiSuccess({
       token: token.name,
+      promptVersion: `${STATION_PROMPT_VERSION}:${selectedModel}`,
       model: selectedModel,
       expiresAt: expireTime,
-      resumed: Boolean(resumeHandle && excludedModels.size === 0),
+      resumed: selectedResumed,
       openingInstruction: station === 'DEFENSA'
         ? 'Inicia la defensa ahora con una primera pregunta específica del caso.'
         : '',

@@ -445,7 +445,8 @@ describe('Simulador clínico por estaciones de voz — beta docente', () => {
     assert.match(api, /COMPLETE_STATION/);
     assert.match(ui, /localStorage\.setItem/);
     assert.match(ui, /readLocalBackup/);
-    assert.match(ui, /setInterval\(\(\) => \{ void patch\('CHECKPOINT'\); \}, 10000\)/);
+    assert.match(api, /runTransaction/);
+    assert.match(ui, /saveQueueRef/);
   });
 
   test('el feedback contrasta evidencia oral, escrita y errores de audio', () => {
@@ -495,22 +496,10 @@ describe('Simulador clínico por estaciones de voz — beta docente', () => {
     assert.match(ui, /Reactivar mi micrófono/);
   });
 
-  test('el paciente no regala diagnósticos ni invierte el interrogatorio', () => {
-    const prompts = readFileSync(new URL('../src/lib/simulador-estaciones/prompts.ts', import.meta.url), 'utf8');
-    assert.match(prompts, /Nunca inviertas los roles/);
-    assert.match(prompts, /NO menciones la sospecha de derivación/);
-    assert.match(prompts, /NO preguntes "¿qué cree usted\?"/);
-    assert.match(prompts, /Después de responder, guarda silencio/);
-    assert.match(prompts, /liveCaseContext/);
-    assert.match(prompts, /no necesita conocer la rúbrica/);
-    assert.match(prompts, /¿qué necesita saber\?/);
-    assert.match(prompts, /normalmente entre 5 y 30 palabras/);
-  });
-
   test('la navegación visual hace visible el caso y confirma cada cambio de estación', () => {
     const ui = readFileSync(new URL('../src/components/simulador-estaciones/SimuladorEstacionesBeta.tsx', import.meta.url), 'utf8');
-    assert.match(ui, /Identificación de la persona simulada/);
-    assert.match(ui, /La ficha no adelanta el motivo/);
+    assert.match(ui, /Datos de ingreso/);
+    assert.match(ui, /visible.resumen_ingreso/);
     assert.match(ui, /Consultar etapas anteriores/);
     assert.match(ui, /closest\('\.overflow-auto'\)/);
     assert.match(ui, /scrollTo\(\{ top: 0/);

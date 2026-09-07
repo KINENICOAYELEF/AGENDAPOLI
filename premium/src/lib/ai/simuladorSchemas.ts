@@ -12,6 +12,7 @@ export const SimCaseSchema = z.object({
         sexo: z.string(),
         ocupacion: z.string(),
         deporte_actividad: z.string(),
+        resumen_ingreso: z.string().default(''),
         motivo_consulta: z.string(),
         derivacion: z.string().describe("'Sin diagnóstico médico previo' o el diagnóstico del médico derivante"),
         tiempo_evolucion: z.string(),
@@ -31,6 +32,15 @@ export const SimCaseSchema = z.object({
             miedos: z.string(),
             expectativa_real: z.string(),
         }),
+        guion_conversacional: z.object({
+            forma_de_hablar: z.string(),
+            respuesta_al_saludo: z.string(),
+            respuesta_a_pregunta_abierta: z.string(),
+            informacion_espontanea_maxima: z.array(z.string()),
+            datos_que_no_sabe_o_no_recuerda: z.array(z.string()),
+            manejo_de_preguntas_multiples: z.string(),
+            reglas_de_consistencia: z.array(z.string()),
+        }).optional(),
     }),
     hallazgos_todos_modulos: z.object({
         observacion_movimiento_inicial: z.string(),
@@ -248,4 +258,3 @@ export const SimSuperProfileSchema = z.object({
     miniPromptDinamico: z.string().describe("Directriz de instrucción dinámica en 3-5 líneas para inyectar en llamadas por voz")
 });
 export type SimSuperProfileType = z.infer<typeof SimSuperProfileSchema>;
-

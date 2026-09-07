@@ -167,12 +167,14 @@ export const SessionPatchSchema = z.object({
   planningDraft: PlanningDraftSchema.optional(),
   reconnectCount: z.number().int().min(0).max(50).optional(),
   resumeHandle: z.string().max(12000).optional(),
+  resumePromptVersion: z.string().max(100).optional(),
 });
 
 export const CreateSessionSchema = z.object({
   region: z.enum(REGION_OPTIONS.map((option) => option.value) as [string, ...string[]]),
   difficulty: z.enum(['INTERMEDIO', 'AVANZADO']).default('AVANZADO'),
   startingNotes: z.string().trim().max(600).default(''),
+  knownDiagnosis: z.string().trim().max(240).default(''),
 });
 
 export interface PublicStationSession {

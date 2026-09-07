@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { useResumableGeminiLive } from '@/hooks/useResumableGeminiLive';
+import { buildStationClosingInstruction } from '@/lib/simulador-estaciones/closing';
 import {
   REGION_OPTIONS,
   STATION_DEFINITIONS,
@@ -99,7 +100,7 @@ export function SimuladorEstacionesBeta() {
 
   useEffect(() => { void loadSessions(); }, [loadSessions]);
 
-  const createSession = async (input: { region: string; difficulty: string; startingNotes: string }) => {
+  const createSession = async (input: { region: string; difficulty: string; startingNotes: string; knownDiagnosis: string }) => {
     setCreating(true);
     setGlobalError('');
     try {
@@ -208,11 +209,12 @@ export function SimuladorEstacionesBeta() {
 
 function NewSessionCard({ creating, onCreate }: {
   creating: boolean;
-  onCreate: (input: { region: string; difficulty: string; startingNotes: string }) => void;
+  onCreate: (input: { region: string; difficulty: string; startingNotes: string; knownDiagnosis: string }) => void;
 }) {
   const [region, setRegion] = useState('RODILLA');
   const [difficulty, setDifficulty] = useState('AVANZADO');
   const [startingNotes, setStartingNotes] = useState('');
+  const [knownDiagnosis, setKnownDiagnosis] = useState('');
   return (
     <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <p className="text-xs font-black uppercase tracking-widest text-indigo-500">Nuevo caso</p>
@@ -228,7 +230,9 @@ function NewSessionCard({ creating, onCreate }: {
       </div>
       <label className="mt-5 block text-sm font-extrabold text-slate-700">Preferencia opcional</label>
       <textarea value={startingNotes} onChange={(event) => setStartingNotes(event.target.value.slice(0, 600))} rows={3} placeholder="Ej.: persona mayor, cuadro persistente, retorno deportivo..." className="mt-2 w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50" />
-      <button disabled={creating} onClick={() => onCreate({ region, difficulty, startingNotes })} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white transition hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60">
+      <label htmlFor="station-known-diagnosis" className="mt-4 block text-sm font-extrabold text-slate-700">Diagnóstico previo conocido (opcional)</label>
+      <input id="station-known-diagnosis" value={knownDiagnosis} maxLength={240} onChange={(event) => setKnownDiagnosis(event.target.value)} placeholder="Déjalo vacío si debe descubrir el cuadro" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" />
+      <button disabled={creating} onClick={() => onCreate({ region, difficulty, startingNotes, knownDiagnosis })} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white transition hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60">
         {creating ? <><LoaderCircle className="h-5 w-5 animate-spin" /> Preparando un caso único...</> : <><Plus className="h-5 w-5" /> Crear simulación</>}
       </button>
     </section>
@@ -388,18 +392,20 @@ function CaseOverview({ session }: { session: PublicStationSession }) {
           <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-indigo-600"><BookOpenCheck className="h-4 w-4" /> Identificación</p>
           <div className="mt-2 flex items-center justify-between gap-3"><div><h2 className="text-lg font-black text-slate-950">{visible.nombre || 'Caso simulado'}</h2><p className="mt-1 text-xs text-slate-600">{visible.edad} · {visible.ocupacion}</p></div><span className="shrink-0 text-xs font-black text-indigo-700">Ver ficha</span></div>
         </summary>
-        <p className="mt-4 rounded-xl bg-white/90 p-3 text-xs font-semibold leading-5 text-slate-600">Área asignada: {regionLabel(session.region)}. El motivo, la evolución y el impacto funcional debes obtenerlos durante la entrevista.</p>
+        <p className="mt-4 rounded-xl bg-white/90 p-3 text-sm leading-6 text-slate-700">{visible.resumen_ingreso}</p>
+        {visible.diagnostico_aportado && <p className="mt-2 text-sm text-slate-700">Diagnóstico previo aportado: {visible.diagnostico_aportado}</p>}
       </details>
       <div className="hidden md:block">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-indigo-600"><BookOpenCheck className="h-4 w-4" /> Identificación de la persona simulada</p>
+          <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-indigo-600"><BookOpenCheck className="h-4 w-4" /> Datos de ingreso</p>
           <h2 className="mt-2 text-xl font-black text-slate-950">{visible.nombre || 'Caso simulado'}</h2>
           <p className="mt-1 text-sm text-slate-600">{visible.edad} · {visible.ocupacion}</p>
         </div>
         <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-indigo-700 ring-1 ring-indigo-100">Área: {regionLabel(session.region)}</span>
       </div>
-      <p className="mt-4 rounded-2xl border border-white bg-white/90 p-3 text-sm font-semibold leading-6 text-slate-600 shadow-sm">La ficha no adelanta el motivo, la evolución ni hipótesis diagnósticas. Debes obtener esa información entrevistando a la persona.</p>
+      <p className="mt-4 rounded-2xl bg-white/90 p-3 text-sm leading-6 text-slate-700">{visible.resumen_ingreso}</p>
+      {visible.diagnostico_aportado && <p className="mt-2 text-sm text-slate-700">Diagnóstico previo aportado: {visible.diagnostico_aportado}</p>}
       </div>
     </section>
   );
@@ -503,11 +509,16 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
   const [nudging, setNudging] = useState(false);
   const [showResponseRecovery, setShowResponseRecovery] = useState(false);
   const resumeHandleRef = useRef('');
+  const resumeVersionRef = useRef('');
   const transcriptRef = useRef<TranscriptTurn[]>(restoredTranscript || []);
   const remainingRef = useRef(progress.remainingSeconds);
   const elapsedRef = useRef(progress.elapsedSeconds);
   const reconnectCountRef = useRef(progress.reconnectCount || 0);
   const saveInFlightRef = useRef(false);
+  const saveQueueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const completedRef = useRef(false);
+  const [lastSaved, setLastSaved] = useState('');
+  const closingTurnRef = useRef(0);
   const closingStartIndexRef = useRef<number | null>(null);
   const closingBaselineRef = useRef<TranscriptTurn[]>([]);
   const semanticConfirmationRef = useRef<SemanticConfirmation>(progress.semanticConfirmation || {
@@ -517,8 +528,9 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
     unresolvedAudio: [],
   });
 
-  const patch = useCallback(async (action: 'START' | 'CHECKPOINT' | 'PAUSE' | 'COMPLETE_STATION', extra: Record<string, unknown> = {}) => {
-    if (saveInFlightRef.current && action === 'CHECKPOINT') return null;
+  const patch = useCallback((action: 'START' | 'CHECKPOINT' | 'PAUSE' | 'COMPLETE_STATION', extra: Record<string, unknown> = {}) => {
+    const operation = saveQueueRef.current.catch(() => undefined).then(async () => {
+    if (completedRef.current) return null;
     saveInFlightRef.current = true;
     try {
       const result = await apiRequest<{ session: PublicStationSession }>(`/api/simulador-estaciones/sessions/${session.id}`, {
@@ -534,27 +546,37 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
           semanticConfirmation: semanticConfirmationRef.current,
           audioUncertainties: semanticConfirmationRef.current.unresolvedAudio,
           reconnectCount: reconnectCountRef.current,
-          ...(resumeHandleRef.current ? { resumeHandle: resumeHandleRef.current } : {}),
+          ...(resumeHandleRef.current ? { resumeHandle: resumeHandleRef.current, resumePromptVersion: resumeVersionRef.current } : {}),
           ...extra,
         }),
       });
+      setLastSaved(new Date().toLocaleTimeString('es-CL'));
+      if (action === 'COMPLETE_STATION') completedRef.current = true;
       return result.session;
     } finally {
       saveInFlightRef.current = false;
     }
+    });
+    saveQueueRef.current = operation;
+    return operation;
   }, [session.id, station]);
 
   const live = useResumableGeminiLive({
     sessionId: session.id,
     station,
     initialTranscript: restoredTranscript,
-    onResumeHandle: (handle) => {
+    listenOnly: station === 'PRESENTACION_FORMAL' && !closing,
+    onResumeHandle: (handle, version) => {
       if (!handle || resumeHandleRef.current === handle) return;
+      const firstHandle = !resumeHandleRef.current;
       resumeHandleRef.current = handle;
-      // El handle se guarda al recibirlo, sin esperar el checkpoint periódico.
+      resumeVersionRef.current = version;
+      // El primero se guarda enseguida. Los siguientes se consolidan en el
+      // checkpoint de 10s o antes de reconectar, evitando una escritura por evento.
+      if (!firstHandle) return;
       const persist = async (attempt = 0): Promise<void> => {
         try {
-          const saved = await patch('CHECKPOINT', { resumeHandle: handle });
+          const saved = await patch('CHECKPOINT');
           if (!saved && attempt < 3) window.setTimeout(() => { void persist(attempt + 1); }, 350);
         } catch {
           if (attempt < 3) window.setTimeout(() => { void persist(attempt + 1); }, 500);
@@ -572,11 +594,13 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
 
   useEffect(() => {
     const key = `station-beta:${session.id}:${station}`;
-    localStorage.setItem(key, JSON.stringify({ remaining, elapsed, transcript: live.transcript, savedAt: Date.now() }));
+    try {
+      localStorage.setItem(key, JSON.stringify({ remaining, elapsed, transcript: live.transcript, savedAt: Date.now() }));
+    } catch { setLocalError('No se pudo guardar la copia local. Mantén la página abierta y comprueba el guardado en servidor.'); }
   }, [elapsed, live.transcript, remaining, session.id, station]);
 
   useEffect(() => {
-    if (live.state !== 'CONNECTED' || closing) return;
+    if (live.state !== 'CONNECTED' || live.audioHealth || closing) return;
     const interval = setInterval(() => {
       setRemaining((value) => {
         const next = Math.max(0, value - 1);
@@ -590,16 +614,17 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [closing, live.state]);
+  }, [closing, live.state, live.audioHealth]);
 
   useEffect(() => {
     if (remaining !== 0 || closing) return;
     closingStartIndexRef.current = live.transcript.length;
     closingBaselineRef.current = live.transcript;
+    closingTurnRef.current = live.completedTurns;
     setClosing(true);
-    const sent = sendControlText('[CONTROL DEL EXAMEN] El tiempo terminó. Realiza ahora el único cierre de confirmación semántica de datos críticos. No permitas agregar contenido nuevo ni entregues feedback.');
+    const sent = sendControlText(buildStationClosingInstruction(live.transcript));
     if (!sent) setClosingReady(true);
-  }, [closing, live.transcript, remaining, sendControlText]);
+  }, [closing, live.transcript, live.completedTurns, remaining, sendControlText]);
 
   useEffect(() => {
     if (!closing) return;
@@ -613,9 +638,9 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
     const closingTurns = [...extendedTurns, ...appendedTurns];
     const summary = closingTurns.filter((turn) => turn.role !== 'STUDENT').map((turn) => turn.text).join(' ').trim();
     const corrections = closingTurns.filter((turn) => turn.role === 'STUDENT').map((turn) => turn.text.trim()).filter(Boolean);
-    if (summary) {
+    if (summary && live.completedTurns > closingTurnRef.current && !live.isSpeaking) {
       semanticConfirmationRef.current = {
-        status: 'CONFIRMED',
+        status: 'PENDING',
         summary: summary.slice(0, 5000),
         studentCorrections: corrections.slice(0, 12),
         unresolvedAudio: [],
@@ -623,7 +648,7 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
       };
       setClosingReady(true);
     }
-  }, [closing, live.transcript]);
+  }, [closing, live.transcript, live.completedTurns, live.isSpeaking]);
 
   useEffect(() => {
     if (!closing || closingReady) return;
@@ -636,19 +661,22 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
         capturedAtMs: elapsedRef.current * 1000,
       };
       setClosingReady(true);
-    }, 15000);
+    }, 45000);
     return () => window.clearTimeout(timer);
   }, [closing, closingReady]);
 
   useEffect(() => {
     if (live.state !== 'CONNECTED') return;
-    const interval = setInterval(() => { void patch('CHECKPOINT'); }, 10000);
+    const interval = setInterval(() => {
+      if (!saveInFlightRef.current) void patch('CHECKPOINT').catch(() => setLocalError('Guardado pendiente: no cierres la página. Se reintentará automáticamente.'));
+    }, 10000);
     return () => clearInterval(interval);
   }, [live.state, patch]);
 
   const start = async () => {
     setLocalError('');
     try {
+      await live.prepareMicrophone();
       await patch('START');
       await live.connect();
     } catch (error) {
@@ -659,16 +687,18 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
   const askToClose = () => {
     closingStartIndexRef.current = live.transcript.length;
     closingBaselineRef.current = live.transcript;
+    closingTurnRef.current = live.completedTurns;
     semanticConfirmationRef.current = { status: 'PENDING', summary: '', studentCorrections: [], unresolvedAudio: [] };
     setClosingReady(false);
     setClosing(true);
-    const sent = live.sendText('[CONTROL DEL EXAMEN] El estudiante solicita cerrar la estación. Haz el único resumen de 3 a 6 datos críticos entendidos. Solo acepta correcciones de escucha; no aceptes contenido clínico nuevo ni entregues feedback.');
+    const sent = live.sendText(buildStationClosingInstruction(live.transcript));
     if (!sent) setClosingReady(true);
   };
 
   const retryVoice = async () => {
     setLocalError('');
     try {
+      await live.prepareMicrophone();
       await patch('CHECKPOINT');
       await live.retry();
     } catch (error) {
@@ -688,8 +718,9 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
     setSaving(true);
     setLocalError('');
     try {
-      const startIndex = closingStartIndexRef.current ?? transcriptRef.current.length;
-      transcriptRef.current = transcriptRef.current.map((turn, index) => index >= startIndex ? { ...turn, confirmed: true } : turn);
+      if (semanticConfirmationRef.current.summary) {
+        semanticConfirmationRef.current = { ...semanticConfirmationRef.current, status: 'CONFIRMED' };
+      }
       if (!semanticConfirmationRef.current.summary && semanticConfirmationRef.current.status === 'PENDING') {
         semanticConfirmationRef.current = {
           status: 'UNAVAILABLE',
@@ -722,7 +753,7 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
           ? 'border-amber-200 bg-amber-50'
           : 'border-slate-200 bg-slate-50';
   const statusTitle = live.isSpeaking
-    ? 'Paciente respondiendo'
+    ? (station.startsWith('ANAMNESIS') ? 'Paciente respondiendo' : 'Comisión hablando')
     : connected && live.isMicOpen
       ? 'Tu micrófono está activo'
       : connected
@@ -735,17 +766,17 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
   const statusDetail = live.isSpeaking
     ? 'Espera a que termine antes de volver a hablar.'
     : connected && live.isMicOpen
-      ? 'Habla con naturalidad; el paciente responderá al terminar tu frase.'
+      ? (station === 'PRESENTACION_FORMAL' ? 'Expón tu caso; la comisión escucha sin interrumpir.' : 'Habla con naturalidad. Puedes interrumpir o reformular tu pregunta.')
       : connected
         ? 'La estación sigue conectada, pero no se envía tu audio.'
         : 'El cronómetro comienza cuando conectas la voz.';
 
   useEffect(() => {
     setShowResponseRecovery(false);
-    if (!connected || live.isSpeaking || lastTurn?.role !== 'STUDENT') return;
+    if (!connected || station === 'PRESENTACION_FORMAL' || live.isSpeaking || lastTurn?.role !== 'STUDENT') return;
     const timer = window.setTimeout(() => setShowResponseRecovery(true), 6000);
     return () => window.clearTimeout(timer);
-  }, [connected, lastTurn?.id, lastTurn?.text, live.isSpeaking]);
+  }, [connected, lastTurn?.id, lastTurn?.text, live.isSpeaking, station]);
 
   return (
     <div className="p-4 sm:p-6">
@@ -760,11 +791,14 @@ function VoiceWorkspace({ session, station, onSessionChange }: {
       </div>
 
       {(localError || live.error) && <div className="mt-4 flex items-start gap-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-800"><WifiOff className="mt-0.5 h-4 w-4 shrink-0" />{localError || live.error}</div>}
+      {live.audioHealth && <p role="alert" className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{live.audioHealth} El tiempo está pausado.</p>}
+      {live.usingFallbackVoice && <p className="mt-2 text-xs text-amber-800">Voz de respaldo del navegador: leyendo la respuesta recibida.</p>}
+      <p className="mt-3 text-xs text-slate-500" role="status">{lastSaved ? `Último guardado en servidor: ${lastSaved}` : 'Aún no hay un guardado confirmado en esta apertura.'}</p>
 
       <div className="mt-5 grid gap-2 sm:flex sm:flex-wrap">
         {!connected && !reconnecting && !closing && <button onClick={() => void start()} className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3.5 text-sm font-black text-white sm:flex-none"><Play className="h-4 w-4" /> {progress.elapsedSeconds > 0 ? 'Reanudar estación' : 'Comenzar estación'}</button>}
-        {live.state === 'ERROR' && <button onClick={() => void retryVoice()} className="flex items-center gap-2 rounded-2xl bg-amber-500 px-5 py-3.5 text-sm font-black text-white"><RefreshCcw className="h-4 w-4" /> Reintentar voz</button>}
-        {connected && <button onClick={live.toggleMic} disabled={live.isSpeaking} aria-pressed={!live.isMicOpen} className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-black transition disabled:cursor-wait disabled:opacity-50 ${live.isMicOpen ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-600 bg-emerald-600 text-white'}`}>{live.isMicOpen ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}{live.isMicOpen ? 'Pausar mi micrófono' : 'Reactivar mi micrófono'}</button>}
+        {(live.state === 'ERROR' || connected) && <button onClick={() => void retryVoice()} className="flex items-center gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-3.5 text-sm font-black text-amber-900"><RefreshCcw className="h-4 w-4" /> Reconectar voz</button>}
+        {connected && <button onClick={live.toggleMic} aria-pressed={!live.isMicOpen} className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-black transition ${live.isMicOpen ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-emerald-600 bg-emerald-600 text-white'}`}>{live.isMicOpen ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}{live.isMicOpen ? 'Pausar mi micrófono' : 'Reactivar mi micrófono'}</button>}
         {showResponseRecovery && !closing && <button onClick={requestMissingResponse} disabled={nudging} className="flex items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-black text-amber-900 disabled:opacity-50"><RefreshCcw className={`h-4 w-4 ${nudging ? 'animate-spin' : ''}`} /> {nudging ? 'Solicitando respuesta…' : 'El paciente no respondió'}</button>}
         {connected && !closing && <button onClick={askToClose} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-300 px-4 py-3 text-sm font-black text-slate-800 sm:ml-auto"><CirclePause className="h-4 w-4" /> Finalizar esta etapa</button>}
       </div>
