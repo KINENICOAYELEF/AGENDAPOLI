@@ -482,6 +482,7 @@ export default function PanelDocenteDiseno() {
     sugerencia?: string;
     puntajesSugeridos?: PuntajesCriteriosDiseno;
     comentarioRetroalimentacion?: string;
+    modeloUtilizado?: string;
   } | null>(null);
 
   // Notificaciones Toast
@@ -894,6 +895,11 @@ ${caso2 ? formatCasoTxt(caso2, 2) : ""}
                   >
                     <span>📋 Copiar Respuestas en Texto</span>
                   </button>
+
+                  <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 border border-purple-200 rounded-lg text-[10px] font-bold text-purple-900">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                    <span>LLM: Gemini 3.7 Flash</span>
+                  </div>
                 </div>
 
                 <span className="text-[11px] text-slate-400 font-mono">
@@ -904,16 +910,22 @@ ${caso2 ? formatCasoTxt(caso2, 2) : ""}
               {/* Panel de Análisis Asistido por IA (Si se ejecutó) */}
               {resultadoIA && (
                 <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-teal-50 border border-indigo-200 rounded-3xl p-6 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between border-b border-indigo-200 pb-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-200 pb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-base">✨</span>
                       <h4 className="font-extrabold text-sm text-indigo-950">
-                        Auditoría Clínica del Asistente Docente (Ambos Casos)
+                        Auditoría Clínica del Asistente Docente ({modoEvaluacionIA === "ambos" ? "Ambos Casos" : modoEvaluacionIA === "caso1" ? "Caso #1" : "Caso #2"})
                       </h4>
                     </div>
-                    <span className="text-[11px] font-bold text-indigo-700 bg-white px-2.5 py-0.5 rounded-full border border-indigo-200">
-                      Puntajes y feedback volcados a la pauta
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-bold text-purple-950 bg-purple-100 border border-purple-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <span>🧠 Modelo:</span>
+                        <span className="font-extrabold">{resultadoIA.modeloUtilizado || "Gemini 3.7 Flash"}</span>
+                      </span>
+                      <span className="text-[11px] font-bold text-indigo-700 bg-white px-2.5 py-0.5 rounded-full border border-indigo-200">
+                        Puntajes volcados a la pauta
+                      </span>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">

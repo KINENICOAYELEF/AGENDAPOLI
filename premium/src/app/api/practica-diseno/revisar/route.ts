@@ -158,6 +158,7 @@ Devuelve ÚNICAMENTE este JSON:
 `;
 
     let rawText = '';
+    let modeloUtilizado = 'Gemini 3.7 Flash';
     try {
       rawText = await callGemini({
         modelId: 'gemini-3.7-flash',
@@ -168,6 +169,7 @@ Devuelve ÚNICAMENTE este JSON:
       });
     } catch (primaryErr: any) {
       console.warn('[Práctica Diseño IA] gemini-3.7-flash no respondió o superó cuota, reintentando con gemini-3.5-flash-lite...', primaryErr?.message);
+      modeloUtilizado = 'Gemini 3.5 Flash Lite (Fallback)';
       rawText = await callGemini({
         modelId: 'gemini-3.5-flash-lite',
         systemInstruction,
@@ -186,7 +188,9 @@ Devuelve ÚNICAMENTE este JSON:
       parsed = JSON.parse(match[0]);
     }
 
-    return NextResponse.json({ success: true, data: parsed });
+    parsed.modeloUtilizado = modeloUtilizado;
+
+    return NextResponse.json({ success: true, data: parsed, modeloUtilizado });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Error desconocido al evaluar entrega';
     console.error('[Práctica Diseño IA] Error:', msg);
