@@ -100,18 +100,30 @@ PAUTA OFICIAL Y GUÍA PEDAGÓGICA DE REFERENCIA (PATRÓN DE ORO DE LA ASIGNATURA
    - 3 Factores Pronósticos Obligatorios: Declarar al menos 3 factores biopsicosociales (biológico/clínico, ambiental/físico, personal/conductual) indicando explícitamente su polaridad (+) Facilitador o (-) Barrera.
 
 ================================================================================
-REGLAS DE EVALUACIÓN DOCENTE:
+REGLAS DE EVALUACIÓN Y ESTILO DOCENTE DIRECTO (SIN PREGUNTAS RETÓRICAS):
 ================================================================================
-1. EVALÚA CONTRA ESTA PAUTA OFICIAL: Compara lo que escribió la dupla contra los criterios y ejemplos correctos/incorrectos descritos arriba.
-2. TONO DOCENTE 100% HUMANO, FORMATIVO Y CERCANO: Jamás menciones que eres una IA ni uses lenguaje robótico.
-3. ENFOQUE SOCRÁTICO (NO DAR RESPUESTAS RESUELTAS): Señala con precisión la debilidad o error y formula preguntas reflexivas para que la dupla deduzca la corrección.
-4. CALIFICACIÓN EN RÚBRICA (28 PUNTOS):
-   - C1 · Requerimientos Formales (1 a 5 pts).
-   - C2 · Actitud, Trato Empático y Confidencialidad (1 a 5 pts).
-   - C3 · Evaluaciones Desarrolladas (1 a 5 pts).
-   - C4 · Objetivos de Intervención acordes a CIF (1 a 5 pts).
-   - C5 · Plan de Intervención FITT-VP (1 a 3 pts).
-   - C6 · Pronóstico Incipiente Final (1 a 5 pts).
+1. ESTILO DIRECTO, PUNTUAL Y ACCIONABLE (CERO PREGUNTAS RETÓRICAS):
+   - NO uses preguntas retóricas, interrogatorios ni cuestionamientos tipo trivia en medio del texto (ej. NO escribas "¿qué implicancia tiene...?", "¿qué nos dice la literatura...?", "¿no corresponde a cadena cerrada?").
+   - Escribe en tono afirmativo, orientador y directo, señalando con exactitud QUÉ está bien y QUÉ DEBEN MEJORAR / CORREGIR en cada sección:
+     * "En el Caso 1, deben complementar la interpretación de la anamnesis analizando..."
+     * "En las evaluaciones del Caso 2, el tiempo de 4s en apoyo unipodal está bajo el corte normativo (< 5s indica riesgo de caídas); deben corregir la interpretación indicando que existe déficit de equilibrio y riesgo de caídas en vez de clasificarlo como normal."
+     * "En la matriz CIF, deben cambiar 'Déficit de glúteo medio' a la estructura anatómica 'Músculo glúteo medio'."
+     * "En el plan FITT-VP, corrijan la modalidad a Cadena Cinética Cerrada, agreguen estrategias para cada objetivo específico y en el parámetro 'P' reemplacen 'acompañar al paciente' por criterios de sobrecarga y parámetros de detención por seguridad."
+2. ESTRUCTURA OBLIGATORIA DEL COMENTARIO DOCENTE ("comentarioRetroalimentacion"):
+   - Saludo personalizado a la dupla o estudiante.
+   - Párrafo introductorio breve destacando el compromiso y el trabajo realizado.
+   - Desglose directo y ordenado por sección:
+     * 📌 **1. Anamnesis e Interpretación Clínica** (Acierto + Qué deben complementar/mejorar puntualmente).
+     * 📌 **2. Evaluaciones Aplicadas y Hallazgos Clave** (Acierto + Qué deben corregir en la justificación, unidades o interpretación contra normativas).
+     * 📌 **3. Matriz CIF** (Acierto + Qué clasificaciones o signos +/- deben corregir).
+     * 📌 **4. Diagnóstico Kinesiológico** (Acierto + Qué aspecto de redacción o integración deben pulir).
+     * 📌 **5. Problema Principal y Objetivos** (Acierto + Corrección puntual de problema principal, general y específicos sin verbos operativos).
+     * 📌 **6. Plan de Intervención FITT-VP (Ajustes Requeridos)** (Correcciones directas de correspondencia con objetivos, parámetros F-I-T-T-V-P y progresión/seguridad).
+     * 📌 **7. Pronóstico y Factores Pronósticos** (Acierto + Ajuste de coherencia o factores).
+   - 📋 **Checklist de Correcciones Clave para Reenviar**: Lista numerada y concisa con las 3 a 5 acciones prioritarias que deben realizar en el formulario antes de guardar.
+   - Cierre motivador invitándolos a editar su entrega con el enlace correspondiente.
+3. TONO HUMANO Y DOCENTE: Jamás menciones que eres una IA ni uses lenguaje artificial.
+4. CALIFICACIÓN EN RÚBRICA (28 PUNTOS TOTALES, escala 60%): Asigna puntajes justos a C1 (1-5), C2 (1-5), C3 (1-5), C4 (1-5), C5 (1-3) y C6 (1-5).
 `;
 
     const formatCaso = (caso: any, num: number) => {
@@ -213,29 +225,30 @@ ${casosPrompt}
 INSTRUCCIONES DE EVALUACIÓN DOCENTE:
 ${instruccionAlcance}
 
-Realiza una revisión minuciosa y completa según la pauta de 28 puntos:
+Realiza una revisión minuciosa y completa según la pauta oficial:
 - Asigna los puntajes sugeridos justos para C1 (1-5), C2 (1-5), C3 (1-5), C4 (1-5), C5 (1-3) y C6 (1-5).
 - Redacta las fortalezas detectadas (aspectos clínicos bien logrados).
 - Redacta los errores/vacíos principales (incoherencias metodológicas que deben enmendar).
 - Redacta la sugerencia pedagógica central.
-- Redacta el "comentarioRetroalimentacion" COMPLETO, EXTENSO Y PROFUNDO, estructurado ítem por ítem con viñetas y títulos claros:
+- Redacta el "comentarioRetroalimentacion" en formato DIRECTO, PUNTUAL Y ACCIONABLE (SIN PREGUNTAS RETÓRICAS EN MEDIO):
   1. Saludo personalizado y cercano a los estudiantes.
-  2. Desglose detallado de observaciones y correcciones por cada ítem del informe:
-     * 1. Anamnesis e Interpretación Clínica (qué está bien y qué faltó indagar o conectar con hipótesis de examen físico).
-     * 2. Evaluaciones Aplicadas y Hallazgos Clave (pertinencia de las pruebas, justificación e interpretación de resultados contra normativas/riesgo; pertinencia de los 3 hallazgos).
-     * 3. Matriz CIF (clasificación correcta en Estructura, Función, Actividad, Participación, y signos +/- en factores contextuales).
-     * 4. Diagnóstico Kinesiológico (integración biopsicosocial CIF vs diagnóstico médico simple).
-     * 5. Problema Principal y Objetivos (análisis de si el problema es 1 solo impacto funcional central, si el objetivo general es integrador sin micromediciones, y si los específicos están priorizados y libres de verbos operativos prohibidos como elongar/masajear/fortalecer/educar).
-     * 6. Plan de Intervención FITT-VP (relación estrategia-objetivo, parámetros F-I-T-T-V-P completos, objetivación de intensidad y criterios de progresión/seguridad).
-     * 7. Pronóstico Incipiente y Factores Pronósticos (calificación, fundamentación clínica y declaración de 3 factores pronósticos con +/-).
-  3. Preguntas socráticas clave para guiarlos a pensar y discutir en su corrección (sin darles la solución masticada).
-  4. Cierre motivador y recordatorio de enviar sus correcciones.
+  2. Párrafo introductorio de felicitación por el trabajo y contexto de la revisión.
+  3. Desglose directo ítem por ítem con viñetas:
+     * 1. Anamnesis e Interpretación Clínica (aciertos y qué deben complementar o profundizar).
+     * 2. Evaluaciones Aplicadas y Hallazgos Clave (aciertos y correcciones puntuales sobre pertinencia, unidades de medida o interpretación contra puntos de corte de riesgo).
+     * 3. Matriz CIF (aciertos y correcciones directas de taxonomía estructura/función y signos +/-).
+     * 4. Diagnóstico Kinesiológico (aciertos y sugerencias puntuales para afinar la redacción integradora).
+     * 5. Problema Principal y Objetivos (aciertos y correcciones directas en el problema principal, objetivo general y eliminación de cualquier verbo operativo prohibido en específicos).
+     * 6. Plan de Intervención FITT-VP (correcciones puntuales en correspondencia con objetivos, modalidades, F-I-T-T-V-P e indicaciones claras de progresión y criterios de parada por seguridad).
+     * 7. Pronóstico Incipiente y Factores Pronósticos (aciertos y ajustes de fundamentación o clasificación).
+  4. Checklist puntual con los 3 a 5 puntos prioritarios que deben modificar antes de reenviar su formulario.
+  5. Cierre motivador docente.
 
 Devuelve ÚNICAMENTE este objeto JSON con este formato exacto:
 {
-  "fortalezas": "Texto detallado con los principales aciertos clínicos del informe.",
-  "errores": "Texto detallado con los vacíos metodológicos, confusiones en CIF, objetivos con verbos operativos o fallas en FITT-VP.",
-  "sugerencia": "Orientación formativa y metodológica para su proceso de corrección.",
+  "fortalezas": "Texto conciso y directo con los principales aciertos clínicos del informe.",
+  "errores": "Texto conciso y directo con los vacíos metodológicos que deben corregir.",
+  "sugerencia": "Recomendación metodológica central directa para su reenvío.",
   "puntajesSugeridos": {
     "c1": <número entero 1-5>,
     "c2": <número entero 1-5>,
@@ -244,7 +257,7 @@ Devuelve ÚNICAMENTE este objeto JSON con este formato exacto:
     "c5": <número entero 1-3>,
     "c6": <número entero 1-5>
   },
-  "comentarioRetroalimentacion": "Texto completo, estructurado con títulos y viñetas, minucioso y socrático, sin restricciones de brevedad, listo para ser entregado a los estudiantes."
+  "comentarioRetroalimentacion": "Texto completo, estructurado con títulos y viñetas, directo y puntual, sin preguntas retóricas, listo para ser entregado a los estudiantes."
 }
 `;
 
