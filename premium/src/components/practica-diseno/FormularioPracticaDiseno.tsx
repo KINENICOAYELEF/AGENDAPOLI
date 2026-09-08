@@ -1421,27 +1421,53 @@ export default function FormularioPracticaDiseno() {
   // Tab activo: 1 o 2
   const [tabActivo, setTabActivo] = useState<1 | 2>(1);
 
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [cargandoId, setCargandoId] = useState(false);
+
   const [enviando, setEnviando] = useState(false);
   const [enviadoExito, setEnviadoExito] = useState(false);
   const [errores, setErrores] = useState<string[]>([]);
 
-  // Cargar borrador local silenciosamente
+  // Cargar entrega si viene ?id= o ?edit= en la URL, o cargar borrador local
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.dupla) setDupla(parsed.dupla);
-        if (parsed.caso1) setCaso1(parsed.caso1);
-        if (parsed.caso2) setCaso2(parsed.caso2);
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const targetId = params.get("id") || params.get("edit");
+
+    if (targetId) {
+      setCargandoId(true);
+      import("@/services/practica-diseno").then(({ getEntregaDisenoById }) => {
+        getEntregaDisenoById(targetId)
+          .then((entrega) => {
+            if (entrega) {
+              setEditandoId(targetId);
+              if (entrega.estudiante) setDupla(entrega.estudiante);
+              if (entrega.caso1) setCaso1(entrega.caso1);
+              else if (entrega.caso) setCaso1(entrega.caso);
+              if (entrega.caso2) setCaso2(entrega.caso2);
+            }
+          })
+          .catch((err) => console.error("Error al cargar entrega para edición:", err))
+          .finally(() => setCargandoId(false));
+      });
+    } else {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.dupla) setDupla(parsed.dupla);
+          if (parsed.caso1) setCaso1(parsed.caso1);
+          if (parsed.caso2) setCaso2(parsed.caso2);
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
     }
   }, []);
 
-  // Auto-guardar silencioso en localStorage
+  // Auto-guardar silencioso en localStorage (solo si no es modo edición remota)
   useEffect(() => {
+    if (editandoId) return; // En modo edición no sobrescribir borrador nuevo
     const timer = setTimeout(() => {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ dupla, caso1, caso2 }));
@@ -1450,7 +1476,7 @@ export default function FormularioPracticaDiseno() {
       }
     }, 1000);
     return () => clearTimeout(timer);
-  }, [dupla, caso1, caso2]);
+  }, [dupla, caso1, caso2, editandoId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1473,13 +1499,22 @@ export default function FormularioPracticaDiseno() {
 
     setEnviando(true);
     try {
-      await enviarEntregaDiseno({
-        estudiante: dupla,
-        caso1,
-        caso2,
-      });
+      if (editandoId) {
+        const { actualizarEntregaDiseno } = await import("@/services/practica-diseno");
+        await actualizarEntregaDiseno(editandoId, {
+          estudiante: dupla,
+          caso1,
+          caso2,
+        });
+      } else {
+        await enviarEntregaDiseno({
+          estudiante: dupla,
+          caso1,
+          caso2,
+        });
+        localStorage.removeItem(STORAGE_KEY);
+      }
 
-      localStorage.removeItem(STORAGE_KEY);
       setEnviadoExito(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: unknown) {
@@ -1490,25 +1525,44 @@ export default function FormularioPracticaDiseno() {
     }
   };
 
+  if (cargandoId) {
+    return (
+      <div className="min-h-[400px] flex flex-col items-center justify-center p-8">
+        <div className="w-10 h-10 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-slate-600 text-sm font-semibold">Cargando respuestas del informe para edición...</p>
+      </div>
+    );
+  }
+
   if (enviadoExito) {
     return (
       <div className="max-w-2xl mx-auto my-12 p-8 bg-white rounded-3xl border border-slate-200 shadow-xl text-center space-y-4">
-        <h2 className="text-2xl font-bold text-slate-800">Informe de Práctica Enviado Exitosamente</h2>
+        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl">
+          ✓
+        </div>
+        <h2 className="text-2xl font-bold text-slate-800">
+          {editandoId ? "¡Informe Actualizado con Éxito!" : "Informe de Práctica Enviado Exitosamente"}
+        </h2>
         <p className="text-slate-600 text-sm leading-relaxed">
-          Tu entrega de <strong>Práctica Diseño de Intervención (2 Casos Clínicos)</strong> ha sido registrada.
-          El docente revisará el informe con la pauta de evaluación oficial.
+          {editandoId
+            ? "Tus correcciones y cambios en ambos casos han sido guardados correctamente para la revisión del docente."
+            : "Tu entrega de Práctica Diseño de Intervención (2 Casos Clínicos) ha sido registrada. El docente revisará el informe con la pauta de evaluación oficial."}
         </p>
         <button
           type="button"
           onClick={() => {
             setEnviadoExito(false);
-            setCaso1(casoDisenoVacio());
-            setCaso2(casoDisenoVacio());
-            setTabActivo(1);
+            if (editandoId) {
+              window.location.href = "/practica-diseno";
+            } else {
+              setCaso1(casoDisenoVacio());
+              setCaso2(casoDisenoVacio());
+              setTabActivo(1);
+            }
           }}
           className="mt-4 px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition"
         >
-          Enviar otro informe
+          {editandoId ? "Volver al formulario principal" : "Enviar otro informe"}
         </button>
       </div>
     );
@@ -1525,6 +1579,20 @@ export default function FormularioPracticaDiseno() {
           Formulario de entrega por dupla · 2 casos clínicos · Anamnesis, evaluaciones, matriz CIF, diagnóstico kinesiológico, objetivos priorizados, plan dosificado FITT-VP y pronóstico.
         </p>
       </div>
+
+      {editandoId && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-300 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-amber-900 text-xs font-semibold shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <span className="text-lg">✏️</span>
+            <span>
+              <strong>Modo Edición Activado:</strong> Modificando entrega previa. Al presionar guardar, se actualizarán tus respuestas en el panel docente.
+            </span>
+          </div>
+          <span className="font-mono text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md self-start sm:self-auto">
+            ID: {editandoId.slice(0, 8)}...
+          </span>
+        </div>
+      )}
 
       {errores.length > 0 && (
         <div className="mb-6 p-5 bg-red-50 border border-red-300 rounded-2xl text-red-800 text-xs space-y-2">
@@ -1654,10 +1722,10 @@ export default function FormularioPracticaDiseno() {
             {enviando ? (
               <>
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Enviando ambos casos...
+                {editandoId ? "Guardando correcciones..." : "Enviando ambos casos..."}
               </>
             ) : (
-              <span>Enviar Informe de Práctica (Ambos Casos)</span>
+              <span>{editandoId ? "Guardar Correcciones (Ambos Casos)" : "Enviar Informe de Práctica (Ambos Casos)"}</span>
             )}
           </button>
         </div>

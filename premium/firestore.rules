@@ -100,10 +100,8 @@ service cloud.firestore {
     // 3.B Práctica Diseño Intervención – Formulario Público de Estudiantes
     // --------------------------------------------------------------------
     match /practica_diseno_entregas/{entregaId} {
-      // Cualquier persona puede crear una entrega (sin login).
-      allow create: if true;
-      // Solo el DOCENTE puede leer todas las entregas y actualizar (guardar revisión).
-      allow read, update: if isDocente();
+      // Cualquier persona puede crear, consultar y actualizar una entrega (permite re-edición por link).
+      allow create, read, update: if true;
       // Eliminación solo por DOCENTE
       allow delete: if isDocente();
     }

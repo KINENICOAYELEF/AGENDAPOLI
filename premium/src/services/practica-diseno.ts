@@ -33,6 +33,18 @@ export async function enviarEntregaDiseno(
   return docRef.id;
 }
 
+// ── Actualizar entrega estudiante (re-edición por link) ───────
+export async function actualizarEntregaDiseno(
+  id: string,
+  data: Partial<Omit<EntregaPracticaDiseno, 'id' | 'creadoEn'>>
+): Promise<void> {
+  await updateDoc(doc(db, COL, id), {
+    ...data,
+    estado: 'entregado' as EstadoEntregaDiseno,
+    actualizadoEn: serverTimestamp(),
+  });
+}
+
 // ── Leer todas las entregas (docente) ───────────────────────
 export async function getTodasLasEntregasDiseno(): Promise<EntregaDisenoConRevision[]> {
   const q = query(collection(db, COL), orderBy('enviadoEn', 'desc'));

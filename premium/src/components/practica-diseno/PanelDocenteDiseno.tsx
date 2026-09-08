@@ -473,6 +473,23 @@ export default function PanelDocenteDiseno() {
   const [exitoGuardar, setExitoGuardar] = useState(false);
   const [casoTabDocente, setCasoTabDocente] = useState<1 | 2>(1);
 
+  // Asistente de Evaluación IA
+  const [evaluandoIA, setEvaluandoIA] = useState(false);
+  const [resultadoIA, setResultadoIA] = useState<{
+    fortalezas?: string;
+    errores?: string;
+    sugerencia?: string;
+    puntajesSugeridos?: PuntajesCriteriosDiseno;
+    comentarioRetroalimentacion?: string;
+  } | null>(null);
+
+  // Notificaciones Toast
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3500);
+  };
+
   const cargarEntregas = useCallback(async () => {
     setLoading(true);
     try {
@@ -495,6 +512,7 @@ export default function PanelDocenteDiseno() {
   const entregaSeleccionada = entregas.find((e) => e.id === selectedId);
 
   useEffect(() => {
+    setResultadoIA(null);
     if (entregaSeleccionada?.revision) {
       setPuntajes(entregaSeleccionada.revision.puntajes);
       setComentarioDocente(entregaSeleccionada.revision.comentarioDocente || "");
@@ -509,6 +527,144 @@ export default function PanelDocenteDiseno() {
   // Cálculo en tiempo real de notas sobre 28 pts con umbral 60%
   const puntajeTotal = puntajes.c1 + puntajes.c2 + puntajes.c3 + puntajes.c4 + puntajes.c5 + puntajes.c6;
   const { nota, porcentaje, aprobado } = calcularNotaDiseno(puntajeTotal);
+
+  // ── Copiar Link de Edición ──────────────────────────────────
+  const handleCopiarLinkEdicion = () => {
+    if (!selectedId) return;
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://agendapoli.vercel.app";
+    const url = `${origin}/practica-diseno?id=${selectedId}`;
+    navigator.clipboard.writeText(url);
+    showToast("🔗 ¡Link de edición copiado! Puedes enviárselo a los alumnos para que corrijan su entrega.");
+  };
+
+  // ── Copiar Respuestas en Texto Limpio ───────────────────────
+  const handleCopiarTexto = () => {
+    if (!entregaSeleccionada) return;
+    const formatCasoTxt = (caso: CasoDisenoIntervencion, num: number) => {
+      if (!caso) return `=== CASO #${num}: No registrado ===\n`;
+      const evals = caso.evaluaciones?.map((e, i) =>
+        `  ${i + 1}. ${e.nombre || "Sin nombre"}\n     - Justificación: ${e.razon || "-"}\n     - Resultado: ${e.resultado || "-"}\n     - Interpretación: ${e.interpretacion || "-"}`
+      ).join("\n") || "  Sin evaluaciones";
+
+      const objs = caso.objetivos?.especificos?.map((o, i) =>
+        `  ${i + 1}. [Prioridad ${o.prioridad || i + 1}]: ${o.texto || "Vacío"}`
+      ).join("\n") || "  Sin objetivos específicos";
+
+      const ests = caso.planIntervencion?.estrategias?.map((s, i) =>
+        `  ${i + 1}. ${s.nombreEstrategia || "Técnica"} (Tributa a: ${s.objetivoRelacionado || "General"})\n     - Frecuencia: ${s.frecuencia || "-"} | Intensidad: ${s.intensidad || "-"} | Tiempo: ${s.tiempo || "-"}\n     - Tipo: ${s.tipo || "-"} | Volumen: ${s.volumen || "-"} | Progresión/Seguridad: ${s.progresion || "-"}`
+      ).join("\n") || "  Sin estrategias";
+
+      return `
+========================================
+📋 CASO CLÍNICO #${num}
+========================================
+1. DATOS DE LA PERSONA:
+- Nombre / Iniciales: ${caso.datosUsuaria?.nombre || "-"}
+- Edad: ${caso.datosUsuaria?.edad || "-"}
+- Ocupación: ${caso.datosUsuaria?.ocupacion || "-"}
+- Contexto de Atención: ${caso.datosUsuaria?.contextoAtencion || "-"}
+- Motivo de Consulta: ${caso.datosUsuaria?.motivoConsulta || "-"}
+
+2. ANAMNESIS / ENTREVISTA CLÍNICA:
+${caso.anamnesis || "No registrada"}
+
+INTERPRETACIÓN DE LA ANAMNESIS:
+${caso.interpretacionAnamnesis || "No registrada"}
+
+3. EVALUACIONES APLICADAS:
+${evals}
+
+4. HALLAZGOS PRINCIPALES:
+1) ${caso.hallazgo1 || "-"}
+2) ${caso.hallazgo2 || "-"}
+3) ${caso.hallazgo3 || "-"}
+
+5. MATRIZ CIF:
+- Estructuras: ${caso.cif?.estructurasCorporales || "-"}
+- Funciones: ${caso.cif?.funcionesCorporales || "-"}
+- Actividades: ${caso.cif?.actividades || "-"}
+- Participación: ${caso.cif?.participacion || "-"}
+- Factores Personales: ${caso.cif?.factoresPersonales || "-"}
+- Factores Ambientales: ${caso.cif?.factoresAmbientales || "-"}
+
+6. DIAGNÓSTICO KINESIOLÓGICO:
+${caso.enunciadoDiagnostico || "No registrado"}
+
+7. OBJETIVOS DE INTERVENCIÓN:
+- Problema Principal: ${caso.objetivos?.problemaPrincipal || "-"}
+- Objetivo General: ${caso.objetivos?.objetivoGeneral || "-"}
+- Objetivos Específicos:
+${objs}
+
+8. PLAN DE INTERVENCIÓN FITT-VP:
+${ests}
+
+9. PRONÓSTICO:
+- Clasificación: ${caso.pronostico?.calificacion?.toUpperCase() || "NO CLASIFICADO"}
+- Fundamentación: ${caso.pronostico?.fundamentacion || "-"}
+- Relación Diagnóstico-Intervención: ${caso.pronostico?.relacionDiagnosticoEIntervencion || "-"}
+- Factores Pronósticos:
+  1) ${caso.pronostico?.factorPronostico1 || "-"}
+  2) ${caso.pronostico?.factorPronostico2 || "-"}
+  3) ${caso.pronostico?.factorPronostico3 || "-"}
+`;
+    };
+
+    const caso1 = entregaSeleccionada.caso1 || entregaSeleccionada.caso;
+    const caso2 = entregaSeleccionada.caso2;
+
+    const textoCompleto = `
+============================================================
+INFORME DE PRÁCTICA: DISEÑO DE INTERVENCIÓN KINESIOLÓGICA
+============================================================
+Estudiante 1: ${entregaSeleccionada.estudiante?.estudiante1 || "-"}
+Estudiante 2: ${entregaSeleccionada.estudiante?.estudiante2 || "Individual"}
+Fecha de Jornada: ${entregaSeleccionada.estudiante?.fechaJornada || "-"}
+Centro: ${entregaSeleccionada.estudiante?.centroAtencion || "Polideportivo"}
+ID de Entrega: ${entregaSeleccionada.id}
+${caso1 ? formatCasoTxt(caso1, 1) : ""}
+${caso2 ? formatCasoTxt(caso2, 2) : ""}
+`;
+
+    navigator.clipboard.writeText(textoCompleto.trim());
+    showToast("📋 ¡Respuestas copiadas al portapapeles en texto limpio!");
+  };
+
+  // ── Revisión Automática con Asistente IA ───────────────────
+  const handleRevisarConIA = async () => {
+    if (!entregaSeleccionada) return;
+    setEvaluandoIA(true);
+    try {
+      const res = await fetch("/api/practica-diseno/revisar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entrega: entregaSeleccionada }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Error al procesar la revisión");
+
+      const aiData = data.data;
+      setResultadoIA(aiData);
+
+      // Auto-rellenar puntajes y comentario docente
+      if (aiData.puntajesSugeridos) {
+        setPuntajes((prev) => ({
+          ...prev,
+          ...aiData.puntajesSugeridos,
+        }));
+      }
+      if (aiData.comentarioRetroalimentacion) {
+        setComentarioDocente(aiData.comentarioRetroalimentacion);
+      }
+
+      showToast("✨ ¡Pre-evaluación completada! Se auto-completó la pauta y el borrador de feedback.");
+    } catch (err) {
+      console.error(err);
+      alert("Hubo un error al ejecutar la revisión automática. Por favor intenta de nuevo.");
+    } finally {
+      setEvaluandoIA(false);
+    }
+  };
 
   const handleGuardarRevision = async () => {
     if (!selectedId) return;
@@ -633,6 +789,111 @@ export default function PanelDocenteDiseno() {
           {/* Área de Revisión y Caso (Columna Derecha) */}
           {entregaSeleccionada && (
             <div className="lg:col-span-8 space-y-6">
+              {/* Barra de Notificación Toast */}
+              {toastMsg && (
+                <div className="p-3.5 bg-slate-900 text-teal-300 rounded-2xl text-xs font-semibold shadow-lg border border-teal-500/30 flex items-center justify-between animate-fade-in">
+                  <span>{toastMsg}</span>
+                  <button
+                    type="button"
+                    onClick={() => setToastMsg(null)}
+                    className="text-slate-400 hover:text-white text-sm ml-3 font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Barra de Acciones Rápidas del Docente */}
+              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleRevisarConIA}
+                    disabled={evaluandoIA}
+                    className="px-4 py-2.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-teal-600 hover:from-purple-700 hover:to-teal-700 text-white text-xs font-black rounded-xl shadow-md transition disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {evaluandoIA ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Analizando ambos casos con IA...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>✨ Pre-Evaluar con Asistente IA</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCopiarLinkEdicion}
+                    className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 transition flex items-center gap-1.5"
+                    title="Copia el enlace para que los alumnos puedan corregir sus respuestas"
+                  >
+                    <span>🔗 Copiar Link de Edición</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCopiarTexto}
+                    className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 transition flex items-center gap-1.5"
+                    title="Copia el informe completo en texto limpio"
+                  >
+                    <span>📋 Copiar Respuestas en Texto</span>
+                  </button>
+                </div>
+
+                <span className="text-[11px] text-slate-400 font-mono">
+                  ID: {entregaSeleccionada.id?.slice(0, 8)}...
+                </span>
+              </div>
+
+              {/* Panel de Análisis Asistido por IA (Si se ejecutó) */}
+              {resultadoIA && (
+                <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-teal-50 border border-indigo-200 rounded-3xl p-6 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-indigo-200 pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">✨</span>
+                      <h4 className="font-extrabold text-sm text-indigo-950">
+                        Auditoría Clínica del Asistente Docente (Ambos Casos)
+                      </h4>
+                    </div>
+                    <span className="text-[11px] font-bold text-indigo-700 bg-white px-2.5 py-0.5 rounded-full border border-indigo-200">
+                      Puntajes y feedback volcados a la pauta
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    {resultadoIA.fortalezas && (
+                      <div className="bg-white p-3.5 rounded-2xl border border-emerald-200 space-y-1">
+                        <span className="font-bold text-emerald-800 uppercase tracking-wider text-[10px] block">
+                          🟢 Fortalezas Detectadas
+                        </span>
+                        <p className="text-slate-700 leading-relaxed">{resultadoIA.fortalezas}</p>
+                      </div>
+                    )}
+
+                    {resultadoIA.errores && (
+                      <div className="bg-white p-3.5 rounded-2xl border border-amber-200 space-y-1">
+                        <span className="font-bold text-amber-800 uppercase tracking-wider text-[10px] block">
+                          ⚠️ Aspectos a Corregir / Vacíos
+                        </span>
+                        <p className="text-slate-700 leading-relaxed">{resultadoIA.errores}</p>
+                      </div>
+                    )}
+
+                    {resultadoIA.sugerencia && (
+                      <div className="bg-white p-3.5 rounded-2xl border border-blue-200 space-y-1">
+                        <span className="font-bold text-blue-800 uppercase tracking-wider text-[10px] block">
+                          💡 Sugerencia Pedagógica
+                        </span>
+                        <p className="text-slate-700 leading-relaxed">{resultadoIA.sugerencia}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Tarjeta de Resumen de Nota */}
               <div className="bg-gradient-to-r from-slate-900 to-teal-900 rounded-3xl p-6 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
                 <div>
