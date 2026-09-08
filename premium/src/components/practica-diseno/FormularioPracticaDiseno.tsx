@@ -275,6 +275,8 @@ function BloqueCasoClinico({
   onChange: (updated: CasoDisenoIntervencion) => void;
 }) {
   const [showAnamnesisExample, setShowAnamnesisExample] = useState(false);
+  const [showDiagnosticoGuia, setShowDiagnosticoGuia] = useState(true);
+  const [formatoDiagnosticoTab, setFormatoDiagnosticoTab] = useState<"clinico" | "situacional">("clinico");
   const [showDiferenciaGeneral, setShowDiferenciaGeneral] = useState(false);
   const [showVerbosTable, setShowVerbosTable] = useState(false);
   const [showGuiaPriorizacion, setShowGuiaPriorizacion] = useState(false);
@@ -700,17 +702,158 @@ function BloqueCasoClinico({
       {/* 6. Diagnóstico Kinesiológico */}
       <SectionCard title={`6. Diagnóstico kinesiológico incipiente (Caso #${numCaso})`}>
         <GuideBox title="¿Qué es un diagnóstico kinesiológico?">
-          <p>Un diagnóstico kinesiológico es un <strong>texto integrador</strong> donde resumen y conectan: quién es la persona, qué situación funcional presenta, qué hallazgos arrojó la evaluación y qué factores contextuales influyen.</p>
+          <p>
+            Un diagnóstico kinesiológico <strong>NO es nombrar la patología médica</strong> (ej: NO es decir solamente &quot;Gonartrosis bilateral&quot; o &quot;Lumbago mecánico&quot;).
+          </p>
+          <p className="mt-1.5">
+            Es un <strong>juicio clínico integrador</strong> donde ustedes como tratantes conectan: quién es la persona, sus deficiencias funcionales y estructurales encontradas en la evaluación, qué actividades cotidianas se ven limitadas, cómo se restringe su participación comunitaria y qué factores personales y ambientales facilitan (+) o dificultan (-) su recuperación.
+          </p>
         </GuideBox>
 
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 text-xs text-indigo-900 space-y-4 mb-4">
-          <p className="font-bold text-sm text-indigo-800">Estructura a seguir para la redacción diagnóstica:</p>
-          <div className="space-y-3 bg-white border border-indigo-200 rounded-lg p-4 text-slate-700">
-            <p><strong>1. Identificación y condición:</strong> Datos de la persona, ocupación, motivo de ingreso o condición de salud relevante.</p>
-            <p><strong>2. Dimensión funcional y tareas:</strong> Dificultad o meta en actividades de la vida diaria y participación social/comunitaria.</p>
-            <p><strong>3. Hallazgos del examen físico:</strong> Déficits en estructuras y funciones corporales evidenciados en la evaluación (con severidad).</p>
-            <p><strong>4. Factores contextuales:</strong> Facilitadores y barreras personales y ambientales más influyentes.</p>
+        {/* GUÍA INTERACTIVA DE LOS DOS FORMATOS */}
+        <div className="border border-indigo-200 rounded-2xl overflow-hidden mb-4 bg-white shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-3.5 bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 border-b border-indigo-200 gap-2">
+            <div>
+              <span className="font-bold text-sm text-indigo-900 block">
+                📖 Guía de Redacción: Elijan uno de los 2 formatos aceptados
+              </span>
+              <p className="text-[11px] text-indigo-700">
+                Ambos formatos son válidos y recomendados para la práctica clínica según el enfoque de la dupla.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowDiagnosticoGuia(!showDiagnosticoGuia)}
+              className="text-xs font-bold text-indigo-700 hover:text-indigo-950 underline self-start sm:self-auto"
+            >
+              {showDiagnosticoGuia ? "Ocultar guía" : "Mostrar guía"}
+            </button>
           </div>
+
+          {showDiagnosticoGuia && (
+            <div className="p-5 space-y-4 text-xs text-slate-700">
+              {/* SELECTOR DE TABS DE FORMATO */}
+              <div className="flex gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setFormatoDiagnosticoTab("clinico")}
+                  className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs transition text-center ${
+                    formatoDiagnosticoTab === "clinico"
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Formato 1: Clínico-Funcional (Estructurado CIF)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormatoDiagnosticoTab("situacional")}
+                  className={`flex-1 py-2 px-3 rounded-lg font-bold text-xs transition text-center ${
+                    formatoDiagnosticoTab === "situacional"
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Formato 2: Situacional-Biopsicosocial (Narrativo en 4 Pasos)
+                </button>
+              </div>
+
+              {/* CONTENIDO FORMATO 1 */}
+              {formatoDiagnosticoTab === "clinico" && (
+                <div className="space-y-3 bg-indigo-50/50 p-4 rounded-xl border border-indigo-200 animate-in fade-in duration-300">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="font-bold text-indigo-900 text-xs uppercase tracking-wider">
+                      📌 Formato 1: Diagnóstico Clínico-Funcional (Cadena Causal CIF)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const plantilla = `Persona [edad, ocupación/rol], con condición de [patología médica o antecedente relevante], que presenta deficiencia [severidad: leve/moderada/severa] en [estructuras anatómicas involucradas] manifestada por [funciones fisiológicas alteradas: dolor EVA X/10, déficit de fuerza M4, limitación de ROM], lo cual condiciona limitación [severidad] en [actividades específicas: marcha, transferencias, escaleras], restringiendo su participación en [rol laboral, deportivo, familiar o talleres comunitarios], facilitada por [factores personales/ambientales (+)] y obstaculizada por [barreras personales/ambientales (-)].`;
+                        if (!caso.enunciadoDiagnostico || confirm("¿Deseas reemplazar el texto actual con la plantilla del Formato 1?")) {
+                          onChange({ ...caso, enunciadoDiagnostico: plantilla });
+                        }
+                      }}
+                      className="text-[11px] font-bold bg-white text-indigo-700 hover:bg-indigo-100 border border-indigo-300 px-3 py-1 rounded-lg shadow-sm transition"
+                    >
+                      📝 Cargar plantilla Formato 1 en el cuadro
+                    </button>
+                  </div>
+
+                  <p className="text-slate-600 leading-relaxed">
+                    <strong>Enfoque:</strong> Conecta directamente en una sola oración articulada la condición de salud con la deficiencia biológica, la limitación funcional y la restricción social.
+                  </p>
+
+                  <div className="bg-white p-3.5 rounded-lg border border-indigo-200 space-y-1.5 font-mono text-[11px] text-slate-800">
+                    <p className="font-bold text-indigo-800 font-sans">Estructura / Plantilla:</p>
+                    <p className="leading-relaxed">
+                      &quot;Persona [edad, ocupación], con condición de [diagnóstico/antecedente médico], que presenta deficiencia [severidad] en [estructuras anatómicas] manifestada por [funciones alteradas: dolor, fuerza, ROM], lo que condiciona limitación [severidad] para [actividades concretas], restringiendo su participación en [roles vitales/comunitarios], mediada por [factores personales (+/-)] y [factores ambientales (+/-)].&quot;
+                    </p>
+                  </div>
+
+                  <div className="bg-emerald-50 p-3.5 rounded-lg border border-emerald-200 text-slate-700 space-y-1">
+                    <span className="font-bold text-emerald-800 text-[11px] uppercase tracking-wider block">
+                      Ejemplo Clínico Real:
+                    </span>
+                    <p className="text-[11px] leading-relaxed italic text-emerald-950">
+                      &quot;Usuaria de 68 años, dueña de casa, con condición de gonartrosis bilateral compensada, que presenta deficiencia moderada en el complejo articular de rodilla derecha manifestada por dolor nociceptivo mecánico EVA 5/10, disminución de fuerza extensora en grado M4 y rigidez matinal, lo cual condiciona limitación moderada en la transferencia sedente-bípedo y marcha comunitaria superior a 500 metros, restringiendo su participación en talleres de envejecimiento activo y compras del hogar, facilitada por alta motivación personal y apoyo familiar (+), pero limitada por vivir en un segundo piso sin pasamanos (-).&quot;
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* CONTENIDO FORMATO 2 */}
+              {formatoDiagnosticoTab === "situacional" && (
+                <div className="space-y-3 bg-purple-50/50 p-4 rounded-xl border border-purple-200 animate-in fade-in duration-300">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="font-bold text-purple-900 text-xs uppercase tracking-wider">
+                      📌 Formato 2: Diagnóstico Situacional-Biopsicosocial (Narrativo Integrador)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const plantilla = `1. Identificación y contexto relevante: [Iniciales], [edad] años, [ocupación/rol], asiste a evaluación en el Polideportivo por [motivo de consulta / meta de salud]. Antecedentes relevantes: [comorbilidades / cirugías / caídas previas].
+
+2. Dimensión funcional desde la persona: Refiere dificultad para [actividad 1] y [actividad 2] (severidad [leve/moderada/severa]), lo que restringe su autonomía y participación en [rol laboral, familiar o comunitario].
+
+3. Juicio clínico y examen físico: La evaluación constata compromiso predominante del sistema [musculoesquelético / neuromuscular], con deficiencia en [estructuras] y alteración en [funciones: fuerza, equilibrio, movilidad, dolor con severidad].
+
+4. Factores contextuales: El proceso se encuentra favorecido por [facilitadores (+)] y desafiado por [barreras personales y ambientales (-)].`;
+                        if (!caso.enunciadoDiagnostico || confirm("¿Deseas reemplazar el texto actual con la plantilla del Formato 2?")) {
+                          onChange({ ...caso, enunciadoDiagnostico: plantilla });
+                        }
+                      }}
+                      className="text-[11px] font-bold bg-white text-purple-700 hover:bg-purple-100 border border-purple-300 px-3 py-1 rounded-lg shadow-sm transition"
+                    >
+                      📝 Cargar plantilla Formato 2 en el cuadro
+                    </button>
+                  </div>
+
+                  <p className="text-slate-600 leading-relaxed">
+                    <strong>Enfoque:</strong> Desglosa y conecta de forma secuencial las 4 dimensiones clínicas: la historia y metas de la persona, sus tareas motoras limitadas, los hallazgos físicos del examen y el balance de su entorno.
+                  </p>
+
+                  <div className="bg-white p-3.5 rounded-lg border border-purple-200 space-y-2 text-[11px] text-slate-800">
+                    <p className="font-bold text-purple-800">Dimensiones de la Plantilla Narrativa:</p>
+                    <div className="space-y-1 text-slate-600">
+                      <p><strong>1. Identificación y contexto:</strong> Datos basales, ocupación y motivo de ingreso/salud.</p>
+                      <p><strong>2. Perspectiva de la persona:</strong> Actividades cotidianas limitadas y roles sociales restringidos.</p>
+                      <p><strong>3. Examen del tratante:</strong> Estructuras comprometidas y funciones alteradas con severidad.</p>
+                      <p><strong>4. Factores contextuales:</strong> Facilitadores (+) y barreras (-) personales y del entorno.</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-emerald-50 p-3.5 rounded-lg border border-emerald-200 text-slate-700 space-y-1">
+                    <span className="font-bold text-emerald-800 text-[11px] uppercase tracking-wider block">
+                      Ejemplo Clínico Real (Caso Polideportivo):
+                    </span>
+                    <p className="text-[11px] leading-relaxed italic text-emerald-950">
+                      &quot;P.B., usuario de 79 años, jubilado y activo socialmente, asiste al Polideportivo para ingresar al programa de ejercicio funcional y acondicionamiento motor. Desde su vivencia cotidiana, relata sensación de inestabilidad y fatiga muscular precoz al desplazarse en terrenos irregulares, lo que ha generado temor a caídas y restricción progresiva en sus traslados independientes al club de adulto mayor. La evaluación kinesiológica constata compromiso del sistema neuromuscular y control sensorio-motor, evidenciando alteración moderada en el equilibrio unipodal (4s), déficit leve de potencia extensora en miembros inferiores y lentitud en las transiciones dinámicas. El cuadro se encuentra favorecido por una excelente adherencia, actitud proactiva y red de apoyo familiar (+), presentándose como barrera el antecedente de traumatismo craneoencefálico previo y la polifarmacia (-).&quot;
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <FieldTA
@@ -718,8 +861,8 @@ function BloqueCasoClinico({
           value={caso.enunciadoDiagnostico}
           onChange={(v) => onChange({ ...caso, enunciadoDiagnostico: v })}
           required
-          rows={8}
-          placeholder="Redacten su diagnóstico kinesiológico integrando: (1) Identificación y contexto, (2) Problemas o metas desde la persona, (3) Déficits estructurales/funcionales desde el tratante, y (4) Factores personales y ambientales..."
+          rows={10}
+          placeholder="Redacten su diagnóstico kinesiológico utilizando el Formato 1 (Clínico-Funcional) o el Formato 2 (Situacional-Narrativo) según las guías de arriba..."
         />
       </SectionCard>
 
