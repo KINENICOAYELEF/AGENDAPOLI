@@ -123,8 +123,16 @@ export interface RevisionIADiseno {
   fortalezas: string;
   errores: string;
   sugerencia: string;
-  puntajesSugeridos: { c3: number; c4: number; c5: number; c6: number };
+  puntajesSugeridos: {
+    c1?: number;
+    c2?: number;
+    c3: number;
+    c4: number;
+    c5: number;
+    c6: number;
+  };
   comentarioRetroalimentacion: string;
+  modeloUtilizado?: string;
 }
 
 export interface RevisionDocenteDiseno {

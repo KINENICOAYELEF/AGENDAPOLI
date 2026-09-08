@@ -922,9 +922,18 @@ ${caso2 ? formatCasoTxt(caso2, 2) : ""}
                         <span>🧠 Modelo:</span>
                         <span className="font-extrabold">{resultadoIA.modeloUtilizado || "Gemini 3.7 Flash"}</span>
                       </span>
-                      <span className="text-[11px] font-bold text-indigo-700 bg-white px-2.5 py-0.5 rounded-full border border-indigo-200">
-                        Puntajes volcados a la pauta
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (resultadoIA.comentarioRetroalimentacion) {
+                            navigator.clipboard.writeText(resultadoIA.comentarioRetroalimentacion);
+                            showToast("📋 ¡Feedback del asistente copiado al portapapeles!");
+                          }
+                        }}
+                        className="text-[11px] font-bold text-indigo-700 hover:text-indigo-900 bg-white hover:bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200 transition shadow-sm flex items-center gap-1"
+                      >
+                        📋 Copiar Feedback Detallado
+                      </button>
                     </div>
                   </div>
 
@@ -934,25 +943,25 @@ ${caso2 ? formatCasoTxt(caso2, 2) : ""}
                         <span className="font-bold text-emerald-800 uppercase tracking-wider text-[10px] block">
                           🟢 Fortalezas Detectadas
                         </span>
-                        <p className="text-slate-700 leading-relaxed">{resultadoIA.fortalezas}</p>
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{resultadoIA.fortalezas}</p>
                       </div>
                     )}
 
                     {resultadoIA.errores && (
                       <div className="bg-white p-3.5 rounded-2xl border border-amber-200 space-y-1">
                         <span className="font-bold text-amber-800 uppercase tracking-wider text-[10px] block">
-                          ⚠️ Aspectos a Corregir / Vacíos
+                          ⚠️ Aspectos a Corregir / Vacíos por Ítem
                         </span>
-                        <p className="text-slate-700 leading-relaxed">{resultadoIA.errores}</p>
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{resultadoIA.errores}</p>
                       </div>
                     )}
 
                     {resultadoIA.sugerencia && (
                       <div className="bg-white p-3.5 rounded-2xl border border-blue-200 space-y-1">
                         <span className="font-bold text-blue-800 uppercase tracking-wider text-[10px] block">
-                          💡 Sugerencia Pedagógica
+                          💡 Guía Socrática para la Dupla
                         </span>
-                        <p className="text-slate-700 leading-relaxed">{resultadoIA.sugerencia}</p>
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{resultadoIA.sugerencia}</p>
                       </div>
                     )}
                   </div>
@@ -1015,15 +1024,40 @@ ${caso2 ? formatCasoTxt(caso2, 2) : ""}
 
                 {/* Comentario Docente */}
                 <div>
-                  <label className="block text-sm font-bold text-slate-800 mb-2">
-                    Retroalimentación Pedagógica Docente
-                  </label>
+                  <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                    <label className="block text-sm font-bold text-slate-800">
+                      Retroalimentación Pedagógica Docente (Ítem por Ítem)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {resultadoIA?.comentarioRetroalimentacion && comentarioDocente !== resultadoIA.comentarioRetroalimentacion && (
+                        <button
+                          type="button"
+                          onClick={() => setComentarioDocente(resultadoIA.comentarioRetroalimentacion || "")}
+                          className="text-xs font-semibold text-slate-600 hover:text-slate-900 underline"
+                        >
+                          Restaurar sugerencia IA
+                        </button>
+                      )}
+                      {comentarioDocente && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(comentarioDocente);
+                            showToast("📋 ¡Retroalimentación copiada al portapapeles!");
+                          }}
+                          className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-300 transition flex items-center gap-1.5"
+                        >
+                          📋 Copiar Retroalimentación
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <textarea
-                    rows={4}
+                    rows={12}
                     value={comentarioDocente}
                     onChange={(e) => setComentarioDocente(e.target.value)}
-                    placeholder="Escribe comentarios pedagógicos sobre la coherencia del diagnóstico, la formulación de objetivos CIF, la dosificación de las estrategias o el pronóstico..."
-                    className="w-full p-4 border border-slate-300 rounded-2xl text-sm text-slate-800 focus:ring-2 focus:ring-teal-500 outline-none"
+                    placeholder="Escribe comentarios pedagógicos detallados sobre la anamnesis, evaluaciones, matriz CIF, coherencia del diagnóstico, formulación de objetivos, dosificación FITT-VP y pronóstico..."
+                    className="w-full p-4 border border-slate-300 rounded-2xl text-sm text-slate-800 focus:ring-2 focus:ring-teal-500 outline-none leading-relaxed font-sans"
                   />
                 </div>
 
