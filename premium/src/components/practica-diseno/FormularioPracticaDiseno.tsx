@@ -761,22 +761,10 @@ function BloqueCasoClinico({
               {/* CONTENIDO FORMATO 1 */}
               {formatoDiagnosticoTab === "clinico" && (
                 <div className="space-y-4 bg-indigo-50/50 p-4 rounded-xl border border-indigo-200 animate-in fade-in duration-300">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
                     <span className="font-bold text-indigo-900 text-xs uppercase tracking-wider">
                       📌 Formato 1: Diagnóstico Clínico-Funcional (Cadena Causal CIF Integrada)
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const plantilla = `Persona de [edad] años, [sexo], [ocupación/rol], con antecedentes médicos relevantes de [enfermedades actuales: ej. HTA, DM2, artrosis previa, cirugías o fármacos], que consulta por [motivo principal de ingreso]. Presenta deficiencia [severidad: leve/moderada/severa] en [estructuras corporales de la CIF: ej. complejo articular, musculatura periarticular, tendón], manifestada por deficiencias funcionales en [todas las funciones alteradas de la CIF con severidad: dolor EVA X/10, déficit de fuerza M4, limitación de ROM articular a X°, alteración de equilibrio unipodal], lo cual condiciona limitación [severidad] en [todas las actividades de la CIF: marcha comunitaria >X m, subir/bajar escaleras, transferencias sedente-bípedo], restringiendo su participación en [todas las restricciones de participación de la CIF: rol laboral, actividades de la vida diaria, talleres de envejecimiento activo, rol familiar/recreativo], facilitada por [factores personales/ambientales (+): motivación, apoyo familiar] y obstaculizada por [factores personales/ambientales (-): sedentarismo, escaleras sin pasamanos].`;
-                        if (!caso.enunciadoDiagnostico || confirm("¿Deseas reemplazar el texto actual con la plantilla del Formato 1?")) {
-                          onChange({ ...caso, enunciadoDiagnostico: plantilla });
-                        }
-                      }}
-                      className="text-[11px] font-bold bg-white text-indigo-700 hover:bg-indigo-100 border border-indigo-300 px-3 py-1 rounded-lg shadow-sm transition"
-                    >
-                      📝 Cargar plantilla Formato 1 en el cuadro
-                    </button>
                   </div>
 
                   <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
@@ -804,38 +792,13 @@ function BloqueCasoClinico({
               {/* CONTENIDO FORMATO 2 */}
               {formatoDiagnosticoTab === "situacional" && (
                 <div className="space-y-4 bg-purple-50/50 p-4 rounded-xl border border-purple-200 animate-in fade-in duration-300">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-purple-900 text-xs uppercase tracking-wider">
-                        📌 Formato 2: Diagnóstico Situacional (4 Puntos — Enfoque UMCE)
-                      </span>
-                      <span className="bg-purple-200 text-purple-900 text-[10px] font-black px-2 py-0.5 rounded-full">
-                        ⭐ Formato Recomendado
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const plantilla = `1. Identificación y antecedentes de salud relevantes:
-[Iniciales], [edad] años, [sexo], [ocupación/rol]. Presenta antecedentes de [enfermedades actuales relevantes, comorbilidades crónicas: ej. HTA, DM2, artrosis, cirugías, traumatismos previos, fármacos habituales]. Consulta por [motivo de consulta principal / meta de salud] de [tiempo de evolución].
-
-2. Problemas identificados por la persona (Actividades y Participación):
-Desde la perspectiva de la persona, el cuadro se expresa como dificultad para [volcar TODAS las actividades limitadas de la CIF con su severidad: ej. caminar distancias >500m, subir/bajar escaleras, levantarse de la silla, agacharse]. Esto restringe su participación en [volcar TODAS las restricciones de participación de la CIF con severidad: ej. autonomía en compras, asistencia a talleres del Polideportivo, rol laboral o familiar].
-
-3. Problemas identificados por el tratante (Estructuras y Funciones):
-Desde la evaluación kinesiológica, el cuadro compromete predominantemente el sistema [musculoesquelético / neuromuscular / cardiorrespiratorio]. A nivel de estructuras: compromiso de [volcar TODAS las estructuras de la CIF: ej. complejo articular, tejidos miotendinosos], sustentado por [evidencia del examen físico]. A nivel de funciones: [volcar TODAS las funciones alteradas de la CIF con su severidad y valores: dolor EVA X/10, déficit de fuerza en escala MRC/dinamometría, limitación de ROM en grados, equilibrio en segundos/test].
-
-4. Factores contextuales:
-Factores personales: como facilitadores (+), [volcar facilitadores personales: motivación, adherencia]; como barreras (-), [volcar barreras personales: temor a caídas, sedentarismo].
-Factores ambientales: como facilitadores (+), [volcar facilitadores ambientales: apoyo familiar, acceso a recinto deportivo]; como barreras (-), [volcar barreras ambientales: barreras arquitectónicas, transporte inaccesible].`;
-                        if (!caso.enunciadoDiagnostico || confirm("¿Deseas reemplazar el texto actual con la plantilla del Formato 2?")) {
-                          onChange({ ...caso, enunciadoDiagnostico: plantilla });
-                        }
-                      }}
-                      className="text-[11px] font-bold bg-white text-purple-700 hover:bg-purple-100 border border-purple-300 px-3 py-1 rounded-lg shadow-sm transition"
-                    >
-                      📝 Cargar plantilla Formato 2 en el cuadro
-                    </button>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-purple-900 text-xs uppercase tracking-wider">
+                      📌 Formato 2: Diagnóstico Situacional (4 Puntos — Enfoque UMCE)
+                    </span>
+                    <span className="bg-purple-200 text-purple-900 text-[10px] font-black px-2 py-0.5 rounded-full">
+                      ⭐ Formato Recomendado
+                    </span>
                   </div>
 
                   <div className="bg-purple-100/70 p-3 rounded-lg border border-purple-300 text-purple-950 text-[11px] leading-relaxed">
