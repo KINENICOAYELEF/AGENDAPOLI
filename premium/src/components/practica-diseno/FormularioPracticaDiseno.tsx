@@ -754,7 +754,7 @@ function BloqueCasoClinico({
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  Formato 2: Situacional-Biopsicosocial (Narrativo en 4 Pasos)
+                  Formato 2: Situacional (Persona → Tratante → Contexto)
                 </button>
               </div>
 
@@ -803,21 +803,21 @@ function BloqueCasoClinico({
 
               {/* CONTENIDO FORMATO 2 */}
               {formatoDiagnosticoTab === "situacional" && (
-                <div className="space-y-3 bg-purple-50/50 p-4 rounded-xl border border-purple-200 animate-in fade-in duration-300">
+                <div className="space-y-4 bg-purple-50/50 p-4 rounded-xl border border-purple-200 animate-in fade-in duration-300">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <span className="font-bold text-purple-900 text-xs uppercase tracking-wider">
-                      📌 Formato 2: Diagnóstico Situacional-Biopsicosocial (Narrativo Integrador)
+                      📌 Formato 2: Diagnóstico Situacional (4 Puntos: Persona → Tratante → Contexto)
                     </span>
                     <button
                       type="button"
                       onClick={() => {
-                        const plantilla = `1. Identificación y contexto relevante: [Iniciales], [edad] años, [ocupación/rol], asiste a evaluación en el Polideportivo por [motivo de consulta / meta de salud]. Antecedentes relevantes: [comorbilidades / cirugías / caídas previas].
+                        const plantilla = `1. Identificación y contexto relevante: [Iniciales], [edad], [sexo], [ocupación], consulta por [motivo principal] de [tiempo de evolución]. El cuadro se asocia a [mecanismo, sobrecarga o antecedente relevante].
 
-2. Dimensión funcional desde la persona: Refiere dificultad para [actividad 1] y [actividad 2] (severidad [leve/moderada/severa]), lo que restringe su autonomía y participación en [rol laboral, familiar o comunitario].
+2. Problemas identificados por la persona: Desde la perspectiva de la persona, el problema se expresa como dificultad para [actividad 1] y [actividad 2], con severidad [leve/moderada/severa]. Esto restringe su participación en [trabajo/deporte/hogar/talleres comunitarios].
 
-3. Juicio clínico y examen físico: La evaluación constata compromiso predominante del sistema [musculoesquelético / neuromuscular], con deficiencia en [estructuras] y alteración en [funciones: fuerza, equilibrio, movilidad, dolor con severidad].
+3. Problemas identificados por el tratante: Desde nuestra evaluación, el cuadro compromete predominantemente el sistema [musculoesquelético/neuromuscular]. A nivel de estructuras: compromiso [probable/confirmado] de [estructura], sustentado por [evidencia]. A nivel de funciones: [dolor, movilidad, fuerza, equilibrio o control motor con severidad].
 
-4. Factores contextuales: El proceso se encuentra favorecido por [facilitadores (+)] y desafiado por [barreras personales y ambientales (-)].`;
+4. Factores contextuales: Factores personales: como facilitador (+), [facilitadores]; como barrera (-), [barreras]. Factores ambientales: como facilitador (+), [facilitadores]; como barrera (-), [barreras].`;
                         if (!caso.enunciadoDiagnostico || confirm("¿Deseas reemplazar el texto actual con la plantilla del Formato 2?")) {
                           onChange({ ...caso, enunciadoDiagnostico: plantilla });
                         }
@@ -829,26 +829,46 @@ function BloqueCasoClinico({
                   </div>
 
                   <p className="text-slate-600 leading-relaxed">
-                    <strong>Enfoque:</strong> Desglosa y conecta de forma secuencial las 4 dimensiones clínicas: la historia y metas de la persona, sus tareas motoras limitadas, los hallazgos físicos del examen y el balance de su entorno.
+                    <strong>Enfoque:</strong> Estructura el razonamiento clínico separando lo que reporta la persona (actividades y participación) de los hallazgos objetivos del tratante (estructuras y funciones) y el entorno.
                   </p>
 
-                  <div className="bg-white p-3.5 rounded-lg border border-purple-200 space-y-2 text-[11px] text-slate-800">
-                    <p className="font-bold text-purple-800">Dimensiones de la Plantilla Narrativa:</p>
-                    <div className="space-y-1 text-slate-600">
-                      <p><strong>1. Identificación y contexto:</strong> Datos basales, ocupación y motivo de ingreso/salud.</p>
-                      <p><strong>2. Perspectiva de la persona:</strong> Actividades cotidianas limitadas y roles sociales restringidos.</p>
-                      <p><strong>3. Examen del tratante:</strong> Estructuras comprometidas y funciones alteradas con severidad.</p>
-                      <p><strong>4. Factores contextuales:</strong> Facilitadores (+) y barreras (-) personales y del entorno.</p>
+                  <div className="space-y-2.5 bg-white p-4 rounded-xl border border-purple-200 text-[11px] text-slate-800">
+                    <div className="space-y-1">
+                      <p className="font-bold text-indigo-800">1. Identificación y contexto relevante:</p>
+                      <p className="text-slate-600 italic">
+                        [Iniciales], [edad], [sexo], [ocupación], consulta por [motivo principal] de [tiempo de evolución]. El cuadro se asocia a [mecanismo o antecedente].
+                      </p>
+                    </div>
+                    <div className="border-t border-slate-100 pt-2 space-y-1">
+                      <p className="font-bold text-indigo-800">2. Problemas identificados por la persona:</p>
+                      <p className="text-slate-600 italic">
+                        Desde la perspectiva de la persona, el problema se expresa como dificultad para [actividades con severidad]. Esto restringe su participación en [trabajo/deporte/hogar/comunidad].
+                      </p>
+                    </div>
+                    <div className="border-t border-slate-100 pt-2 space-y-1">
+                      <p className="font-bold text-indigo-800">3. Problemas identificados por el tratante:</p>
+                      <p className="text-slate-600 italic">
+                        Desde nuestra evaluación, compromiso del sistema [musculoesquelético/neuromuscular]. A nivel de estructuras: [estructura y evidencia]. A nivel de funciones: [dolor, fuerza, movilidad o equilibrio con severidad].
+                      </p>
+                    </div>
+                    <div className="border-t border-slate-100 pt-2 space-y-1">
+                      <p className="font-bold text-indigo-800">4. Factores contextuales:</p>
+                      <p className="text-slate-600 italic">
+                        Factores personales: (+) [facilitador] | (-) [barrera]. Factores ambientales: (+) [facilitador] | (-) [barrera].
+                      </p>
                     </div>
                   </div>
 
                   <div className="bg-emerald-50 p-3.5 rounded-lg border border-emerald-200 text-slate-700 space-y-1">
                     <span className="font-bold text-emerald-800 text-[11px] uppercase tracking-wider block">
-                      Ejemplo Clínico Real (Caso Polideportivo):
+                      Ejemplo Clínico Real del Formato 2:
                     </span>
-                    <p className="text-[11px] leading-relaxed italic text-emerald-950">
-                      &quot;P.B., usuario de 79 años, jubilado y activo socialmente, asiste al Polideportivo para ingresar al programa de ejercicio funcional y acondicionamiento motor. Desde su vivencia cotidiana, relata sensación de inestabilidad y fatiga muscular precoz al desplazarse en terrenos irregulares, lo que ha generado temor a caídas y restricción progresiva en sus traslados independientes al club de adulto mayor. La evaluación kinesiológica constata compromiso del sistema neuromuscular y control sensorio-motor, evidenciando alteración moderada en el equilibrio unipodal (4s), déficit leve de potencia extensora en miembros inferiores y lentitud en las transiciones dinámicas. El cuadro se encuentra favorecido por una excelente adherencia, actitud proactiva y red de apoyo familiar (+), presentándose como barrera el antecedente de traumatismo craneoencefálico previo y la polifarmacia (-).&quot;
-                    </p>
+                    <div className="text-[11px] leading-relaxed text-emerald-950 space-y-1.5 pt-1">
+                      <p><strong>1. Identificación:</strong> M.G., 52 años, auxiliar de aseo, consulta por dolor en región anterior de rodilla derecha de 4 semanas de evolución asociado a sobrecarga laboral durante periodo de limpieza profunda.</p>
+                      <p><strong>2. Desde la persona:</strong> Dificultad para subir escaleras, ponerse de pie desde silla baja y caminar más de 500m (severidad moderada), lo que restringe su participación laboral al costarle completar la jornada.</p>
+                      <p><strong>3. Desde el tratante:</strong> Compromiso musculoesquelético con probable afección del complejo patelofemoral derecho por dolor anterior en carga. A nivel de funciones: dolor moderado (EVA 6/10), disminución de rango articular de flexión y déficit leve de fuerza en cuádriceps.</p>
+                      <p><strong>4. Factores contextuales:</strong> Factores personales: (+) alta motivación y adherencia | (-) sobrepeso. Factores ambientales: (+) horario estable para asistir a sesiones | (-) exigencia laboral inmodificable de subir escaleras.</p>
+                    </div>
                   </div>
                 </div>
               )}
