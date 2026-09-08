@@ -157,12 +157,25 @@ Devuelve ÚNICAMENTE este JSON:
 }
 `;
 
-    const rawText = await callGemini({
-      systemInstruction,
-      userPrompt,
-      temperature: 0.2,
-      responseMimeType: 'application/json',
-    });
+    let rawText = '';
+    try {
+      rawText = await callGemini({
+        modelId: 'gemini-3.7-flash',
+        systemInstruction,
+        userPrompt,
+        temperature: 0.2,
+        responseMimeType: 'application/json',
+      });
+    } catch (primaryErr: any) {
+      console.warn('[Práctica Diseño IA] gemini-3.7-flash no respondió o superó cuota, reintentando con gemini-3.5-flash-lite...', primaryErr?.message);
+      rawText = await callGemini({
+        modelId: 'gemini-3.5-flash-lite',
+        systemInstruction,
+        userPrompt,
+        temperature: 0.2,
+        responseMimeType: 'application/json',
+      });
+    }
 
     let parsed: any;
     try {
