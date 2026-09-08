@@ -276,7 +276,7 @@ function BloqueCasoClinico({
 }) {
   const [showAnamnesisExample, setShowAnamnesisExample] = useState(false);
   const [showDiagnosticoGuia, setShowDiagnosticoGuia] = useState(true);
-  const [formatoDiagnosticoTab, setFormatoDiagnosticoTab] = useState<"clinico" | "situacional">("clinico");
+  const [formatoDiagnosticoTab, setFormatoDiagnosticoTab] = useState<"clinico" | "situacional">("situacional");
   const [showDiferenciaGeneral, setShowDiferenciaGeneral] = useState(false);
   const [showVerbosTable, setShowVerbosTable] = useState(false);
   const [showGuiaPriorizacion, setShowGuiaPriorizacion] = useState(false);
@@ -760,15 +760,15 @@ function BloqueCasoClinico({
 
               {/* CONTENIDO FORMATO 1 */}
               {formatoDiagnosticoTab === "clinico" && (
-                <div className="space-y-3 bg-indigo-50/50 p-4 rounded-xl border border-indigo-200 animate-in fade-in duration-300">
+                <div className="space-y-4 bg-indigo-50/50 p-4 rounded-xl border border-indigo-200 animate-in fade-in duration-300">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <span className="font-bold text-indigo-900 text-xs uppercase tracking-wider">
-                      📌 Formato 1: Diagnóstico Clínico-Funcional (Cadena Causal CIF)
+                      📌 Formato 1: Diagnóstico Clínico-Funcional (Cadena Causal CIF Integrada)
                     </span>
                     <button
                       type="button"
                       onClick={() => {
-                        const plantilla = `Persona [edad, ocupación/rol], con condición de [patología médica o antecedente relevante], que presenta deficiencia [severidad: leve/moderada/severa] en [estructuras anatómicas involucradas] manifestada por [funciones fisiológicas alteradas: dolor EVA X/10, déficit de fuerza M4, limitación de ROM], lo cual condiciona limitación [severidad] en [actividades específicas: marcha, transferencias, escaleras], restringiendo su participación en [rol laboral, deportivo, familiar o talleres comunitarios], facilitada por [factores personales/ambientales (+)] y obstaculizada por [barreras personales/ambientales (-)].`;
+                        const plantilla = `Persona de [edad] años, [sexo], [ocupación/rol], con antecedentes médicos relevantes de [enfermedades actuales: ej. HTA, DM2, artrosis previa, cirugías o fármacos], que consulta por [motivo principal de ingreso]. Presenta deficiencia [severidad: leve/moderada/severa] en [estructuras corporales de la CIF: ej. complejo articular, musculatura periarticular, tendón], manifestada por deficiencias funcionales en [todas las funciones alteradas de la CIF con severidad: dolor EVA X/10, déficit de fuerza M4, limitación de ROM articular a X°, alteración de equilibrio unipodal], lo cual condiciona limitación [severidad] en [todas las actividades de la CIF: marcha comunitaria >X m, subir/bajar escaleras, transferencias sedente-bípedo], restringiendo su participación en [todas las restricciones de participación de la CIF: rol laboral, actividades de la vida diaria, talleres de envejecimiento activo, rol familiar/recreativo], facilitada por [factores personales/ambientales (+): motivación, apoyo familiar] y obstaculizada por [factores personales/ambientales (-): sedentarismo, escaleras sin pasamanos].`;
                         if (!caso.enunciadoDiagnostico || confirm("¿Deseas reemplazar el texto actual con la plantilla del Formato 1?")) {
                           onChange({ ...caso, enunciadoDiagnostico: plantilla });
                         }
@@ -779,23 +779,23 @@ function BloqueCasoClinico({
                     </button>
                   </div>
 
-                  <p className="text-slate-600 leading-relaxed">
-                    <strong>Enfoque:</strong> Conecta directamente en una sola oración articulada la condición de salud con la deficiencia biológica, la limitación funcional y la restricción social.
-                  </p>
+                  <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
+                    💡 <strong>Regla de integración total CIF:</strong> En este enunciado deben volcar <strong>absolutamente todo</strong> lo registrado en la tabla CIF (estructuras, funciones con severidad, actividades con severidad, participación y factores con +/-) más las comorbilidades crónicas del usuario.
+                  </div>
 
                   <div className="bg-white p-3.5 rounded-lg border border-indigo-200 space-y-1.5 font-mono text-[11px] text-slate-800">
                     <p className="font-bold text-indigo-800 font-sans">Estructura / Plantilla:</p>
                     <p className="leading-relaxed">
-                      &quot;Persona [edad, ocupación], con condición de [diagnóstico/antecedente médico], que presenta deficiencia [severidad] en [estructuras anatómicas] manifestada por [funciones alteradas: dolor, fuerza, ROM], lo que condiciona limitación [severidad] para [actividades concretas], restringiendo su participación en [roles vitales/comunitarios], mediada por [factores personales (+/-)] y [factores ambientales (+/-)].&quot;
+                      &quot;Persona [edad, ocupación], con antecedentes de [enfermedades actuales relevantes], que presenta deficiencia [severidad] en [estructuras anatómicas] manifestada por [todas las funciones alteradas con severidad], lo que condiciona limitación [severidad] para [todas las actividades CIF], restringiendo su participación en [roles vitales/comunitarios CIF], mediada por [factores personales (+/-)] y [factores ambientales (+/-)].&quot;
                     </p>
                   </div>
 
                   <div className="bg-emerald-50 p-3.5 rounded-lg border border-emerald-200 text-slate-700 space-y-1">
                     <span className="font-bold text-emerald-800 text-[11px] uppercase tracking-wider block">
-                      Ejemplo Clínico Real:
+                      Ejemplo Clínico Real Integrado:
                     </span>
                     <p className="text-[11px] leading-relaxed italic text-emerald-950">
-                      &quot;Usuaria de 68 años, dueña de casa, con condición de gonartrosis bilateral compensada, que presenta deficiencia moderada en el complejo articular de rodilla derecha manifestada por dolor nociceptivo mecánico EVA 5/10, disminución de fuerza extensora en grado M4 y rigidez matinal, lo cual condiciona limitación moderada en la transferencia sedente-bípedo y marcha comunitaria superior a 500 metros, restringiendo su participación en talleres de envejecimiento activo y compras del hogar, facilitada por alta motivación personal y apoyo familiar (+), pero limitada por vivir en un segundo piso sin pasamanos (-).&quot;
+                      &quot;Usuaria de 68 años, dueña de casa, con antecedentes de hipertensión arterial compensada y sobrepeso, que consulta por dolor y fatiga en extremidad inferior derecha. Presenta deficiencia moderada en el complejo articular y musculatura periarticular de rodilla derecha, manifestada por dolor nociceptivo mecánico EVA 5/10, disminución moderada de fuerza extensora de cuádriceps (M4) y alteración leve en balance unipodal (7s), lo cual condiciona limitación moderada en la transferencia sedente-bípedo, subir escaleras y marcha comunitaria prolongada (&gt;500m), restringiendo su participación en talleres de envejecimiento activo del Polideportivo y compras del hogar, facilitada por alta motivación personal y buena red de apoyo familiar (+), pero limitada por vivir en un segundo piso sin pasamanos y temor leve a caídas (-).&quot;
                     </p>
                   </div>
                 </div>
@@ -805,19 +805,29 @@ function BloqueCasoClinico({
               {formatoDiagnosticoTab === "situacional" && (
                 <div className="space-y-4 bg-purple-50/50 p-4 rounded-xl border border-purple-200 animate-in fade-in duration-300">
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    <span className="font-bold text-purple-900 text-xs uppercase tracking-wider">
-                      📌 Formato 2: Diagnóstico Situacional (4 Puntos: Persona → Tratante → Contexto)
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-purple-900 text-xs uppercase tracking-wider">
+                        📌 Formato 2: Diagnóstico Situacional (4 Puntos — Enfoque UMCE)
+                      </span>
+                      <span className="bg-purple-200 text-purple-900 text-[10px] font-black px-2 py-0.5 rounded-full">
+                        ⭐ Formato Recomendado
+                      </span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => {
-                        const plantilla = `1. Identificación y contexto relevante: [Iniciales], [edad], [sexo], [ocupación], consulta por [motivo principal] de [tiempo de evolución]. El cuadro se asocia a [mecanismo, sobrecarga o antecedente relevante].
+                        const plantilla = `1. Identificación y antecedentes de salud relevantes:
+[Iniciales], [edad] años, [sexo], [ocupación/rol]. Presenta antecedentes de [enfermedades actuales relevantes, comorbilidades crónicas: ej. HTA, DM2, artrosis, cirugías, traumatismos previos, fármacos habituales]. Consulta por [motivo de consulta principal / meta de salud] de [tiempo de evolución].
 
-2. Problemas identificados por la persona: Desde la perspectiva de la persona, el problema se expresa como dificultad para [actividad 1] y [actividad 2], con severidad [leve/moderada/severa]. Esto restringe su participación en [trabajo/deporte/hogar/talleres comunitarios].
+2. Problemas identificados por la persona (Actividades y Participación):
+Desde la perspectiva de la persona, el cuadro se expresa como dificultad para [volcar TODAS las actividades limitadas de la CIF con su severidad: ej. caminar distancias >500m, subir/bajar escaleras, levantarse de la silla, agacharse]. Esto restringe su participación en [volcar TODAS las restricciones de participación de la CIF con severidad: ej. autonomía en compras, asistencia a talleres del Polideportivo, rol laboral o familiar].
 
-3. Problemas identificados por el tratante: Desde nuestra evaluación, el cuadro compromete predominantemente el sistema [musculoesquelético/neuromuscular]. A nivel de estructuras: compromiso [probable/confirmado] de [estructura], sustentado por [evidencia]. A nivel de funciones: [dolor, movilidad, fuerza, equilibrio o control motor con severidad].
+3. Problemas identificados por el tratante (Estructuras y Funciones):
+Desde la evaluación kinesiológica, el cuadro compromete predominantemente el sistema [musculoesquelético / neuromuscular / cardiorrespiratorio]. A nivel de estructuras: compromiso de [volcar TODAS las estructuras de la CIF: ej. complejo articular, tejidos miotendinosos], sustentado por [evidencia del examen físico]. A nivel de funciones: [volcar TODAS las funciones alteradas de la CIF con su severidad y valores: dolor EVA X/10, déficit de fuerza en escala MRC/dinamometría, limitación de ROM en grados, equilibrio en segundos/test].
 
-4. Factores contextuales: Factores personales: como facilitador (+), [facilitadores]; como barrera (-), [barreras]. Factores ambientales: como facilitador (+), [facilitadores]; como barrera (-), [barreras].`;
+4. Factores contextuales:
+Factores personales: como facilitadores (+), [volcar facilitadores personales: motivación, adherencia]; como barreras (-), [volcar barreras personales: temor a caídas, sedentarismo].
+Factores ambientales: como facilitadores (+), [volcar facilitadores ambientales: apoyo familiar, acceso a recinto deportivo]; como barreras (-), [volcar barreras ambientales: barreras arquitectónicas, transporte inaccesible].`;
                         if (!caso.enunciadoDiagnostico || confirm("¿Deseas reemplazar el texto actual con la plantilla del Formato 2?")) {
                           onChange({ ...caso, enunciadoDiagnostico: plantilla });
                         }
@@ -828,46 +838,54 @@ function BloqueCasoClinico({
                     </button>
                   </div>
 
-                  <p className="text-slate-600 leading-relaxed">
-                    <strong>Enfoque:</strong> Estructura el razonamiento clínico separando lo que reporta la persona (actividades y participación) de los hallazgos objetivos del tratante (estructuras y funciones) y el entorno.
-                  </p>
+                  <div className="bg-purple-100/70 p-3 rounded-lg border border-purple-300 text-purple-950 text-[11px] leading-relaxed">
+                    💡 <strong>Integración completa de la Matriz CIF:</strong> Cada uno de los 4 puntos se alimenta directamente de las casillas de la CIF. Asegúrense de <strong>incluir todas las variables registradas</strong> junto con las enfermedades actuales o comorbilidades basales del usuario.
+                  </div>
 
-                  <div className="space-y-2.5 bg-white p-4 rounded-xl border border-purple-200 text-[11px] text-slate-800">
+                  <div className="space-y-3 bg-white p-4 rounded-xl border border-purple-200 text-[11px] text-slate-800">
                     <div className="space-y-1">
-                      <p className="font-bold text-indigo-800">1. Identificación y contexto relevante:</p>
-                      <p className="text-slate-600 italic">
-                        [Iniciales], [edad], [sexo], [ocupación], consulta por [motivo principal] de [tiempo de evolución]. El cuadro se asocia a [mecanismo o antecedente].
+                      <p className="font-bold text-indigo-800 text-xs">1. Identificación y antecedentes de salud relevantes:</p>
+                      <p className="text-slate-600 italic leading-relaxed">
+                        [Iniciales], [edad], [sexo], [ocupación]. Enfermedades actuales / antecedentes basales: [comorbilidades, cirugías, fármacos]. Consulta por [motivo principal] de [tiempo de evolución].
                       </p>
                     </div>
                     <div className="border-t border-slate-100 pt-2 space-y-1">
-                      <p className="font-bold text-indigo-800">2. Problemas identificados por la persona:</p>
-                      <p className="text-slate-600 italic">
-                        Desde la perspectiva de la persona, el problema se expresa como dificultad para [actividades con severidad]. Esto restringe su participación en [trabajo/deporte/hogar/comunidad].
+                      <p className="font-bold text-indigo-800 text-xs">2. Problemas identificados por la persona (Actividades y Participación):</p>
+                      <p className="text-slate-600 italic leading-relaxed">
+                        Desde la perspectiva de la persona, dificultad para [todas las actividades CIF con severidad]. Esto restringe su participación en [todas las restricciones CIF con severidad].
                       </p>
                     </div>
                     <div className="border-t border-slate-100 pt-2 space-y-1">
-                      <p className="font-bold text-indigo-800">3. Problemas identificados por el tratante:</p>
-                      <p className="text-slate-600 italic">
-                        Desde nuestra evaluación, compromiso del sistema [musculoesquelético/neuromuscular]. A nivel de estructuras: [estructura y evidencia]. A nivel de funciones: [dolor, fuerza, movilidad o equilibrio con severidad].
+                      <p className="font-bold text-indigo-800 text-xs">3. Problemas identificados por el tratante (Estructuras y Funciones):</p>
+                      <p className="text-slate-600 italic leading-relaxed">
+                        Compromiso del sistema [musculoesquelético/neuromuscular]. A nivel de estructuras: [todas las estructuras CIF]. A nivel de funciones: [todas las funciones CIF con severidad y mediciones].
                       </p>
                     </div>
                     <div className="border-t border-slate-100 pt-2 space-y-1">
-                      <p className="font-bold text-indigo-800">4. Factores contextuales:</p>
-                      <p className="text-slate-600 italic">
-                        Factores personales: (+) [facilitador] | (-) [barrera]. Factores ambientales: (+) [facilitador] | (-) [barrera].
+                      <p className="font-bold text-indigo-800 text-xs">4. Factores contextuales:</p>
+                      <p className="text-slate-600 italic leading-relaxed">
+                        Factores personales: (+) [todos los facilitadores] | (-) [todas las barreras]. Factores ambientales: (+) [todos los facilitadores] | (-) [todas las barreras].
                       </p>
                     </div>
                   </div>
 
-                  <div className="bg-emerald-50 p-3.5 rounded-lg border border-emerald-200 text-slate-700 space-y-1">
-                    <span className="font-bold text-emerald-800 text-[11px] uppercase tracking-wider block">
-                      Ejemplo Clínico Real del Formato 2:
+                  <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200 text-slate-700 space-y-2">
+                    <span className="font-bold text-emerald-800 text-xs uppercase tracking-wider block">
+                      Ejemplo Clínico Real Completo (Formato 2 — Caso Polideportivo):
                     </span>
-                    <div className="text-[11px] leading-relaxed text-emerald-950 space-y-1.5 pt-1">
-                      <p><strong>1. Identificación:</strong> M.G., 52 años, auxiliar de aseo, consulta por dolor en región anterior de rodilla derecha de 4 semanas de evolución asociado a sobrecarga laboral durante periodo de limpieza profunda.</p>
-                      <p><strong>2. Desde la persona:</strong> Dificultad para subir escaleras, ponerse de pie desde silla baja y caminar más de 500m (severidad moderada), lo que restringe su participación laboral al costarle completar la jornada.</p>
-                      <p><strong>3. Desde el tratante:</strong> Compromiso musculoesquelético con probable afección del complejo patelofemoral derecho por dolor anterior en carga. A nivel de funciones: dolor moderado (EVA 6/10), disminución de rango articular de flexión y déficit leve de fuerza en cuádriceps.</p>
-                      <p><strong>4. Factores contextuales:</strong> Factores personales: (+) alta motivación y adherencia | (-) sobrepeso. Factores ambientales: (+) horario estable para asistir a sesiones | (-) exigencia laboral inmodificable de subir escaleras.</p>
+                    <div className="text-[11px] leading-relaxed text-emerald-950 space-y-2 pt-1">
+                      <p>
+                        <strong>1. Identificación y antecedentes relevantes:</strong> M.G., 52 años, sexo femenino, auxiliar de aseo. Como antecedentes mórbidos presenta Hipertensión Arterial en tratamiento farmacológico regular (Enalapril 10mg) y sobrepeso (IMC 28.4 kg/m²). Consulta por dolor mecánico en región anterior de rodilla derecha de 4 semanas de evolución, desencadenado por sobrecarga laboral en labores de aseo profundo.
+                      </p>
+                      <p>
+                        <strong>2. Problemas identificados por la persona:</strong> Desde la perspectiva de la usuaria, el cuadro se manifiesta como dificultad moderada para subir y bajar escaleras, ponerse de pie desde sillas bajas y caminar trayectos mayores a 500 metros debido a dolor y fatiga. Esto genera restricción moderada en su participación laboral, afectando el cumplimiento de su jornada, y restricción leve en sus actividades recreativas comunitarias.
+                      </p>
+                      <p>
+                        <strong>3. Problemas identificados por el tratante:</strong> La evaluación kinesiológica evidencia compromiso predominante del sistema musculoesquelético. A nivel de estructuras: compromiso probable del complejo patelofemoral y tendón cuadricipital derecho, sustentado por dolor a la palpación y crepitación articular. A nivel de funciones: dolor moderado (EVA 6/10 en flexión con carga), disminución moderada de rango articular de flexión activa (90° vs 135° contralateral), déficit leve de fuerza en cuádriceps (grado M4 en MRC) y disminución en la tolerancia a la carga unipodal.
+                      </p>
+                      <p>
+                        <strong>4. Factores contextuales:</strong> Factores personales: como facilitadores (+), presenta alta motivación por rehabilitarse, buena adherencia y actitud proactiva; como barreras (-), sobrepeso y temor moderado a agravar el dolor. Factores ambientales: como facilitadores (+), cuenta con apoyo familiar para traslados y acceso a talleres del Polideportivo; como barreras (-), exigencia laboral inmodificable de subir escaleras y vivienda sin ascensor.
+                      </p>
                     </div>
                   </div>
                 </div>
