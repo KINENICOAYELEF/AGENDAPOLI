@@ -1420,6 +1420,7 @@ export default function FormularioPracticaDiseno() {
 
   // Tab activo: 1 o 2
   const [tabActivo, setTabActivo] = useState<1 | 2>(1);
+  const [tipoEntrega, setTipoEntrega] = useState<"dupla" | "individual">("dupla");
 
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [cargandoId, setCargandoId] = useState(false);
@@ -1441,7 +1442,12 @@ export default function FormularioPracticaDiseno() {
           .then((entrega) => {
             if (entrega) {
               setEditandoId(targetId);
-              if (entrega.estudiante) setDupla(entrega.estudiante);
+              if (entrega.estudiante) {
+                setDupla(entrega.estudiante);
+                if (!entrega.estudiante.estudiante2 && !entrega.caso2?.datosUsuaria?.nombre) {
+                  setTipoEntrega("individual");
+                }
+              }
               if (entrega.caso1) setCaso1(entrega.caso1);
               else if (entrega.caso) setCaso1(entrega.caso);
               if (entrega.caso2) setCaso2(entrega.caso2);
@@ -1458,6 +1464,7 @@ export default function FormularioPracticaDiseno() {
           if (parsed.dupla) setDupla(parsed.dupla);
           if (parsed.caso1) setCaso1(parsed.caso1);
           if (parsed.caso2) setCaso2(parsed.caso2);
+          if (parsed.tipoEntrega) setTipoEntrega(parsed.tipoEntrega);
         }
       } catch {
         // ignore
@@ -1470,13 +1477,13 @@ export default function FormularioPracticaDiseno() {
     if (editandoId) return; // En modo edición no sobrescribir borrador nuevo
     const timer = setTimeout(() => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ dupla, caso1, caso2 }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ dupla, caso1, caso2, tipoEntrega }));
       } catch {
         // ignore
       }
     }, 1000);
     return () => clearTimeout(timer);
-  }, [dupla, caso1, caso2, editandoId]);
+  }, [dupla, caso1, caso2, tipoEntrega, editandoId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1487,7 +1494,7 @@ export default function FormularioPracticaDiseno() {
     if (!dupla.fechaJornada) errsDupla.push("Fecha de la jornada");
 
     const errs1 = validarCaso(caso1, 1);
-    const errs2 = validarCaso(caso2, 2);
+    const errs2 = tipoEntrega === "dupla" ? validarCaso(caso2, 2) : [];
 
     const todosLosErrores = [...errsDupla, ...errs1, ...errs2];
 
@@ -1607,10 +1614,42 @@ export default function FormularioPracticaDiseno() {
 
       <form onSubmit={handleSubmit}>
         {/* 1. Datos de la Dupla (Compartidos) */}
-        <SectionCard title="Datos de la Dupla y Jornada">
+        <SectionCard title="Datos de Identificación y Jornada">
           <HelpText>
-            Ingresen los datos de la dupla y la jornada de atención.
+            Ingresen los datos de la dupla o estudiante y la jornada de atención.
           </HelpText>
+
+          {/* Selector de Modalidad */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50 border border-slate-200 rounded-2xl mb-4">
+            <span className="text-xs font-bold text-slate-700">Modalidad de entrega:</span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setTipoEntrega("dupla")}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition ${
+                  tipoEntrega === "dupla"
+                    ? "bg-teal-600 border-teal-600 text-white shadow-sm"
+                    : "bg-white border-slate-300 text-slate-700 hover:border-teal-400"
+                }`}
+              >
+                👫 Dupla (2 Casos Clínicos)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTipoEntrega("individual");
+                  setTabActivo(1);
+                }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition ${
+                  tipoEntrega === "individual"
+                    ? "bg-teal-600 border-teal-600 text-white shadow-sm"
+                    : "bg-white border-slate-300 text-slate-700 hover:border-teal-400"
+                }`}
+              >
+                👤 Individual (1 Caso Clínico)
+              </button>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FieldInput
@@ -1620,12 +1659,14 @@ export default function FormularioPracticaDiseno() {
               onChange={(v) => setDupla({ ...dupla, estudiante1: v })}
               placeholder="Nombre y Apellido..."
             />
-            <FieldInput
-              label="Estudiante 2 (Opcional si es individual)"
-              value={dupla.estudiante2 || ""}
-              onChange={(v) => setDupla({ ...dupla, estudiante2: v })}
-              placeholder="Nombre y Apellido..."
-            />
+            {tipoEntrega === "dupla" && (
+              <FieldInput
+                label="Estudiante 2 (Dupla)"
+                value={dupla.estudiante2 || ""}
+                onChange={(v) => setDupla({ ...dupla, estudiante2: v })}
+                placeholder="Nombre y Apellido..."
+              />
+            )}
             <FieldInput
               label="Fecha de la jornada"
               type="date"
@@ -1643,41 +1684,50 @@ export default function FormularioPracticaDiseno() {
         </SectionCard>
 
         {/* SELECTOR DE PESTAÑAS CASO 1 / CASO 2 */}
-        <div className="sticky top-4 z-20 mb-6 bg-slate-900/90 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-slate-700 flex gap-2">
-          <button
-            type="button"
-            onClick={() => setTabActivo(1)}
-            className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 ${
-              tabActivo === 1
-                ? "bg-teal-600 text-white shadow-md"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-            }`}
-          >
-            <span>Caso Clínico #1</span>
-            {caso1.datosUsuaria.nombre && (
-              <span className="text-[10px] font-normal opacity-90 truncate max-w-[120px] hidden sm:inline">
-                ({caso1.datosUsuaria.nombre})
-              </span>
-            )}
-          </button>
+        {tipoEntrega === "dupla" ? (
+          <div className="sticky top-4 z-20 mb-6 bg-slate-900/90 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-slate-700 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setTabActivo(1)}
+              className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 ${
+                tabActivo === 1
+                  ? "bg-teal-600 text-white shadow-md"
+                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+              }`}
+            >
+              <span>Caso Clínico #1</span>
+              {caso1.datosUsuaria.nombre && (
+                <span className="text-[10px] font-normal opacity-90 truncate max-w-[120px] hidden sm:inline">
+                  ({caso1.datosUsuaria.nombre})
+                </span>
+              )}
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setTabActivo(2)}
-            className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 ${
-              tabActivo === 2
-                ? "bg-teal-600 text-white shadow-md"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-            }`}
-          >
-            <span>Caso Clínico #2</span>
-            {caso2.datosUsuaria.nombre && (
-              <span className="text-[10px] font-normal opacity-90 truncate max-w-[120px] hidden sm:inline">
-                ({caso2.datosUsuaria.nombre})
-              </span>
+            <button
+              type="button"
+              onClick={() => setTabActivo(2)}
+              className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 ${
+                tabActivo === 2
+                  ? "bg-teal-600 text-white shadow-md"
+                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+              }`}
+            >
+              <span>Caso Clínico #2</span>
+              {caso2.datosUsuaria.nombre && (
+                <span className="text-[10px] font-normal opacity-90 truncate max-w-[120px] hidden sm:inline">
+                  ({caso2.datosUsuaria.nombre})
+                </span>
+              )}
+            </button>
+          </div>
+        ) : (
+          <div className="mb-6 p-3 bg-teal-50 border border-teal-200 rounded-2xl text-teal-900 text-xs font-bold flex items-center justify-between">
+            <span>👤 Entrega Individual: Completando Caso Clínico Único</span>
+            {caso1.datosUsuaria.nombre && (
+              <span className="font-normal opacity-90">({caso1.datosUsuaria.nombre})</span>
             )}
-          </button>
-        </div>
+          </div>
+        )}
 
         {/* CONTENIDO DEL CASO ACTIVO */}
         {tabActivo === 1 ? (

@@ -475,6 +475,7 @@ export default function PanelDocenteDiseno() {
 
   // Asistente de Evaluación IA
   const [evaluandoIA, setEvaluandoIA] = useState(false);
+  const [modoEvaluacionIA, setModoEvaluacionIA] = useState<"ambos" | "caso1" | "caso2">("ambos");
   const [resultadoIA, setResultadoIA] = useState<{
     fortalezas?: string;
     errores?: string;
@@ -638,7 +639,10 @@ ${caso2 ? formatCasoTxt(caso2, 2) : ""}
       const res = await fetch("/api/practica-diseno/revisar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entrega: entregaSeleccionada }),
+        body: JSON.stringify({
+          entrega: entregaSeleccionada,
+          modoEvaluacion: modoEvaluacionIA,
+        }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || "Error al procesar la revisión");
@@ -657,7 +661,13 @@ ${caso2 ? formatCasoTxt(caso2, 2) : ""}
         setComentarioDocente(aiData.comentarioRetroalimentacion);
       }
 
-      showToast("✨ ¡Pre-evaluación completada! Se auto-completó la pauta y el borrador de feedback.");
+      showToast(
+        modoEvaluacionIA === "ambos"
+          ? "✨ ¡Pre-evaluación completada para Ambos Casos!"
+          : modoEvaluacionIA === "caso1"
+          ? "✨ ¡Pre-evaluación completada para el Caso #1!"
+          : "✨ ¡Pre-evaluación completada para el Caso #2!"
+      );
     } catch (err) {
       console.error(err);
       alert("Hubo un error al ejecutar la revisión automática. Por favor intenta de nuevo.");
@@ -806,6 +816,43 @@ ${caso2 ? formatCasoTxt(caso2, 2) : ""}
               {/* Barra de Acciones Rápidas del Docente */}
               <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase px-1.5 hidden sm:inline">Evaluar:</span>
+                    <button
+                      type="button"
+                      onClick={() => setModoEvaluacionIA("ambos")}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                        modoEvaluacionIA === "ambos"
+                          ? "bg-white text-indigo-900 shadow-sm border border-indigo-200"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Ambos Casos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModoEvaluacionIA("caso1")}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                        modoEvaluacionIA === "caso1"
+                          ? "bg-white text-indigo-900 shadow-sm border border-indigo-200"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Solo Caso #1
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModoEvaluacionIA("caso2")}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${
+                        modoEvaluacionIA === "caso2"
+                          ? "bg-white text-indigo-900 shadow-sm border border-indigo-200"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Solo Caso #2
+                    </button>
+                  </div>
+
                   <button
                     type="button"
                     onClick={handleRevisarConIA}
@@ -815,11 +862,17 @@ ${caso2 ? formatCasoTxt(caso2, 2) : ""}
                     {evaluandoIA ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Analizando ambos casos con IA...</span>
+                        <span>
+                          {modoEvaluacionIA === "ambos"
+                            ? "Analizando ambos casos..."
+                            : modoEvaluacionIA === "caso1"
+                            ? "Analizando Caso #1..."
+                            : "Analizando Caso #2..."}
+                        </span>
                       </>
                     ) : (
                       <>
-                        <span>✨ Pre-Evaluar con Asistente IA</span>
+                        <span>✨ Pre-Evaluar ({modoEvaluacionIA === "ambos" ? "Ambos" : modoEvaluacionIA === "caso1" ? "Caso 1" : "Caso 2"})</span>
                       </>
                     )}
                   </button>

@@ -5,7 +5,13 @@ import type { EntregaPracticaDiseno } from '@/types/practica-diseno';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { entrega }: { entrega: EntregaPracticaDiseno } = body;
+    const {
+      entrega,
+      modoEvaluacion = 'ambos',
+    }: {
+      entrega: EntregaPracticaDiseno;
+      modoEvaluacion?: 'ambos' | 'caso1' | 'caso2';
+    } = body;
 
     if (!entrega) {
       return NextResponse.json({ success: false, error: 'No se proporcionó la entrega' }, { status: 400 });
@@ -13,10 +19,10 @@ export async function POST(req: Request) {
 
     const systemInstruction = `
 Eres un docente universitario y kinesiólogo clínico experto evaluando una entrega de estudiantes de Kinesiología en su "Práctica: Diseño de Intervención".
-Tu objetivo es realizar una auditoría clínica-pedagógica rigurosa, formativa y humana de los 2 casos clínicos presentados por la dupla, evaluando el informe contra la pauta de evaluación oficial de 28 puntos.
+Tu objetivo es realizar una auditoría clínica-pedagógica rigurosa, formativa y humana evaluando el informe presentado contra la pauta de evaluación oficial de 28 puntos.
 
 REGLAS METODOLÓGICAS ESTRICTAS:
-1. Evalúa ÚNICAMENTE lo que los estudiantes escribieron en ambos casos. No inventes datos ni asumas información no registrada.
+1. Evalúa ÚNICAMENTE lo que los estudiantes escribieron en el o los casos seleccionados. No inventes datos ni asumas información no registrada.
 2. La retroalimentación debe sonar 100% natural, cercana, constructiva y profesional (como un docente clínico hablando a sus alumnos). NUNCA menciones que eres una IA, ni uses frases como "según mi análisis" o "como modelo de lenguaje".
 3. Identifica fortalezas concretas y aspectos específicos a mejorar citando secciones del informe (Anamnesis, Evaluaciones, CIF, Diagnóstico, Objetivos, FITT-VP, Pronóstico).
 4. Criterios de la Rúbrica Oficial (28 Puntos Totales, escala al 60%):
@@ -31,7 +37,7 @@ REGLAS METODOLÓGICAS ESTRICTAS:
 `;
 
     const formatCaso = (caso: any, num: number) => {
-      if (!caso) return `=== CASO ${num}: No registrado ===`;
+      if (!caso) return `=== CASO ${num}: No registrado o vacío ===`;
       const evaluacionesStr = Array.isArray(caso.evaluaciones)
         ? caso.evaluaciones.map((e: any, i: number) => `  * Eval ${i + 1}: ${e.nombre || 'S/N'} | Razón: ${e.razon || 'S/R'} | Resultado: ${e.resultado || 'S/R'} | Interpretación: ${e.interpretacion || 'S/I'}`).join('\n')
         : 'Sin evaluaciones';
@@ -96,21 +102,37 @@ PRONÓSTICO:
     const caso1Data = entrega.caso1 || entrega.caso;
     const caso2Data = entrega.caso2;
 
+    let casosPrompt = '';
+    let instruccionAlcance = '';
+
+    if (modoEvaluacion === 'caso1') {
+      casosPrompt = formatCaso(caso1Data, 1);
+      instruccionAlcance = 'Evalúa ÚNICAMENTE el Caso Clínico #1.';
+    } else if (modoEvaluacion === 'caso2') {
+      casosPrompt = formatCaso(caso2Data, 2);
+      instruccionAlcance = 'Evalúa ÚNICAMENTE el Caso Clínico #2.';
+    } else {
+      // Ambos casos (o solo caso1 si caso2 no existe)
+      casosPrompt = `${formatCaso(caso1Data, 1)}\n\n${caso2Data?.datosUsuaria?.nombre ? formatCaso(caso2Data, 2) : '=== CASO 2: No registrado en esta entrega ==='}`;
+      instruccionAlcance = caso2Data?.datosUsuaria?.nombre
+        ? 'Evalúa el desempeño global de la entrega considerando AMBOS casos clínicos.'
+        : 'Evalúa la entrega considerando el Caso Clínico #1 disponible.';
+    }
+
     const userPrompt = `
-Revisa la entrega de Práctica de Diseño de Intervención de la dupla:
+Revisa la entrega de Práctica de Diseño de Intervención:
 Estudiante 1: ${entrega.estudiante?.estudiante1 || 'Estudiante'}
 Estudiante 2: ${entrega.estudiante?.estudiante2 || 'Individual'}
 Fecha: ${entrega.estudiante?.fechaJornada || 'Reciente'}
 Centro: ${entrega.estudiante?.centroAtencion || 'Polideportivo'}
+Alcance solicitado: ${instruccionAlcance}
 
-${formatCaso(caso1Data, 1)}
-
-${caso2Data ? formatCaso(caso2Data, 2) : '=== CASO 2: No incluido en esta entrega ==='}
+${casosPrompt}
 
 ---
 
 EVALUACIÓN REQUERIDA:
-Evalúa el desempeño global de la dupla considerando ambos casos según los criterios C1 a C6:
+${instruccionAlcance} Evalúa según los criterios C1 a C6:
 - c1 (1-5 pts): Requerimientos formales y completitud.
 - c2 (1-5 pts): Confidencialidad y trato empático reflejado.
 - c3 (1-5 pts): Pertinencia y justificación de evaluaciones e interpretación oportuna.
@@ -120,7 +142,7 @@ Evalúa el desempeño global de la dupla considerando ambos casos según los cri
 
 Devuelve ÚNICAMENTE este JSON:
 {
-  "fortalezas": "Párrafo conciso con los principales aciertos clínicos de la entrega (máximo 80 palabras).",
+  "fortalezas": "Párrafo conciso con los principales aciertos clínicos del caso o entrega evaluada (máximo 80 palabras).",
   "errores": "Párrafo conciso con vacíos metodológicos, incoherencias o errores detectados (máximo 100 palabras).",
   "sugerencia": "Párrafo conciso con recomendaciones clave para mejorar su práctica clínica (máximo 80 palabras).",
   "puntajesSugeridos": {
@@ -131,7 +153,7 @@ Devuelve ÚNICAMENTE este JSON:
     "c5": <número 1-3>,
     "c6": <número 1-5>
   },
-  "comentarioRetroalimentacion": "Borrador de feedback pedagógico completo, cálido y profesional que el docente entregará a la dupla. Debe iniciar saludando a la dupla, destacar los aspectos positivos, detallar con claridad los puntos que deben corregir o afinar, y cerrar con un mensaje motivador. (Máximo 150 palabras. Sin mencionar IA)."
+  "comentarioRetroalimentacion": "Borrador de feedback pedagógico completo, cálido y profesional que el docente entregará al estudiante o dupla. Debe iniciar saludando, destacar los aspectos positivos, detallar con claridad los puntos que deben corregir o afinar, y cerrar con un mensaje motivador. (Máximo 150 palabras. Sin mencionar IA)."
 }
 `;
 
