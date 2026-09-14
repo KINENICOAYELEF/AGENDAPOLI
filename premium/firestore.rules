@@ -123,6 +123,20 @@ service cloud.firestore {
     }
 
     // --------------------------------------------------------------------
+    // 4.B Repaso Clínico MSK — progreso privado, mediado por API servidor
+    // --------------------------------------------------------------------
+    // Los intentos se escriben con Firebase Admin tras verificar el token y
+    // el rol en /api/repaso-msk. Las reglas de cliente no aplican a Admin.
+    // Mantener este silo cerrado evita lectura directa de claves, respuestas
+    // o historial ajeno desde un navegador.
+    match /msk_quiz_private/{userId} {
+      allow read, write: if false;
+      match /attempts/{attemptId} {
+        allow read, write: if false;
+      }
+    }
+
+    // --------------------------------------------------------------------
     // 5. Configuración de Tareas del Simulador
     // --------------------------------------------------------------------
     match /settings/{docId} {

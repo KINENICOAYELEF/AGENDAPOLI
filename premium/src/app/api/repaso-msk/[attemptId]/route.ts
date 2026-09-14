@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireTeacher } from '@/lib/server/firebaseAdmin';
+import { requireRepasoUser } from '@/lib/server/firebaseAdmin';
 import { handleApiError, getRequestId } from '@/lib/server/apiResponse';
 import { attemptsRef, bank, attemptView } from '@/lib/repaso-msk/server';
 import { advanceAttempt } from '@/lib/repaso-msk/engine';
@@ -15,7 +15,7 @@ const schema = z.discriminatedUnion('type', [
 ]);
 type Context = { params: Promise<{ attemptId: string }> };
 async function getRef(req: Request, context: Context) {
-  const { uid } = await requireTeacher(req.headers.get('authorization'));
+  const { uid } = await requireRepasoUser(req.headers.get('authorization'));
   const { attemptId } = await context.params;
   if (!z.string().uuid().safeParse(attemptId).success) throw new Error('NOT_FOUND');
   return attemptsRef(uid).doc(attemptId);

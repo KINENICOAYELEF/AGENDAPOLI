@@ -169,7 +169,7 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
   return <div className={styles.root}>
     <header className={styles.pageHead}>
       <div><p className={styles.eyebrow}>FORMACIÓN · MSK Y DEPORTIVA</p><h1>Repaso clínico</h1><p>Conocer las bases. Interpretar los hallazgos. Tomar una decisión.</p></div>
-      <span className={styles.private}><ShieldCheck size={16} /> Solo docentes · Beta</span>
+      <span className={styles.private}><ShieldCheck size={16} /> Espacio personal · Beta</span>
     </header>
     {error && <div role="alert" className={styles.error}><strong>No se completó la operación</strong><p>{error}</p>
       {pending && <button onClick={() => void sync(pending, pending.type === 'answer')} disabled={busy}>Reintentar guardado</button>}
@@ -206,7 +206,7 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
         <section className={styles.syllabus} id="bank-syllabus"><div><p className={styles.eyebrow}>CONTENIDO DEL BANCO</p><h2>{selectedBank.title}, sin saltarse las bases</h2><p>Todos los cuadros se mezclan en este ensayo. La selección por condición estará disponible cuando existan suficientes variantes.</p><button className={styles.primary} disabled={!!error} onClick={() => active ? void openAttempt(active.id) : setStartModal(true)}>{active ? 'Continuar' : 'Comenzar'} {selectedBank.title}<ArrowRight size={18} /></button></div>
           <ul>{selectedBank.conditions.map(c => <li key={c}><Check size={16} />{c}</li>)}</ul>
         </section>
-        <div className={styles.notice}><ShieldCheck size={18} /><p>Vista de validación docente. No visible para internos. Este banco es una muestra editorial: los resultados orientan la revisión, no certifican competencia clínica.</p></div>
+        <div className={styles.notice}><ShieldCheck size={18} /><p>Tu historial es personal. Este banco es una muestra editorial: los resultados orientan la revisión, no certifican competencia clínica.</p></div>
       </> : <section className={styles.section}><h2>Mis intentos</h2><p className={styles.muted}>Últimos 40 intentos. Las respuestas y explicaciones se consultan al terminar.</p>
         {!history.length ? <div className={styles.empty}><History size={30} /><h3>Todavía no hay intentos</h3><p>Tu primer cuestionario quedará aquí, incluso si lo pausas.</p><button className={styles.primary} onClick={() => setTab('study')}>Explorar bancos</button></div> : <div className={styles.historyList}>{history.map(h => <button key={h.id} onClick={() => void openAttempt(h.id)}><div><strong>{catalog[h.version ?? 'knee-v1'].title} · {h.status === 'active' ? 'En curso' : 'Finalizado'}</strong><span>{date(h.createdAt)} {h.repeated ? '· Ensayo repetido' : ''}</span></div><b>{h.status === 'completed' ? `${h.correct}/${h.total} aciertos` : `${h.answered}/${h.total}`}</b><ChevronRight size={20} /></button>)}</div>}
       </section>}
@@ -246,7 +246,7 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
         </>}
       </section>
       <div className={styles.quizBottom}><span><ShieldCheck size={15} />{pending ? 'Guardado pendiente · no cierres esta pestaña' : 'Respuestas confirmadas guardadas en Firebase'}</span>{running && <button onClick={pause}><Pause size={16} /> Guardar y pausar</button>}</div>
-      <p className={styles.microcopy}>Beta docente · Al terminar podrás consultar todas las respuestas y sus fundamentos. No se muestra el diagnóstico del ítem durante la prueba.</p>
+      <p className={styles.microcopy}>Beta formativa · Al terminar podrás consultar todas las respuestas y sus fundamentos. No se muestra el diagnóstico del ítem durante la prueba.</p>
     </> : null}
     {startModal && <div className={styles.modalShade} onKeyDown={e => {
       if (e.key === 'Escape' && !busy) setStartModal(false);

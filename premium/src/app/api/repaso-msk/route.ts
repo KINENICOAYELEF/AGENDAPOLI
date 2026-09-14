@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { randomInt, randomUUID } from 'node:crypto';
-import { requireTeacher } from '@/lib/server/firebaseAdmin';
+import { requireRepasoUser } from '@/lib/server/firebaseAdmin';
 import { handleApiError, getRequestId } from '@/lib/server/apiResponse';
 import { attemptsRef, bankQuestions, attemptView } from '@/lib/repaso-msk/server';
 import { catalog, validVersion, type BankVersion } from '@/lib/repaso-msk/catalog';
@@ -11,7 +11,7 @@ import type { Attempt } from '@/lib/repaso-msk/types';
 export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   try {
-    const { uid } = await requireTeacher(req.headers.get('authorization'));
+    const { uid } = await requireRepasoUser(req.headers.get('authorization'));
     const ref = attemptsRef(uid);
     const [docs, marker] = await Promise.all([ref.orderBy('createdAt', 'desc').limit(40).get(), ref.parent!.get()]);
     const banks = (Object.keys(catalog) as BankVersion[]).map(version => {
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { uid } = await requireTeacher(req.headers.get('authorization'));
+    const { uid } = await requireRepasoUser(req.headers.get('authorization'));
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== 'object' || Array.isArray(body) ||
       (body.version !== undefined && !validVersion(body.version)) ||

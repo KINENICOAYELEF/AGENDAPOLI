@@ -105,11 +105,11 @@ test('resumen informa denominadores y separa omisiones', () => {
   assert.equal(condition.total, 1); assert.equal(condition.skipped, 1);
 });
 
-test('API bloquea anónimos e internos antes de leer el banco o Firestore', async () => {
-  for (const role of ['anonymous', 'INTERNO']) {
+test('API bloquea anónimos y cuentas pendientes antes de leer el banco o Firestore', async () => {
+  for (const role of ['anonymous', 'PENDING']) {
     const dependencies = {
       'next/server': require('next/server'), zod: require('zod'), 'node:crypto': require('node:crypto'),
-      '@/lib/server/firebaseAdmin': { requireTeacher: async () => { throw new Error(role === 'anonymous' ? 'Unauthorized' : 'Forbidden'); } },
+      '@/lib/server/firebaseAdmin': { requireRepasoUser: async () => { throw new Error(role === 'anonymous' ? 'Unauthorized' : 'Forbidden'); } },
       '@/lib/server/apiResponse': { getRequestId: () => 'test', handleApiError: e => ({ status: e.message === 'Unauthorized' ? 401 : 403 }) },
       '@/lib/repaso-msk/server': { attemptsRef: () => { throw new Error('Unexpected DB access'); }, bank, attemptView },
       '@/lib/repaso-msk/catalog': catalog, '@/lib/repaso-msk/bank-state': bankState,
@@ -122,6 +122,26 @@ test('API bloquea anónimos e internos antes de leer el banco o Firestore', asyn
       assert.equal((await route[method](req, { params: Promise.resolve({ attemptId: 'not-used' }) })).status, role === 'anonymous' ? 401 : 403);
     }
   }
+});
+
+test('API acepta un interno autorizado y lo limita a su propio espacio privado', async () => {
+  const documents = new Map([['marker-interno', {}]]);
+  const ref = { parent: { id: 'marker-interno' }, doc: id => ({ id }), firestore: { runTransaction: async fn => fn({
+    get: async ref => ({ exists: documents.has(ref.id), data: () => documents.get(ref.id) }),
+    create: (ref, value) => documents.set(ref.id, value),
+    set: (ref, value) => documents.set(ref.id, { ...documents.get(ref.id), ...value, banks: { ...documents.get(ref.id)?.banks, ...value.banks } }),
+  }) } };
+  const route = load('src/app/api/repaso-msk/route.ts', {
+    'next/server': require('next/server'), 'node:crypto': require('node:crypto'),
+    '@/lib/server/firebaseAdmin': { requireRepasoUser: async () => ({ uid: 'interno-uid', user: { role: 'INTERNO' } }) },
+    '@/lib/server/apiResponse': { getRequestId: () => 'test', handleApiError: () => ({ status: 500 }) },
+    '@/lib/repaso-msk/server': { attemptsRef: uid => { assert.equal(uid, 'interno-uid'); return ref; }, bankQuestions, attemptView },
+    '@/lib/repaso-msk/catalog': catalog, '@/lib/repaso-msk/bank-state': bankState, '@/lib/repaso-msk/selection': selection,
+  });
+  const response = await route.POST({ headers: new Headers(), json: async () => ({ version: 'shoulder-v1' }) });
+  assert.equal(response.status, 200);
+  const body = await response.json(); assert.equal(body.attempt.version, 'shoulder-v1');
+  assert.equal(body.questions.length, 35); assert.equal(body.review, undefined);
 });
 
 test('tres zonas tienen 70 ítems activos, cuatro alternativas y fundamentos', () => {
@@ -165,7 +185,7 @@ test('API crea cada banco una vez, retoma el correcto y exige permiso para repet
   }) } };
   const route = load('src/app/api/repaso-msk/route.ts', {
     'next/server': require('next/server'), 'node:crypto': require('node:crypto'),
-    '@/lib/server/firebaseAdmin': { requireTeacher: async () => ({ uid: 'teacher' }) },
+    '@/lib/server/firebaseAdmin': { requireRepasoUser: async () => ({ uid: 'teacher' }) },
     '@/lib/server/apiResponse': { getRequestId: () => 'test', handleApiError: () => ({ status: 500 }) },
     '@/lib/repaso-msk/server': { attemptsRef: () => ref, bankQuestions, attemptView },
     '@/lib/repaso-msk/catalog': catalog, '@/lib/repaso-msk/bank-state': bankState,
