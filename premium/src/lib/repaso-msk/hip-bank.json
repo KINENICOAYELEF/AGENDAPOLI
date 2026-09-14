@@ -1,0 +1,1157 @@
+[
+  {
+    "id": "hip-v1-01",
+    "stem": "Una persona de 68 años tiene dolor inguinal gradual al caminar, rigidez matinal de 15 minutos y dificultad para ponerse los calcetines. La rotación interna está limitada y reproduce su dolor. Sin trauma ni deterioro brusco. ¿Qué hipótesis integra mejor el conjunto?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Dolor exclusivamente referido de columna."
+      },
+      {
+        "id": "B",
+        "text": "Artrosis de cadera."
+      },
+      {
+        "id": "C",
+        "text": "Tendinopatía glútea aislada."
+      },
+      {
+        "id": "D",
+        "text": "Lesión aguda de aductores."
+      }
+    ],
+    "correct": "B",
+    "objective": "H-01",
+    "condition": "Artrosis de cadera",
+    "domain": "Reconocimiento",
+    "explanation": "El patrón favorece artrosis. La distribución por sí sola no basta: hay que integrar rigidez, movilidad y función; los datos atípicos obligarían a ampliar la evaluación.",
+    "sources": [
+      {
+        "title": "NICE NG226 · Artrosis",
+        "url": "https://www.nice.org.uk/guidance/NG226/chapter/recommendations"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-02",
+    "stem": "Una usuaria pregunta si la artrosis significa que su cartílago se gastó y por eso ya no debe cargar la cadera. ¿Qué explicación es más adecuada?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Es un proceso articular complejo; la tolerancia a la actividad puede mejorar con ejercicio adaptado."
+      },
+      {
+        "id": "B",
+        "text": "Es una erosión inevitable que progresa cada vez que camina."
+      },
+      {
+        "id": "C",
+        "text": "La imagen determina exactamente cuánto dolor debería tener."
+      },
+      {
+        "id": "D",
+        "text": "La articulación necesita reposo permanente para evitar el contacto óseo."
+      }
+    ],
+    "correct": "A",
+    "objective": "H-02",
+    "condition": "Artrosis de cadera",
+    "domain": "Fundamentos",
+    "explanation": "Evita presentar la artrosis como desgaste inevitable. El tratamiento considera síntomas y función, sin convertir una imagen en una prohibición de movimiento.",
+    "sources": [
+      {
+        "title": "NICE NG226 · Artrosis",
+        "url": "https://www.nice.org.uk/guidance/NG226/chapter/recommendations"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-03",
+    "stem": "Dos personas tienen cambios radiográficos similares de cadera. Una camina una hora; la otra abandona a los diez minutos por dolor. ¿Qué dato orienta mejor las prioridades de rehabilitación?",
+    "options": [
+      {
+        "id": "A",
+        "text": "El grado radiográfico como único criterio para ambas."
+      },
+      {
+        "id": "B",
+        "text": "La edad como criterio único para fijar el tratamiento."
+      },
+      {
+        "id": "C",
+        "text": "Un programa idéntico porque las radiografías son parecidas."
+      },
+      {
+        "id": "D",
+        "text": "Sus limitaciones, capacidad actual, objetivos y respuesta a la carga."
+      }
+    ],
+    "correct": "D",
+    "objective": "H-03",
+    "condition": "Artrosis de cadera",
+    "domain": "Interpretación",
+    "explanation": "Los objetivos funcionales y la evaluación individual evitan tratar imágenes en lugar de personas. La radiografía no sustituye el seguimiento clínico.",
+    "sources": [
+      {
+        "title": "APTA/JOSPT · Artrosis de cadera, revisión 2025",
+        "url": "https://www.orthopt.org/content/publications/pub-cpg/hip-pain-and-mobility-deficits-hip-osteoarthritis-revision-2025"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-04",
+    "stem": "Una usuaria con artrosis quiere volver a caminar al almacén. Se fatiga pronto y tolera pocas repeticiones de sentarse y levantarse. ¿Qué inicio tiene mejor fundamento?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Caminata al máximo cada día, sin considerar la respuesta posterior."
+      },
+      {
+        "id": "B",
+        "text": "Evitar fuerza hasta que desaparezca por completo el dolor."
+      },
+      {
+        "id": "C",
+        "text": "Fuerza y caminata ajustadas a su capacidad, con progresión y seguimiento de síntomas."
+      },
+      {
+        "id": "D",
+        "text": "Solo movilizaciones hasta recuperar toda la movilidad."
+      }
+    ],
+    "correct": "C",
+    "objective": "H-04",
+    "condition": "Artrosis de cadera",
+    "domain": "Intervención",
+    "explanation": "El ejercicio se adapta a capacidad y metas. La terapia manual puede acompañarlo, pero no reemplaza la recuperación activa ni exige ausencia total de dolor para iniciarla.",
+    "sources": [
+      {
+        "title": "NICE NG226 · Artrosis",
+        "url": "https://www.nice.org.uk/guidance/NG226/chapter/recommendations"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-05",
+    "stem": "Tras cuatro semanas de trabajo, una persona dice estar algo mejor. ¿Qué comparación permite evaluar el objetivo de caminar de forma más interpretable?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Preguntar únicamente si la cadera se siente más suelta."
+      },
+      {
+        "id": "B",
+        "text": "Repetir la misma prueba de marcha y registrar capacidad, síntomas y condiciones de medición."
+      },
+      {
+        "id": "C",
+        "text": "Repetir solo una radiografía aunque no haya cambios clínicos atípicos."
+      },
+      {
+        "id": "D",
+        "text": "Cambiar la distancia y la ayuda de marcha sin anotarlo."
+      }
+    ],
+    "correct": "B",
+    "objective": "H-05",
+    "condition": "Artrosis de cadera",
+    "domain": "Evaluación",
+    "explanation": "Una medición comparable permite separar cambio clínico de cambio de procedimiento. Importa conservar y documentar las condiciones, además de la percepción del paciente.",
+    "sources": [
+      {
+        "title": "APTA/JOSPT · Artrosis de cadera, revisión 2025",
+        "url": "https://www.orthopt.org/content/publications/pub-cpg/hip-pain-and-mobility-deficits-hip-osteoarthritis-revision-2025"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-06",
+    "stem": "Se informa morfología cam en una radiografía solicitada por otro motivo. La persona no tiene dolor ni limitación. ¿Cuál interpretación corresponde?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Es un hallazgo morfológico; por sí solo no establece síndrome FAI."
+      },
+      {
+        "id": "B",
+        "text": "Confirma síndrome FAI aunque no existan síntomas."
+      },
+      {
+        "id": "C",
+        "text": "Demuestra una lesión labral sintomática."
+      },
+      {
+        "id": "D",
+        "text": "Indica que necesita cirugía para prevenir cualquier dolor futuro."
+      }
+    ],
+    "correct": "A",
+    "objective": "H-06",
+    "condition": "Dolor no artrósico y FAI",
+    "domain": "Fundamentos",
+    "explanation": "Warwick exige concordancia entre síntomas, signos clínicos e imagen. Una forma ósea aislada no equivale al síndrome ni decide el tratamiento.",
+    "sources": [
+      {
+        "title": "Consenso Warwick · Síndrome FAI",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/27629403/"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-07",
+    "stem": "Una persona con dolor anterior de cadera tiene FADIR doloroso. No hay imágenes y el resto del examen aún no se completa. ¿Qué conclusión es más defendible?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Se confirmó qué estructura del labrum está lesionada."
+      },
+      {
+        "id": "B",
+        "text": "Se descartó todo origen extraarticular."
+      },
+      {
+        "id": "C",
+        "text": "Se confirmó FAI y la necesidad de artroscopia."
+      },
+      {
+        "id": "D",
+        "text": "Se reprodujo dolor en una maniobra provocadora; falta integrar otros datos."
+      }
+    ],
+    "correct": "D",
+    "objective": "H-07",
+    "condition": "Dolor no artrósico y FAI",
+    "domain": "Interpretación",
+    "explanation": "Reproducir dolor no identifica por sí solo una estructura ni establece una indicación quirúrgica. El hallazgo debe concordar con historia y examen.",
+    "sources": [
+      {
+        "title": "JOSPT · Dolor de cadera no artrósico, 2023",
+        "url": "https://doi.org/10.2519/jospt.2023.0302"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-08",
+    "stem": "Una deportista presenta dolor inguinal relacionado con flexión y giro, signos clínicos concordantes e imágenes compatibles con morfología de impingement. ¿Qué conjunto permite considerar síndrome FAI?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Solo el tamaño del ángulo alfa en la radiografía."
+      },
+      {
+        "id": "B",
+        "text": "Solo la sensación de chasquido, aunque sea indoloro."
+      },
+      {
+        "id": "C",
+        "text": "La concordancia de síntomas, signos e imágenes."
+      },
+      {
+        "id": "D",
+        "text": "Solo el dolor inguinal, independientemente del examen."
+      }
+    ],
+    "correct": "C",
+    "objective": "H-08",
+    "condition": "Dolor no artrósico y FAI",
+    "domain": "Reconocimiento",
+    "explanation": "El diagnóstico requiere el conjunto, no una característica aislada. Considerar FAI no excluye condiciones coexistentes ni determina cirugía.",
+    "sources": [
+      {
+        "title": "Consenso Warwick · Síndrome FAI",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/27629403/"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-09",
+    "stem": "Durante rehabilitación por dolor no artrósico de cadera, una sentadilla profunda reproduce dolor intenso, pero una amplitud menor se tolera. ¿Cuál ajuste inicial es más razonable?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Usar la misma profundidad y duplicar repeticiones para desensibilizar."
+      },
+      {
+        "id": "B",
+        "text": "Modificar amplitud y carga, manteniendo trabajo tolerado y reevaluando la respuesta."
+      },
+      {
+        "id": "C",
+        "text": "Forzar siempre la profundidad para remodelar el hueso."
+      },
+      {
+        "id": "D",
+        "text": "Suspender toda actividad de miembros inferiores durante meses."
+      }
+    ],
+    "correct": "B",
+    "objective": "H-09",
+    "condition": "Dolor no artrósico y FAI",
+    "domain": "Intervención",
+    "explanation": "La tarea puede graduarse según irritabilidad y capacidad. Ajustarla no implica prometer cambios de morfología ósea con ejercicio.",
+    "sources": [
+      {
+        "title": "JOSPT · Dolor de cadera no artrósico, 2023",
+        "url": "https://doi.org/10.2519/jospt.2023.0302"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-10",
+    "stem": "Un informe describe una lesión labral. ¿Cuál afirmación evita un salto diagnóstico?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Su relevancia sintomática depende de la concordancia clínica; el informe no prueba por sí solo el origen del dolor."
+      },
+      {
+        "id": "B",
+        "text": "Toda lesión labral explica cualquier dolor de cadera."
+      },
+      {
+        "id": "C",
+        "text": "Una lesión labral excluye síntomas provenientes de otras regiones."
+      },
+      {
+        "id": "D",
+        "text": "La imagen permite omitir la anamnesis y la evaluación funcional."
+      }
+    ],
+    "correct": "A",
+    "objective": "H-10",
+    "condition": "Dolor no artrósico y FAI",
+    "domain": "Fundamentos",
+    "explanation": "El hallazgo de imagen debe situarse en el cuadro clínico. Tampoco permite atribuir todas las limitaciones a una sola estructura.",
+    "sources": [
+      {
+        "title": "JOSPT · Dolor de cadera no artrósico, 2023",
+        "url": "https://doi.org/10.2519/jospt.2023.0302"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-11",
+    "stem": "Una mujer de 54 años presenta dolor lateral de cadera al acostarse sobre ese lado, subir escaleras y sostenerse en una pierna. Palpación local y carga de abductores reproducen su dolor conocido. ¿Qué hipótesis gana peso?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Artrosis de cadera confirmada solo por la edad."
+      },
+      {
+        "id": "B",
+        "text": "Lesión aislada de aductores por su inserción inguinal."
+      },
+      {
+        "id": "C",
+        "text": "Fractura confirmada por el dolor al dormir de lado."
+      },
+      {
+        "id": "D",
+        "text": "Tendinopatía glútea dentro del dolor lateral de cadera."
+      }
+    ],
+    "correct": "D",
+    "objective": "H-11",
+    "condition": "Dolor lateral de cadera",
+    "domain": "Reconocimiento",
+    "explanation": "El conjunto es compatible con dolor de tendones glúteos. Debe considerarse el diagnóstico diferencial; dolor lateral no significa automáticamente bursitis.",
+    "sources": [
+      {
+        "title": "Mellor et al. · Educación y ejercicio, ensayo LEAP",
+        "url": "https://www.bmj.com/content/361/bmj.k1662"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-12",
+    "stem": "En tendinopatía glútea persistente, ¿qué estrategia activa cuenta con respaldo de un ensayo clínico frente a esperar sin intervención?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Estiramiento intenso de aducción para todos."
+      },
+      {
+        "id": "B",
+        "text": "Infiltraciones seriadas como única intervención necesaria."
+      },
+      {
+        "id": "C",
+        "text": "Educación para manejar cargas junto con ejercicio específico."
+      },
+      {
+        "id": "D",
+        "text": "Reposo absoluto mantenido como estrategia principal."
+      }
+    ],
+    "correct": "C",
+    "objective": "H-12",
+    "condition": "Dolor lateral de cadera",
+    "domain": "Intervención",
+    "explanation": "El ensayo LEAP respalda educación y ejercicio. No demuestra que una dosis fija sea adecuada para todas las personas ni que se deba ignorar la irritabilidad.",
+    "sources": [
+      {
+        "title": "Mellor et al. · Educación y ejercicio, ensayo LEAP",
+        "url": "https://www.bmj.com/content/361/bmj.k1662"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-13",
+    "stem": "Una persona mejora tras tratamiento y pregunta si eso prueba que el tendón recuperó exactamente su estructura original. ¿Qué respuesta es más rigurosa?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La mejoría demuestra que el diagnóstico inicial era falso."
+      },
+      {
+        "id": "B",
+        "text": "La mejoría informa de síntomas y función; no demuestra por sí sola normalización estructural."
+      },
+      {
+        "id": "C",
+        "text": "Sí: menos dolor equivale siempre a estructura normal."
+      },
+      {
+        "id": "D",
+        "text": "No puede haber mejoría sin comprobar antes una resonancia normal."
+      }
+    ],
+    "correct": "B",
+    "objective": "H-13",
+    "condition": "Dolor lateral de cadera",
+    "domain": "Interpretación",
+    "explanation": "Los desenlaces clínicos del ensayo son dolor y mejoría percibida, no una prueba de reparación anatómica individual.",
+    "sources": [
+      {
+        "title": "Mellor et al. · Educación y ejercicio, ensayo LEAP",
+        "url": "https://www.bmj.com/content/361/bmj.k1662"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-14",
+    "stem": "Una usuaria con dolor lateral refiere que cruzar las piernas y dormir sobre el lado afectado agravan claramente los síntomas. ¿Qué educación es más pertinente?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Probar ajustes de esas posiciones y de la carga, sin eliminar toda actividad."
+      },
+      {
+        "id": "B",
+        "text": "Mantener las posiciones dolorosas hasta acostumbrarse."
+      },
+      {
+        "id": "C",
+        "text": "Afirmar que tiene un músculo permanentemente acortado."
+      },
+      {
+        "id": "D",
+        "text": "Evitar cualquier contracción de glúteos durante todo el tratamiento."
+      }
+    ],
+    "correct": "A",
+    "objective": "H-14",
+    "condition": "Dolor lateral de cadera",
+    "domain": "Intervención",
+    "explanation": "La educación se dirige a cargas y posiciones provocadoras identificadas. No hace falta atribuirlas a un síndrome de acortamiento universal.",
+    "sources": [
+      {
+        "title": "Mellor et al. · Educación y ejercicio, ensayo LEAP",
+        "url": "https://www.bmj.com/content/361/bmj.k1662"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-15",
+    "stem": "Seis semanas después, ¿qué información resulta más útil para decidir la progresión de una persona con dolor lateral?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Únicamente si la palpación sigue siendo sensible."
+      },
+      {
+        "id": "B",
+        "text": "La fecha del calendario sin considerar la evolución."
+      },
+      {
+        "id": "C",
+        "text": "Que el dolor haya desaparecido durante los minutos de terapia manual."
+      },
+      {
+        "id": "D",
+        "text": "Tolerancia a tareas relevantes, capacidad de carga y respuesta de síntomas."
+      }
+    ],
+    "correct": "D",
+    "objective": "H-15",
+    "condition": "Dolor lateral de cadera",
+    "domain": "Evaluación",
+    "explanation": "La progresión requiere integrar función y respuesta a carga; un cambio aislado inmediato no resume la evolución del cuadro.",
+    "sources": [
+      {
+        "title": "APTA/JOSPT · Artrosis de cadera, revisión 2025",
+        "url": "https://www.orthopt.org/content/publications/pub-cpg/hip-pain-and-mobility-deficits-hip-osteoarthritis-revision-2025"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-16",
+    "stem": "Un futbolista tiene dolor inguinal conocido reproducido al palpar aductores y durante aducción resistida. ¿Qué clasificación clínica encaja mejor?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Hernia inguinal confirmada."
+      },
+      {
+        "id": "B",
+        "text": "Síndrome FAI confirmado sin necesidad de otros datos."
+      },
+      {
+        "id": "C",
+        "text": "Dolor inguinal relacionado con aductores."
+      },
+      {
+        "id": "D",
+        "text": "Dolor inguinal relacionado con iliopsoas por definición."
+      }
+    ],
+    "correct": "C",
+    "objective": "H-16",
+    "condition": "Dolor inguinal",
+    "domain": "Reconocimiento",
+    "explanation": "La combinación corresponde a la entidad clínica de Doha. No equivale a demostrar una rotura ni a excluir coexistencia de otros cuadros.",
+    "sources": [
+      {
+        "title": "Consenso Doha · Dolor inguinal en deportistas",
+        "url": "https://eprints.whiterose.ac.uk/id/eprint/110611/"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-17",
+    "stem": "Una deportista tiene sensibilidad del iliopsoas y dolor conocido al flexionar la cadera contra resistencia y al estirar flexores. ¿Qué entidad debe considerarse?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Artrosis confirmada aunque no se haya explorado movilidad."
+      },
+      {
+        "id": "B",
+        "text": "Dolor inguinal relacionado con iliopsoas."
+      },
+      {
+        "id": "C",
+        "text": "Dolor púbico confirmado por esos datos."
+      },
+      {
+        "id": "D",
+        "text": "Rotura completa del ligamento inguinal."
+      }
+    ],
+    "correct": "B",
+    "objective": "H-17",
+    "condition": "Dolor inguinal",
+    "domain": "Reconocimiento",
+    "explanation": "Estos hallazgos orientan hacia iliopsoas; su interpretación depende de concordancia, no solo de que una maniobra resulte molesta.",
+    "sources": [
+      {
+        "title": "Consenso Doha · Dolor inguinal en deportistas",
+        "url": "https://eprints.whiterose.ac.uk/id/eprint/110611/"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-18",
+    "stem": "¿Por qué conviene evitar usar pubalgia como diagnóstico específico para todo dolor inguinal deportivo?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Porque reúne presentaciones distintas que requieren historia y examen para clasificarse."
+      },
+      {
+        "id": "B",
+        "text": "Porque todos los dolores inguinales provienen del mismo tendón."
+      },
+      {
+        "id": "C",
+        "text": "Porque una resonancia basta para clasificar cualquier dolor."
+      },
+      {
+        "id": "D",
+        "text": "Porque las entidades clínicas nunca pueden coexistir."
+      }
+    ],
+    "correct": "A",
+    "objective": "H-18",
+    "condition": "Dolor inguinal",
+    "domain": "Fundamentos",
+    "explanation": "Doha diferencia entidades relacionadas con aductores, iliopsoas, región inguinal, pubis y cadera, además de otras causas.",
+    "sources": [
+      {
+        "title": "Consenso Doha · Dolor inguinal en deportistas",
+        "url": "https://eprints.whiterose.ac.uk/id/eprint/110611/"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-19",
+    "stem": "En una misma evaluación se reproducen síntomas concordantes tanto con aducción resistida como con pruebas dirigidas a cadera. ¿Cómo debe razonarse?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Debe elegirse necesariamente una y descartar la otra."
+      },
+      {
+        "id": "B",
+        "text": "La primera prueba positiva anula las siguientes."
+      },
+      {
+        "id": "C",
+        "text": "Dos pruebas dolorosas demuestran simulación del paciente."
+      },
+      {
+        "id": "D",
+        "text": "Pueden coexistir fuentes o entidades; hay que valorar la contribución de cada una."
+      }
+    ],
+    "correct": "D",
+    "objective": "H-19",
+    "condition": "Dolor inguinal",
+    "domain": "Interpretación",
+    "explanation": "La clasificación permite más de una entidad. La clínica debe determinar cuáles hallazgos son relevantes y qué limitaciones explican.",
+    "sources": [
+      {
+        "title": "Consenso Doha · Dolor inguinal en deportistas",
+        "url": "https://eprints.whiterose.ac.uk/id/eprint/110611/"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-20",
+    "stem": "Un corredor consulta por dolor inguinal y también describe síntomas urinarios nuevos. ¿Cuál enfoque evita el cierre prematuro?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Indicar estiramientos y esperar a que ceda todo."
+      },
+      {
+        "id": "B",
+        "text": "Descartar causas no musculoesqueléticas porque practica deporte."
+      },
+      {
+        "id": "C",
+        "text": "Ampliar el diferencial y coordinar evaluación médica, sin asumir origen muscular."
+      },
+      {
+        "id": "D",
+        "text": "Asignar dolor de aductores solo por la ubicación."
+      }
+    ],
+    "correct": "C",
+    "objective": "H-20",
+    "condition": "Dolor inguinal",
+    "domain": "Evaluación",
+    "explanation": "Ser deportista no elimina causas no musculoesqueléticas. Los síntomas asociados pueden cambiar la prioridad de evaluación.",
+    "sources": [
+      {
+        "title": "Consenso Doha · Dolor inguinal en deportistas",
+        "url": "https://eprints.whiterose.ac.uk/id/eprint/110611/"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-21",
+    "stem": "Tras artroplastia primaria electiva de cadera sin complicaciones, con estabilidad clínica y autorización del equipo, ¿qué enfoque temprano corresponde?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Aplicar carrera temprana porque la articulación ya fue reemplazada."
+      },
+      {
+        "id": "B",
+        "text": "Iniciar rehabilitación y movilización temprana adaptada a indicaciones y tolerancia."
+      },
+      {
+        "id": "C",
+        "text": "Esperar varias semanas en cama para comenzar cualquier actividad."
+      },
+      {
+        "id": "D",
+        "text": "Omitir entrenamiento de transferencias hasta eliminar todo dolor."
+      }
+    ],
+    "correct": "B",
+    "objective": "H-21",
+    "condition": "Artroplastia de cadera",
+    "domain": "Intervención",
+    "explanation": "NICE recomienda ofrecer rehabilitación el día de cirugía si es posible o dentro de 24 horas. La situación clínica y las indicaciones guían su aplicación.",
+    "sources": [
+      {
+        "title": "NICE NG157 · Rehabilitación tras artroplastia",
+        "url": "https://www.nice.org.uk/guidance/ng157/chapter/Recommendations"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-22",
+    "stem": "Una persona inicia atención ambulatoria tras prótesis. No trae claras las restricciones de carga ni el abordaje. ¿Qué información conviene resolver antes de progresar?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Indicaciones quirúrgicas, carga permitida, evolución de herida y estado funcional."
+      },
+      {
+        "id": "B",
+        "text": "Solo la marca comercial de la prótesis."
+      },
+      {
+        "id": "C",
+        "text": "Únicamente cuánto caminaba antes de operarse."
+      },
+      {
+        "id": "D",
+        "text": "El número de días, que reemplaza cualquier otra información."
+      }
+    ],
+    "correct": "A",
+    "objective": "H-22",
+    "condition": "Artroplastia de cadera",
+    "domain": "Evaluación",
+    "explanation": "El plan posoperatorio requiere contexto quirúrgico y clínico. No es seguro inferir todas las precauciones desde el tiempo transcurrido.",
+    "sources": [
+      {
+        "title": "AAOS · Actividad después de prótesis de cadera",
+        "url": "https://www.orthoinfo.org/recovery/activities-after-hip-replacement"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-23",
+    "stem": "¿Qué afirmación describe mejor el objetivo de una artroplastia total de cadera?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Normalizar automáticamente la fuerza y el equilibrio al salir de pabellón."
+      },
+      {
+        "id": "B",
+        "text": "Eliminar toda posibilidad de dolor o complicaciones futuras."
+      },
+      {
+        "id": "C",
+        "text": "Restaurar por sí sola la capacidad previa sin considerar comorbilidades."
+      },
+      {
+        "id": "D",
+        "text": "Reemplazar las superficies articulares dañadas; la recuperación funcional todavía necesita rehabilitación."
+      }
+    ],
+    "correct": "D",
+    "objective": "H-23",
+    "condition": "Artroplastia de cadera",
+    "domain": "Fundamentos",
+    "explanation": "Reemplazo articular no equivale a recuperación instantánea de capacidad muscular, marcha ni autonomía.",
+    "sources": [
+      {
+        "title": "AAOS · Artroplastia total de cadera y complicaciones",
+        "url": "https://www.orthoinfo.org/treatment/total-hip-replacement"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-24",
+    "stem": "Tres semanas después de cirugía, una usuaria camina con ayuda y desea retirarla. Todavía presenta marcha insegura sin ella. ¿Qué criterio es más útil?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Retirarla aunque cojee para acelerar la adaptación."
+      },
+      {
+        "id": "B",
+        "text": "Mantenerla para siempre porque toda prótesis necesita bastón."
+      },
+      {
+        "id": "C",
+        "text": "Seguridad, calidad funcional y carga autorizada, evaluadas individualmente."
+      },
+      {
+        "id": "D",
+        "text": "Retirarla siempre al cumplir exactamente tres semanas."
+      }
+    ],
+    "correct": "C",
+    "objective": "H-24",
+    "condition": "Artroplastia de cadera",
+    "domain": "Intervención",
+    "explanation": "La ayuda se ajusta al desempeño y a las indicaciones, no solo al calendario. La meta es movilidad segura y progresivamente autónoma.",
+    "sources": [
+      {
+        "title": "AAOS · Actividad después de prótesis de cadera",
+        "url": "https://www.orthoinfo.org/recovery/activities-after-hip-replacement"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-25",
+    "stem": "Al reevaluar una prótesis, el dolor bajó, pero persiste dificultad para levantarse y caminar. ¿Qué conclusión corresponde?",
+    "options": [
+      {
+        "id": "A",
+        "text": "No corresponde medir tareas funcionales después de una prótesis."
+      },
+      {
+        "id": "B",
+        "text": "La mejoría del dolor no basta para dar por recuperada la función."
+      },
+      {
+        "id": "C",
+        "text": "Se puede dar el alta porque el dolor es el único desenlace."
+      },
+      {
+        "id": "D",
+        "text": "La prótesis falló necesariamente porque persiste debilidad."
+      }
+    ],
+    "correct": "B",
+    "objective": "H-25",
+    "condition": "Artroplastia de cadera",
+    "domain": "Evaluación",
+    "explanation": "La rehabilitación busca autonomía y actividades además de alivio de dolor. Medirlas permite reconocer necesidades persistentes.",
+    "sources": [
+      {
+        "title": "NICE NG157 · Rehabilitación tras artroplastia",
+        "url": "https://www.nice.org.uk/guidance/ng157/chapter/Recommendations"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-26",
+    "stem": "Una corredora aumentó bruscamente su carga y ahora tiene dolor inguinal progresivo al apoyar, incluso caminando. Refiere baja disponibilidad energética. ¿Qué prioridad es más segura?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Considerar lesión ósea por estrés, suspender impacto y coordinar evaluación médica pronta."
+      },
+      {
+        "id": "B",
+        "text": "Asumir tendinopatía y mantener carrera para observar adaptación."
+      },
+      {
+        "id": "C",
+        "text": "Realizar saltos repetidos hasta reproducir dolor máximo."
+      },
+      {
+        "id": "D",
+        "text": "Descartar lesión ósea porque no hubo golpe."
+      }
+    ],
+    "correct": "A",
+    "objective": "H-26",
+    "condition": "Seguridad y derivación",
+    "domain": "Seguridad",
+    "explanation": "El mecanismo por estrés no requiere traumatismo único. La sospecha en cuello femoral exige precaución por sus consecuencias potenciales.",
+    "sources": [
+      {
+        "title": "Consenso internacional · Lesiones óseas por estrés",
+        "url": "https://doi.org/10.1136/bjsports-2024-108616"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-27",
+    "stem": "En una lesión ósea por estrés, ¿qué mecanismo explica mejor su aparición?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Solo aparece tras un golpe único de alta energía."
+      },
+      {
+        "id": "B",
+        "text": "Es siempre consecuencia de una contractura que desplaza el fémur."
+      },
+      {
+        "id": "C",
+        "text": "Se explica únicamente por falta de elongación de flexores."
+      },
+      {
+        "id": "D",
+        "text": "La carga repetida puede superar la capacidad de adaptación y reparación del hueso."
+      }
+    ],
+    "correct": "D",
+    "objective": "H-27",
+    "condition": "Seguridad y derivación",
+    "domain": "Fundamentos",
+    "explanation": "La adaptación depende de carga y factores individuales, incluyendo recuperación y salud ósea. No se reduce a un músculo acortado.",
+    "sources": [
+      {
+        "title": "Consenso internacional · Lesiones óseas por estrés",
+        "url": "https://doi.org/10.1136/bjsports-2024-108616"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-28",
+    "stem": "Ante sospecha clínica importante de lesión ósea por estrés de cuello femoral, una radiografía inicial no muestra fractura. ¿Qué conclusión es más prudente?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Toda sospecha clínica queda anulada por esa imagen."
+      },
+      {
+        "id": "B",
+        "text": "Se confirma que el dolor es solo de origen psicológico."
+      },
+      {
+        "id": "C",
+        "text": "El resultado inicial no basta para descartar la lesión; se mantiene la derivación y la precaución."
+      },
+      {
+        "id": "D",
+        "text": "Se puede reiniciar inmediatamente impacto ilimitado."
+      }
+    ],
+    "correct": "C",
+    "objective": "H-28",
+    "condition": "Seguridad y derivación",
+    "domain": "Interpretación",
+    "explanation": "La elección de estudio y seguimiento corresponde a evaluación médica. Una prueba inicial negativa no siempre resuelve una sospecha de alto impacto clínico.",
+    "sources": [
+      {
+        "title": "Consenso internacional · Lesiones óseas por estrés",
+        "url": "https://doi.org/10.1136/bjsports-2024-108616"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-29",
+    "stem": "Diez días después de una prótesis de cadera, una persona presenta disnea súbita y dolor torácico. ¿Qué debe priorizarse?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Atribuirlo a desentrenamiento posoperatorio sin más evaluación."
+      },
+      {
+        "id": "B",
+        "text": "Activar atención de urgencia; no continuar la sesión."
+      },
+      {
+        "id": "C",
+        "text": "Realizar primero ejercicios respiratorios y observar media hora."
+      },
+      {
+        "id": "D",
+        "text": "Masajear la pantorrilla antes de decidir."
+      }
+    ],
+    "correct": "B",
+    "objective": "H-29",
+    "condition": "Seguridad y derivación",
+    "domain": "Seguridad",
+    "explanation": "Estos síntomas pueden corresponder a una complicación grave, incluida embolia pulmonar. No son un escenario para continuar ejercicio o esperar respuesta terapéutica.",
+    "sources": [
+      {
+        "title": "AAOS · Artroplastia total de cadera y complicaciones",
+        "url": "https://www.orthoinfo.org/treatment/total-hip-replacement"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-30",
+    "stem": "Una persona operada de cadera presenta drenaje nuevo de la herida y aumento progresivo de dolor. ¿Cuál conducta es más adecuada?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Contactar prontamente al equipo quirúrgico para evaluación de posible complicación."
+      },
+      {
+        "id": "B",
+        "text": "Asumir que es una respuesta habitual al ejercicio."
+      },
+      {
+        "id": "C",
+        "text": "Cubrir la herida y aumentar la intensidad de la sesión."
+      },
+      {
+        "id": "D",
+        "text": "Esperar a que aparezca fiebre para avisar."
+      }
+    ],
+    "correct": "A",
+    "objective": "H-30",
+    "condition": "Seguridad y derivación",
+    "domain": "Seguridad",
+    "explanation": "La ausencia de fiebre no descarta complicación de la herida. El cambio exige evaluación, no una etiqueta automática de dolor muscular.",
+    "sources": [
+      {
+        "title": "AAOS · Artroplastia total de cadera y complicaciones",
+        "url": "https://www.orthoinfo.org/treatment/total-hip-replacement"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-31",
+    "stem": "Una persona consulta por dolor de cadera. ¿Qué pregunta ayuda más a convertir el motivo de consulta en un objetivo relevante?",
+    "options": [
+      {
+        "id": "A",
+        "text": "¿Qué músculo cree que tiene acortado?"
+      },
+      {
+        "id": "B",
+        "text": "¿Qué técnica manual quiere recibir necesariamente?"
+      },
+      {
+        "id": "C",
+        "text": "¿Qué diagnóstico de internet prefiere que registremos?"
+      },
+      {
+        "id": "D",
+        "text": "¿Qué actividad importante para usted está limitada y cómo ha cambiado?"
+      }
+    ],
+    "correct": "D",
+    "objective": "H-31",
+    "condition": "Evaluación y razonamiento",
+    "domain": "Evaluación",
+    "explanation": "Las metas relevantes parten de actividad y participación. La hipótesis y el plan deben apoyarse en evaluación, no en una etiqueta elegida de antemano.",
+    "sources": [
+      {
+        "title": "APTA/JOSPT · Artrosis de cadera, revisión 2025",
+        "url": "https://www.orthopt.org/content/publications/pub-cpg/hip-pain-and-mobility-deficits-hip-osteoarthritis-revision-2025"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-32",
+    "stem": "Al evaluar fuerza de abducción, aparece dolor y la persona produce poca fuerza. ¿Qué interpretación evita una conclusión excesiva?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Se ha confirmado un síndrome postural de acortamiento."
+      },
+      {
+        "id": "B",
+        "text": "La fuerza baja mide directamente el tamaño de la lesión."
+      },
+      {
+        "id": "C",
+        "text": "Hay menor fuerza medida en condiciones dolorosas; hay que considerar dolor y procedimiento."
+      },
+      {
+        "id": "D",
+        "text": "Se ha demostrado una rotura completa del glúteo medio."
+      }
+    ],
+    "correct": "C",
+    "objective": "H-32",
+    "condition": "Evaluación y razonamiento",
+    "domain": "Interpretación",
+    "explanation": "El resultado funcional puede estar influido por dolor, esfuerzo y método. No demuestra por sí solo una lesión anatómica concreta.",
+    "sources": [
+      {
+        "title": "JOSPT · Dolor de cadera no artrósico, 2023",
+        "url": "https://doi.org/10.2519/jospt.2023.0302"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-33",
+    "stem": "Una estudiante dice: 'FADIR positivo significa diagnóstico seguro'. ¿Qué principio falta en ese razonamiento?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Hacer varias veces la misma prueba garantiza certeza."
+      },
+      {
+        "id": "B",
+        "text": "El valor de una prueba depende del contexto y de su capacidad para discriminar alternativas."
+      },
+      {
+        "id": "C",
+        "text": "Toda prueba con dolor tiene especificidad perfecta."
+      },
+      {
+        "id": "D",
+        "text": "Una prueba positiva reemplaza la historia clínica."
+      }
+    ],
+    "correct": "B",
+    "objective": "H-33",
+    "condition": "Evaluación y razonamiento",
+    "domain": "Fundamentos",
+    "explanation": "Una prueba provocadora es una pieza del razonamiento. Repetir una maniobra no elimina sus limitaciones diagnósticas.",
+    "sources": [
+      {
+        "title": "JOSPT · Dolor de cadera no artrósico, 2023",
+        "url": "https://doi.org/10.2519/jospt.2023.0302"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-34",
+    "stem": "Se propone fortalecer para mejorar la capacidad de subir escaleras. ¿Qué prescripción está mejor definida para poder ajustarla luego?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Ejercicio, carga o esfuerzo, series, repeticiones, frecuencia y criterio de progresión."
+      },
+      {
+        "id": "B",
+        "text": "Solo escribir fortalecimiento de glúteos."
+      },
+      {
+        "id": "C",
+        "text": "Solo indicar tres sesiones de kinesiología sin contenido."
+      },
+      {
+        "id": "D",
+        "text": "Elegir una técnica sin relacionarla con la limitación."
+      }
+    ],
+    "correct": "A",
+    "objective": "H-34",
+    "condition": "Evaluación y razonamiento",
+    "domain": "Intervención",
+    "explanation": "La dosis debe ser observable y ajustable. Enumerar parámetros no hace correcta cualquier dosis: aún debe corresponder a capacidad, objetivos y respuesta.",
+    "sources": [
+      {
+        "title": "APTA/JOSPT · Artrosis de cadera, revisión 2025",
+        "url": "https://www.orthopt.org/content/publications/pub-cpg/hip-pain-and-mobility-deficits-hip-osteoarthritis-revision-2025"
+      }
+    ]
+  },
+  {
+    "id": "hip-v1-35",
+    "stem": "Tras una intervención, mejora inmediatamente la movilidad. ¿Qué afirmación es la más justificada?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Se corrigió permanentemente la posición del fémur."
+      },
+      {
+        "id": "B",
+        "text": "Se probó que todo el dolor provenía de una contractura."
+      },
+      {
+        "id": "C",
+        "text": "No hace falta reevaluar porque el efecto inmediato demuestra curación."
+      },
+      {
+        "id": "D",
+        "text": "Hubo un cambio inmediato que debe contrastarse con función y evolución posterior."
+      }
+    ],
+    "correct": "D",
+    "objective": "H-35",
+    "condition": "Evaluación y razonamiento",
+    "domain": "Interpretación",
+    "explanation": "Un efecto inmediato no demuestra mecanismo estructural ni duración del beneficio. El seguimiento permite comprobar su importancia clínica.",
+    "sources": [
+      {
+        "title": "APTA/JOSPT · Artrosis de cadera, revisión 2025",
+        "url": "https://www.orthopt.org/content/publications/pub-cpg/hip-pain-and-mobility-deficits-hip-osteoarthritis-revision-2025"
+      }
+    ]
+  }
+]

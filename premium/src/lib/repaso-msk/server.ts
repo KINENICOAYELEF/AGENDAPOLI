@@ -1,9 +1,11 @@
 import { getAdminDb } from '@/lib/server/firebaseAdmin';
 import type { Firestore } from 'firebase-admin/firestore';
 import bankData from './knee-bank.json';
+import hipData from './hip-bank.json';
 import type { Attempt, AttemptView, ReviewedQuestion } from './types';
 
-export const bank = bankData as ReviewedQuestion[];
+export const bank = [...bankData, ...hipData] as ReviewedQuestion[];
+export const bankQuestions = (version: Attempt['version']) => bank.filter(q => q.id.startsWith(`${version}-`));
 export const attemptsRef = (uid: string) => (getAdminDb() as Firestore).collection('msk_quiz_private').doc(uid).collection('attempts');
 export function attemptView(attempt: Attempt): AttemptView {
   const ordered = attempt.questionIds.map(id => {

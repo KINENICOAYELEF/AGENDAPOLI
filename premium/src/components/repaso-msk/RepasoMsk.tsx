@@ -5,12 +5,12 @@ import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCircle2, ChevronRight, Clo
 import { auth } from '@/lib/firebase';
 import { QUESTION_MS, summarise } from '@/lib/repaso-msk/types';
 import type { AttemptSummary, AttemptView, OptionId, QuizAction } from '@/lib/repaso-msk/types';
+import { catalog, type BankVersion } from '@/lib/repaso-msk/catalog';
 import styles from './repaso.module.css';
 
 type Pending = QuizAction & { requestId: string };
 type Draft = { revision: number; remainingMs: number; selected: OptionId | null; pending: Pending | null };
 const zones = ['Hombro', 'Codo', 'Muñeca y mano', 'Cervical', 'Columna torácica y lumbar', 'Cadera e ingle', 'Rodilla', 'Tobillo y pie'];
-const conditions = ['Dolor patelofemoral', 'Tendinopatía patelar', 'Artrosis', 'Menisco', 'Ligamentos', 'Inestabilidad patelar', 'Artroplastia'];
 const date = (value: string) => new Date(value).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' });
 
 async function api<T>(path = '', body?: unknown): Promise<T> {
@@ -30,6 +30,7 @@ async function api<T>(path = '', body?: unknown): Promise<T> {
 
 export default function RepasoMsk({ uid, request = api }: { uid: string; request?: typeof api }) {
   const [history, setHistory] = useState<AttemptSummary[]>([]);
+  const [version, setVersion] = useState<BankVersion>('knee-v1');
   const [view, setView] = useState<AttemptView | null>(null);
   const [tab, setTab] = useState<'study' | 'history'>('study');
   const [loading, setLoading] = useState(true);
@@ -150,13 +151,15 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
   };
   const create = async () => {
     setBusy(true); setError('');
-    try { const next = await request<AttemptView>('', { replay: repeat }); applyView(next, true); setStartModal(false); }
+    try { const next = await request<AttemptView>('', { replay: repeat, version }); applyView(next, true); setStartModal(false); }
     catch (e) { setError(e instanceof Error ? e.message : 'No se pudo iniciar.'); }
     finally { setBusy(false); }
   };
-  const active = history.find(a => a.status === 'active');
-  const completed = history.filter(a => a.status === 'completed');
+  const selectedBank = catalog[version];
+  const active = history.find(a => a.status === 'active' && (a.version ?? 'knee-v1') === version);
+  const completed = history.filter(a => a.status === 'completed' && (a.version ?? 'knee-v1') === version);
   const a = view?.attempt;
+  const attemptTitle = catalog[a?.version ?? version].title;
   const index = a?.answers.length ?? 0;
   const question = view?.questions[index];
   const showResults = a?.status === 'completed';
@@ -178,7 +181,7 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
       </nav>
       {tab === 'study' ? <>
         <section className={styles.hero}>
-          <div><span className={styles.heroTag}>PRIMER BANCO · RODILLA</span><h2>De las bases<br />a la decisión clínica.</h2>
+          <div><span className={styles.heroTag}>BANCO · {selectedBank.title.toUpperCase()}</span><h2>De las bases<br />a la decisión clínica.</h2>
             <p>35 preguntas sobre cuadros frecuentes, mecanismos, evaluación e intervención. Sin respuestas escritas.</p>
             <div className={styles.heroFacts}><span><Clock3 size={17} /> 60 s por pregunta</span><span><Target size={17} /> 7 cuadros clínicos</span></div>
             <button className={styles.heroButton} disabled={!!error} onClick={() => active ? void openAttempt(active.id) : setStartModal(true)}>
@@ -192,19 +195,22 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
             <li><b>03</b><div><strong>Decisiones fundamentadas</strong><p>Objetivos, dosis y seguridad.</p></div></li>
           </ol></div>
         </section>
-        <section className={styles.section}><div className={styles.sectionHeading}><div><h2>Explorar por zona</h2><p>Rodilla está lista para revisión. Las demás zonas aún no tienen preguntas publicadas.</p></div><span>01 / 08</span></div>
-          <div className={styles.zones}>{zones.map((zone, i) => zone === 'Rodilla' ? <button key={zone} className={styles.readyZone} onClick={() => document.getElementById('knee-syllabus')?.scrollIntoView({ behavior: 'smooth' })}><span>0{i + 1}</span><strong>{zone}</strong><small>35 preguntas · Ver contenido <ChevronRight size={14} /></small></button> : <div key={zone} className={styles.zone}><span>0{i + 1}</span><strong>{zone}</strong><small><LockKeyhole size={13} /> En preparación</small></div>)}</div>
+        <section className={styles.section}><div className={styles.sectionHeading}><div><h2>Explorar por zona</h2><p>Elige Rodilla o Cadera e ingle. Cada banco tiene 35 preguntas y conserva su propio intento.</p></div><span>02 / 08</span></div>
+          <div className={styles.zones}>{zones.map((zone, i) => {
+            const entry = (Object.entries(catalog) as [BankVersion, typeof catalog[BankVersion]][]).find(([, value]) => value.zone === zone);
+            return entry ? <button key={zone} aria-pressed={version === entry[0]} className={styles.readyZone} onClick={() => { setVersion(entry[0]); setRepeat(false); }}><span>0{i + 1}</span><strong>{zone}</strong><small>{version === entry[0] ? 'Seleccionado · 35 preguntas' : 'Elegir · 35 preguntas'} <ChevronRight size={14} /></small></button> : <div key={zone} className={styles.zone}><span>0{i + 1}</span><strong>{zone}</strong><small><LockKeyhole size={13} /> En preparación</small></div>;
+          })}</div>
         </section>
-        <section className={styles.syllabus} id="knee-syllabus"><div><p className={styles.eyebrow}>CONTENIDO DEL BANCO</p><h2>Rodilla, sin saltarse las bases</h2><p>Todos los cuadros se mezclan en este ensayo. La selección por condición estará disponible cuando existan suficientes variantes.</p></div>
-          <ul>{conditions.map(c => <li key={c}><Check size={16} />{c}</li>)}</ul>
+        <section className={styles.syllabus} id="bank-syllabus"><div><p className={styles.eyebrow}>CONTENIDO DEL BANCO</p><h2>{selectedBank.title}, sin saltarse las bases</h2><p>Todos los cuadros se mezclan en este ensayo. La selección por condición estará disponible cuando existan suficientes variantes.</p><button className={styles.primary} disabled={!!error} onClick={() => active ? void openAttempt(active.id) : setStartModal(true)}>{active ? 'Continuar' : 'Comenzar'} {selectedBank.title}<ArrowRight size={18} /></button></div>
+          <ul>{selectedBank.conditions.map(c => <li key={c}><Check size={16} />{c}</li>)}</ul>
         </section>
         <div className={styles.notice}><ShieldCheck size={18} /><p>Vista de validación docente. No visible para internos. Este banco es una muestra editorial: los resultados orientan la revisión, no certifican competencia clínica.</p></div>
       </> : <section className={styles.section}><h2>Mis intentos</h2><p className={styles.muted}>Últimos 40 intentos. Las respuestas y explicaciones se consultan al terminar.</p>
-        {!history.length ? <div className={styles.empty}><History size={30} /><h3>Todavía no hay intentos</h3><p>Tu primer cuestionario quedará aquí, incluso si lo pausas.</p><button className={styles.primary} onClick={() => setTab('study')}>Explorar Rodilla</button></div> : <div className={styles.historyList}>{history.map(h => <button key={h.id} onClick={() => void openAttempt(h.id)}><div><strong>Rodilla · {h.status === 'active' ? 'En curso' : 'Finalizado'}</strong><span>{date(h.createdAt)} {h.repeated ? '· Ensayo repetido' : ''}</span></div><b>{h.status === 'completed' ? `${h.correct}/${h.total} aciertos` : `${h.answered}/${h.total}`}</b><ChevronRight size={20} /></button>)}</div>}
+        {!history.length ? <div className={styles.empty}><History size={30} /><h3>Todavía no hay intentos</h3><p>Tu primer cuestionario quedará aquí, incluso si lo pausas.</p><button className={styles.primary} onClick={() => setTab('study')}>Explorar bancos</button></div> : <div className={styles.historyList}>{history.map(h => <button key={h.id} onClick={() => void openAttempt(h.id)}><div><strong>{catalog[h.version ?? 'knee-v1'].title} · {h.status === 'active' ? 'En curso' : 'Finalizado'}</strong><span>{date(h.createdAt)} {h.repeated ? '· Ensayo repetido' : ''}</span></div><b>{h.status === 'completed' ? `${h.correct}/${h.total} aciertos` : `${h.answered}/${h.total}`}</b><ChevronRight size={20} /></button>)}</div>}
       </section>}
     </> : showResults ? <>
       <button className={styles.back} onClick={home}><ArrowLeft size={17} /> Volver a mi espacio</button>
-      <section className={styles.resultsHead}><CheckCircle2 size={32} /><p className={styles.eyebrow}>INTENTO FINALIZADO · RODILLA</p><h2>Ahora, entender cada respuesta.</h2><p>{date(a!.createdAt)}{a!.repeated ? ' · Ensayo docente repetido: no mide retención nueva.' : ''}</p>
+      <section className={styles.resultsHead}><CheckCircle2 size={32} /><p className={styles.eyebrow}>INTENTO FINALIZADO · {attemptTitle.toUpperCase()}</p><h2>Ahora, entender cada respuesta.</h2><p>{date(a!.createdAt)}{a!.repeated ? ' · Ensayo docente repetido: no mide retención nueva.' : ''}</p>
         <div className={styles.metrics}>
           <div><strong>{a!.answers.filter(x => x.correct).length}<small> / 35</small></strong><span>Aciertos</span></div>
           <div><strong>{a!.answers.filter(x => x.option && !x.correct).length}</strong><span>Incorrectas</span></div>
@@ -213,6 +219,7 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
         </div><small>Las respuestas elegidas al límite de tiempo se corrigen normalmente. No hay bonificación por velocidad.</small>
       </section>
       <section className={styles.section}><h2>Qué conviene repasar</h2><p className={styles.muted}>Aciertos sobre preguntas presentadas por área; no es una nota de dominio.</p><div className={styles.domainGrid}>{summarise(a!, view.questions).map(d => <div key={d.domain}><div><strong>{d.domain}</strong><span>{d.correct}/{d.total}</span></div><progress value={d.correct} max={d.total || 1} /><small>{d.total < 3 ? 'Pocas preguntas para concluir' : d.correct < d.total ? 'Revisar conceptos y explicaciones' : 'Comprobar luego con casos nuevos'}</small></div>)}</div></section>
+      <section className={styles.section}><h2>Por cuadro clínico</h2><p className={styles.muted}>Primero aparecen los cuadros con menor proporción de aciertos en este intento. Las omisiones también se incluyen; no equivalen necesariamente a desconocimiento.</p><div className={styles.domainGrid}>{summarise(a!, view.questions, 'condition').sort((x, y) => x.correct / (x.total || 1) - y.correct / (y.total || 1)).map(d => <div key={d.domain}><div><strong>{d.domain}</strong><span>{d.correct}/{d.total}</span></div><progress value={d.correct} max={d.total || 1} /><small>{d.total - d.correct} para revisar · {d.skipped + d.timedOut} sin responder{d.total < 3 ? ' · Muestra pequeña' : ''}</small></div>)}</div></section>
       <section className={styles.section}><div className={styles.sectionHeading}><h2>Respuestas y fundamentos</h2><label className={styles.filter}>Mostrar<select value={reviewFilter} onChange={e => setReviewFilter(e.target.value)}><option value="all">Todas las preguntas</option><option value="review">Incorrectas y sin respuesta</option></select></label></div>
         <div className={styles.reviewList}>{view.review?.map((q, i) => {
           const ans = a!.answers[i]; if (reviewFilter === 'review' && ans.correct) return null;
@@ -222,7 +229,7 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
         })}</div>
       </section>
     </> : question ? <>
-      <div className={styles.quizTop}><span>RODILLA · CUESTIONARIO MIXTO</span><span>{index + 1} de {view.questions.length}</span></div>
+      <div className={styles.quizTop}><span>{attemptTitle.toUpperCase()} · CUESTIONARIO MIXTO</span><span>{index + 1} de {view.questions.length}</span></div>
       <progress className={styles.totalProgress} value={index} max={view.questions.length} aria-label="Preguntas respondidas" />
       <section className={styles.quizCard}>
         <div className={styles.questionHeader}><span>Pregunta {String(index + 1).padStart(2, '0')}</span><div className={remaining <= 10000 ? styles.timerUrgent : styles.timer} role="timer" aria-label={`${Math.ceil(remaining / 1000)} segundos restantes`}><Clock3 size={19} />{String(Math.floor(Math.ceil(remaining / 1000) / 60)).padStart(2, '0')}:{String(Math.ceil(remaining / 1000) % 60).padStart(2, '0')}</div></div>
@@ -248,7 +255,7 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
         if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
       }
     }}><section role="dialog" aria-modal="true" aria-labelledby="quiz-start-title" className={styles.modal}>
-      <button autoFocus className={styles.close} aria-label="Cerrar instrucciones" disabled={busy} onClick={() => setStartModal(false)}><X size={22} /></button><p className={styles.eyebrow}>ANTES DE EMPEZAR</p><h2 id="quiz-start-title">Rodilla · 35 preguntas</h2><p>Un minuto por pregunta, sin tiempo mínimo. Calcula hasta 35 minutos para responder y tiempo adicional para revisar.</p>
+      <button autoFocus className={styles.close} aria-label="Cerrar instrucciones" disabled={busy} onClick={() => setStartModal(false)}><X size={22} /></button><p className={styles.eyebrow}>ANTES DE EMPEZAR</p><h2 id="quiz-start-title">{selectedBank.title} · 35 preguntas</h2><p>Un minuto por pregunta, sin tiempo mínimo. Calcula hasta 35 minutos para responder y tiempo adicional para revisar.</p>
       <ul><li>Selecciona y confirma para avanzar antes.</li><li>Al terminar el minuto se envía la opción seleccionada, o queda sin respuesta.</li><li>Puedes guardar y pausar. No se reinicia el minuto al volver.</li><li>Las explicaciones se consultan al finalizar.</li></ul>
       {completed.length > 0 && <label className={styles.repeat}><input type="checkbox" checked={repeat} onChange={e => setRepeat(e.target.checked)} /> Entiendo que repetiré preguntas vistas. Es un ensayo docente, no una medición nueva de aprendizaje.</label>}
       {error && <p role="alert" className={styles.error}>{error}</p>}

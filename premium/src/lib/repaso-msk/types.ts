@@ -11,12 +11,12 @@ export type Answer = {
   reason: 'answer' | 'skip' | 'timeout'; elapsedMs: number; correct: boolean;
 };
 export type Attempt = {
-  id: string; version: 'knee-v1'; questionIds: string[]; answers: Answer[];
+  id: string; version: 'knee-v1' | 'hip-v1'; questionIds: string[]; answers: Answer[];
   revision: number; status: 'active' | 'completed'; remainingMs: number;
   selected: OptionId | null; createdAt: string; updatedAt: string; repeated: boolean;
 };
 export type AttemptView = { attempt: Attempt; questions: Question[]; review?: ReviewedQuestion[] };
-export type AttemptSummary = Pick<Attempt, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'repeated'> & {
+export type AttemptSummary = Pick<Attempt, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'repeated'> & { version?: Attempt['version'];
   answered: number; correct: number; total: number;
 };
 export type QuizAction = {
@@ -26,10 +26,10 @@ export type QuizAction = {
 
 export const QUESTION_MS = 60_000;
 
-export function summarise(attempt: Attempt, questions: Question[]) {
-  const domains = [...new Set(questions.map(q => q.domain))];
+export function summarise(attempt: Attempt, questions: Question[], group: 'domain' | 'condition' = 'domain') {
+  const domains = [...new Set(questions.map(q => q[group]))];
   return domains.map(domain => {
-    const ids = new Set(questions.filter(q => q.domain === domain).map(q => q.id));
+    const ids = new Set(questions.filter(q => q[group] === domain).map(q => q.id));
     const answers = attempt.answers.filter(a => ids.has(a.questionId));
     return { domain, total: answers.length, correct: answers.filter(a => a.correct).length,
       skipped: answers.filter(a => a.reason === 'skip').length,

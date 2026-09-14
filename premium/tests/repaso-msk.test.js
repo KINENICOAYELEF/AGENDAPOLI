@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const ts = require('typescript');
 const bank = require('../src/lib/repaso-msk/knee-bank.json');
+const hipBank = require('../src/lib/repaso-msk/hip-bank.json');
 function load(file, dependencies = {}) {
   const module = { exports: {} };
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText,
@@ -12,7 +13,9 @@ function load(file, dependencies = {}) {
 }
 const types = load('src/lib/repaso-msk/types.ts');
 const { advanceAttempt } = load('src/lib/repaso-msk/engine.ts', { './types': types });
-const { attemptView } = load('src/lib/repaso-msk/server.ts', { './knee-bank.json': bank, '@/lib/server/firebaseAdmin': {} });
+const { attemptView, bankQuestions } = load('src/lib/repaso-msk/server.ts', { './knee-bank.json': bank, './hip-bank.json': hipBank, '@/lib/server/firebaseAdmin': {} });
+const catalog = load('src/lib/repaso-msk/catalog.ts');
+const bankState = load('src/lib/repaso-msk/bank-state.ts');
 const make = () => ({ id: 'test', version: 'knee-v1', questionIds: bank.map(q => q.id), answers: [], revision: 0,
   status: 'active', remainingMs: 60000, selected: null, createdAt: '2026-09-14', updatedAt: '2026-09-14', repeated: false });
 const answer = (a, values = {}) => ({ type: 'answer', revision: a.revision, index: a.answers.length,
@@ -63,6 +66,8 @@ test('resumen informa denominadores y separa omisiones', () => {
   const a = advanceAttempt(make(), answer(make(), { option: null, reason: 'skip' }), bank, 'now');
   const result = types.summarise(a, bank).find(d => d.domain === bank[0].domain);
   assert.equal(result.total, 1); assert.equal(result.correct, 0); assert.equal(result.skipped, 1);
+  const condition = types.summarise(a, bank, 'condition').find(d => d.domain === bank[0].condition);
+  assert.equal(condition.total, 1); assert.equal(condition.skipped, 1);
 });
 
 test('API bloquea anónimos e internos antes de leer el banco o Firestore', async () => {
@@ -72,6 +77,7 @@ test('API bloquea anónimos e internos antes de leer el banco o Firestore', asyn
       '@/lib/server/firebaseAdmin': { requireTeacher: async () => { throw new Error(role === 'anonymous' ? 'Unauthorized' : 'Forbidden'); } },
       '@/lib/server/apiResponse': { getRequestId: () => 'test', handleApiError: e => ({ status: e.message === 'Unauthorized' ? 401 : 403 }) },
       '@/lib/repaso-msk/server': { attemptsRef: () => { throw new Error('Unexpected DB access'); }, bank, attemptView },
+      '@/lib/repaso-msk/catalog': catalog, '@/lib/repaso-msk/bank-state': bankState,
       '@/lib/repaso-msk/engine': { advanceAttempt },
     };
     const list = load('src/app/api/repaso-msk/route.ts', dependencies);
@@ -81,4 +87,64 @@ test('API bloquea anónimos e internos antes de leer el banco o Firestore', asyn
       assert.equal((await route[method](req, { params: Promise.resolve({ attemptId: 'not-used' }) })).status, role === 'anonymous' ? 401 : 403);
     }
   }
+});
+
+test('cadera y rodilla tienen 35 ítems distintos y claves equilibradas', () => {
+  assert.equal(new Set([...bank, ...hipBank].map(q => q.id)).size, 70);
+  for (const version of ['knee-v1', 'hip-v1']) {
+    const questions = bankQuestions(version); assert.equal(questions.length, 35);
+    for (const q of questions) {
+      assert.ok(q.id.startsWith(version)); assert.equal(q.options.length, 4);
+      assert.equal(new Set(q.options.map(o => o.text)).size, 4);
+      assert.ok(q.options.some(o => o.id === q.correct)); assert.ok(q.explanation.length > 30);
+      assert.ok(q.sources.every(s => s.url.startsWith('https://')));
+    }
+  }
+  for (const key of ['A', 'B', 'C', 'D']) assert.ok(hipBank.filter(q => q.correct === key).length >= 8);
+  assert.ok(hipBank.filter(q => q.domain === 'Fundamentos').length >= 5);
+});
+test('intentos antiguos de rodilla no bloquean cadera ni se pierden', () => {
+  const legacy = { activeId: 'old-knee', usedBank: true };
+  assert.equal(bankState.readBankState(legacy, 'knee-v1').activeId, 'old-knee');
+  assert.equal(bankState.readBankState(legacy, 'hip-v1').used, false);
+  const updated = { ...legacy, banks: { 'hip-v1': { activeId: 'new-hip', used: true } } };
+  assert.equal(bankState.readBankState(updated, 'knee-v1').activeId, 'old-knee');
+  assert.equal(bankState.readBankState(updated, 'hip-v1').activeId, 'new-hip');
+});
+test('cadera completa, oculta claves y conserva revisión sin mezclarse con rodilla', () => {
+  let a = { ...make(), version: 'hip-v1', questionIds: hipBank.map(q => q.id) };
+  assert.equal(attemptView(a).questions[0].correct, undefined);
+  for (let i = 0; i < 35; i++) a = advanceAttempt(a, { type: 'answer', revision: a.revision, index: i, option: hipBank[i].correct, reason: 'answer', elapsedMs: 5000 }, [...bank, ...hipBank], 'now');
+  assert.equal(a.status, 'completed'); assert.equal(a.answers.filter(x => x.correct).length, 35);
+  assert.ok(attemptView(a).review.every(q => q.id.startsWith('hip-v1-')));
+  assert.ok(attemptView(make()).questions.every(q => q.id.startsWith('knee-v1-')));
+});
+
+test('API crea cada banco una vez, retoma el correcto y exige permiso para repetir', async () => {
+  const documents = new Map([['marker', { activeId: 'legacy', usedBank: true }], ['legacy', { ...make(), id: 'legacy' }]]);
+  let writes = 0;
+  const ref = { parent: { id: 'marker' }, doc: id => ({ id }), firestore: { runTransaction: async fn => fn({
+    get: async ref => ({ exists: documents.has(ref.id), data: () => documents.get(ref.id) }),
+    create: (ref, value) => { assert.equal(documents.has(ref.id), false); documents.set(ref.id, value); writes++; },
+    set: (ref, value, options) => { assert.equal(options.merge, true); const prior = documents.get(ref.id); documents.set(ref.id, { ...prior, banks: { ...prior?.banks, ...value.banks } }); },
+  }) } };
+  const route = load('src/app/api/repaso-msk/route.ts', {
+    'next/server': require('next/server'), 'node:crypto': require('node:crypto'),
+    '@/lib/server/firebaseAdmin': { requireTeacher: async () => ({ uid: 'teacher' }) },
+    '@/lib/server/apiResponse': { getRequestId: () => 'test', handleApiError: () => ({ status: 500 }) },
+    '@/lib/repaso-msk/server': { attemptsRef: () => ref, bankQuestions, attemptView },
+    '@/lib/repaso-msk/catalog': catalog, '@/lib/repaso-msk/bank-state': bankState,
+  });
+  const post = body => route.POST({ headers: new Headers(), json: async () => body });
+  assert.equal((await post({ version: 'unknown' })).status, 400);
+  assert.equal((await post(null)).status, 400);
+  const knee = await (await post({ version: 'knee-v1' })).json(); assert.equal(knee.attempt.id, 'legacy');
+  const hip = await (await post({ version: 'hip-v1' })).json(); assert.equal(hip.attempt.version, 'hip-v1');
+  assert.equal(hip.questions.length, 35); assert.ok(hip.questions.every(q => q.id.startsWith('hip-v1')));
+  const again = await (await post({ version: 'hip-v1' })).json(); assert.equal(again.attempt.id, hip.attempt.id); assert.equal(writes, 1);
+  assert.equal(documents.get('marker').activeId, 'legacy');
+  documents.set(hip.attempt.id, { ...hip.attempt, status: 'completed' });
+  assert.equal((await post({ version: 'hip-v1' })).status, 409);
+  const replay = await (await post({ version: 'hip-v1', replay: true })).json();
+  assert.equal(replay.attempt.repeated, true); assert.notEqual(replay.attempt.id, hip.attempt.id);
 });
