@@ -1,0 +1,2312 @@
+[
+  {
+    "id": "shoulder-v1-01",
+    "stem": "Dolor lateral de hombro al elevar y cargar, sin trauma, con movilidad pasiva casi conservada y dolor en rotación externa resistida. ¿Qué hipótesis priorizas?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Artrosis glenohumeral avanzada."
+      },
+      {
+        "id": "B",
+        "text": "Inestabilidad posterior sintomática."
+      },
+      {
+        "id": "C",
+        "text": "Dolor relacionado con manguito rotador."
+      },
+      {
+        "id": "D",
+        "text": "Hombro congelado."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-1",
+    "condition": "Manguito rotador",
+    "domain": "Reconocimiento",
+    "explanation": "El patrón orienta a manguito, sin identificar un tendón específico. Una restricción pasiva marcada cambiaría el diferencial.",
+    "sources": [
+      {
+        "title": "JOSPT · Guía de tendinopatía del manguito, 2025",
+        "url": "https://doi.org/10.2519/jospt.2025.13182"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-02",
+    "stem": "¿Qué conjunto forma el manguito rotador?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Supraespinoso, trapecio, serrato anterior y deltoides."
+      },
+      {
+        "id": "B",
+        "text": "Supraespinoso, infraespinoso, subescapular y redondo menor."
+      },
+      {
+        "id": "C",
+        "text": "Deltoides, supraespinoso, redondo mayor y bíceps."
+      },
+      {
+        "id": "D",
+        "text": "Infraespinoso, redondo mayor, dorsal ancho y subescapular."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-2",
+    "condition": "Manguito rotador",
+    "domain": "Fundamentos",
+    "explanation": "Los cuatro tendones rodean la cabeza humeral. Deltoides y músculos escapulares contribuyen al movimiento, pero no integran el manguito.",
+    "sources": [
+      {
+        "title": "OpenStax · Músculos de cintura escapular y miembro superior",
+        "url": "https://openstax.org/books/anatomy-and-physiology-2e/pages/11-5-muscles-of-the-pectoral-girdle-and-upper-limbs"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-03",
+    "stem": "Hawkins-Kennedy reproduce dolor habitual. ¿Qué inferencia es más adecuada?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Es un hallazgo provocador que necesita contexto."
+      },
+      {
+        "id": "B",
+        "text": "Localiza con precisión una rotura del supraespinoso."
+      },
+      {
+        "id": "C",
+        "text": "Prueba fricción ósea como mecanismo único."
+      },
+      {
+        "id": "D",
+        "text": "Distingue por sí solo tendinopatía de bursitis."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-3",
+    "condition": "Manguito rotador",
+    "domain": "Interpretación",
+    "explanation": "Una maniobra dolorosa no tiene especificidad suficiente para esas atribuciones estructurales. Se integra con historia, movilidad y fuerza.",
+    "sources": [
+      {
+        "title": "JOSPT · Guía de tendinopatía del manguito, 2025",
+        "url": "https://doi.org/10.2519/jospt.2025.13182"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-04",
+    "stem": "Una pintora con dolor de manguito tolera trabajo bajo la altura del hombro, pero empeora con dos horas continuas sobre cabeza. ¿Qué ajustar primero?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Suprimir también toda tarea indolora."
+      },
+      {
+        "id": "B",
+        "text": "Mantener dos horas y añadir más fortalecimiento."
+      },
+      {
+        "id": "C",
+        "text": "Cambiar únicamente la postura del cuello."
+      },
+      {
+        "id": "D",
+        "text": "Fraccionar esa exposición y mantener carga tolerada."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-4",
+    "condition": "Manguito rotador",
+    "domain": "Intervención",
+    "explanation": "La exposición identificada permite una modificación concreta. Se busca recuperar capacidad, no depender de una postura ideal universal.",
+    "sources": [
+      {
+        "title": "JOSPT · Guía de tendinopatía del manguito, 2025",
+        "url": "https://doi.org/10.2519/jospt.2025.13182"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-05",
+    "stem": "¿Qué función mecánica del manguito es relevante durante la elevación?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Producir únicamente rotación interna del húmero."
+      },
+      {
+        "id": "B",
+        "text": "Aportar estabilidad exclusivamente pasiva."
+      },
+      {
+        "id": "C",
+        "text": "Contribuir a la estabilidad dinámica glenohumeral."
+      },
+      {
+        "id": "D",
+        "text": "Elevar el brazo sin participación de otros músculos."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-5",
+    "condition": "Manguito rotador",
+    "domain": "Fundamentos",
+    "explanation": "La actividad coordinada genera fuerzas que contribuyen al control articular; no elimina movimientos fisiológicos ni reemplaza todos los estabilizadores.",
+    "sources": [
+      {
+        "title": "OpenStax · Músculos de cintura escapular y miembro superior",
+        "url": "https://openstax.org/books/anatomy-and-physiology-2e/pages/11-5-muscles-of-the-pectoral-girdle-and-upper-limbs"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-06",
+    "stem": "Una ecografía muestra una rotura degenerativa, pero la persona conserva buena función y presenta pocos síntomas. ¿Qué dato debe guiar su relevancia clínica?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La presencia de cualquier cambio degenerativo."
+      },
+      {
+        "id": "B",
+        "text": "Concordancia con síntomas, déficit y objetivos."
+      },
+      {
+        "id": "C",
+        "text": "El tamaño del informe como único criterio."
+      },
+      {
+        "id": "D",
+        "text": "La palabra rotura como indicación quirúrgica suficiente."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-6",
+    "condition": "Manguito rotador",
+    "domain": "Interpretación",
+    "explanation": "Una rotura puede coexistir con buena función. Imagen, discapacidad y expectativas se consideran conjuntamente antes de decidir manejo.",
+    "sources": [
+      {
+        "title": "AAOS · Roturas del manguito",
+        "url": "https://www.orthoinfo.org/diseases--conditions/rotator-cuff-tears"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-07",
+    "stem": "Para recuperar resistencia al guardar objetos, un usuario tolera pocas elevaciones con 1 kg. ¿Qué propuesta es más ajustable?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Series breves toleradas, carga registrada y progresión según respuesta."
+      },
+      {
+        "id": "B",
+        "text": "Fijar 4 kg por edad y mantenerlo sin reevaluar."
+      },
+      {
+        "id": "C",
+        "text": "Elegir muchas repeticiones sin registrar esfuerzo."
+      },
+      {
+        "id": "D",
+        "text": "Usar únicamente una técnica pasiva porque se fatiga."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-7",
+    "condition": "Manguito rotador",
+    "domain": "Intervención",
+    "explanation": "Anotar esfuerzo, volumen y respuesta permite dosificar. Un esquema sin esos datos no explica si la tarea está subdosificada o excede capacidad.",
+    "sources": [
+      {
+        "title": "JOSPT · Guía de tendinopatía del manguito, 2025",
+        "url": "https://doi.org/10.2519/jospt.2025.13182"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-08",
+    "stem": "El ensayo GRASP no halló superioridad del programa supervisado progresivo sobre consejo de buena práctica a largo plazo. ¿Qué NO permite concluir?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Que más sesiones no garantizan mayor beneficio promedio."
+      },
+      {
+        "id": "B",
+        "text": "Que el consejo de calidad puede ser relevante."
+      },
+      {
+        "id": "C",
+        "text": "Que conviene adaptar intensidad de apoyo al paciente."
+      },
+      {
+        "id": "D",
+        "text": "Que el ejercicio carece de utilidad."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-8",
+    "condition": "Manguito rotador",
+    "domain": "Interpretación",
+    "explanation": "Ambos grupos recibieron intervención activa y orientación. Comparar dos estrategias no equivale a compararlas con ausencia de ejercicio.",
+    "sources": [
+      {
+        "title": "GRASP · Ensayo de ejercicio y consejo",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8343092/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-09",
+    "stem": "¿Qué resultado del ensayo CSAW cuestiona una explicación puramente mecánica de pinzamiento?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La imagen predijo exactamente quién mejoraría."
+      },
+      {
+        "id": "B",
+        "text": "Los resultados probaron que ningún hombro requiere cirugía."
+      },
+      {
+        "id": "C",
+        "text": "La descompresión no añadió beneficio relevante frente a artroscopia placebo."
+      },
+      {
+        "id": "D",
+        "text": "La cirugía demostró que todo dolor era tendinoso."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-9",
+    "condition": "Manguito rotador",
+    "domain": "Fundamentos",
+    "explanation": "El ensayo cuestiona el beneficio específico de descomprimir en la población estudiada; no se extrapola a toda indicación quirúrgica.",
+    "sources": [
+      {
+        "title": "CSAW · Ensayo de descompresión subacromial",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/29169668/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-10",
+    "stem": "Para seguir discapacidad de hombro eliges SPADI. ¿Qué complemento evita reducir la evaluación a un cuestionario?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Sustituir anamnesis por la puntuación de dolor."
+      },
+      {
+        "id": "B",
+        "text": "Una tarea relevante y medidas clínicas comparables."
+      },
+      {
+        "id": "C",
+        "text": "Cambiar de escala cada semana sin equivalencias."
+      },
+      {
+        "id": "D",
+        "text": "Usar solo el número final para decidir diagnóstico."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-10",
+    "condition": "Manguito rotador",
+    "domain": "Evaluación",
+    "explanation": "Un autoinforme y el desempeño físico aportan dimensiones distintas. Su cambio debe interpretarse junto con metas y contexto.",
+    "sources": [
+      {
+        "title": "JOSPT · Guía de tendinopatía del manguito, 2025",
+        "url": "https://doi.org/10.2519/jospt.2025.13182"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-11",
+    "stem": "Persona de 52 años con dolor gradual y pérdida progresiva de movilidad activa y pasiva, especialmente rotación externa. Radiografía sin artrosis explicativa. ¿Qué cuadro gana peso?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Hombro congelado."
+      },
+      {
+        "id": "B",
+        "text": "Tendinopatía aislada del bíceps."
+      },
+      {
+        "id": "C",
+        "text": "Inestabilidad atraumática."
+      },
+      {
+        "id": "D",
+        "text": "Lesión acromioclavicular aguda."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-11",
+    "condition": "Hombro congelado",
+    "domain": "Reconocimiento",
+    "explanation": "La limitación pasiva es central en este patrón. El diagnóstico requiere considerar otras causas de rigidez, incluida artrosis.",
+    "sources": [
+      {
+        "title": "BESS · Guía de hombro congelado, 2025",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12018368/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-12",
+    "stem": "¿Qué proceso es relevante en el hombro congelado?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Acortamiento aislado del trapecio superior."
+      },
+      {
+        "id": "B",
+        "text": "Pérdida exclusiva de fuerza del deltoides."
+      },
+      {
+        "id": "C",
+        "text": "Luxación mantenida de la cabeza humeral."
+      },
+      {
+        "id": "D",
+        "text": "Cambios inflamatorios y fibróticos capsulares."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-12",
+    "condition": "Hombro congelado",
+    "domain": "Fundamentos",
+    "explanation": "La restricción capsular no debe confundirse con un síndrome muscular postural. El comportamiento clínico y la irritabilidad varían.",
+    "sources": [
+      {
+        "title": "BESS · Guía de hombro congelado, 2025",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12018368/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-13",
+    "stem": "Una paciente con hombro congelado tiene dolor nocturno intenso y aumento sostenido después de movilizaciones al límite. ¿Qué indica para la dosis?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Que el dolor nocturno demuestra fracaso inevitable."
+      },
+      {
+        "id": "B",
+        "text": "Que debe comenzar fortalecimiento máximo de inmediato."
+      },
+      {
+        "id": "C",
+        "text": "La intensidad actual supera su tolerancia."
+      },
+      {
+        "id": "D",
+        "text": "Que es necesario aumentar la fuerza de movilización."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-13",
+    "condition": "Hombro congelado",
+    "domain": "Interpretación",
+    "explanation": "La irritabilidad orienta amplitud e intensidad. Más dolor posterior no demuestra que se estén rompiendo adherencias de forma útil.",
+    "sources": [
+      {
+        "title": "BESS · Guía de hombro congelado, 2025",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12018368/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-14",
+    "stem": "¿Qué distinción ayuda más a separar rigidez capsular de limitación activa por dolor o debilidad?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Contar el número de chasquidos al moverse."
+      },
+      {
+        "id": "B",
+        "text": "Comparar movilidad activa y pasiva con procedimiento consistente."
+      },
+      {
+        "id": "C",
+        "text": "Medir solo elevación activa rápida."
+      },
+      {
+        "id": "D",
+        "text": "Palpar únicamente el trapecio."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-14",
+    "condition": "Hombro congelado",
+    "domain": "Evaluación",
+    "explanation": "Una limitación activa aislada no demuestra restricción capsular. La comparación debe considerar compensaciones y dolor.",
+    "sources": [
+      {
+        "title": "BESS · Guía de hombro congelado, 2025",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12018368/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-15",
+    "stem": "En hombro congelado muy irritable, ¿qué inicio es más razonable?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Educación y movimiento tolerado, ajustando intensidad y coordinación médica."
+      },
+      {
+        "id": "B",
+        "text": "Estiramientos máximos prolongados desde la primera sesión."
+      },
+      {
+        "id": "C",
+        "text": "Trabajo explosivo para recuperar rango rápidamente."
+      },
+      {
+        "id": "D",
+        "text": "Movilización forzada como requisito de cada consulta."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-15",
+    "condition": "Hombro congelado",
+    "domain": "Intervención",
+    "explanation": "Se adapta la intervención al paciente y se explican opciones. No hay una fase de calendario que obligue a tolerar maniobras agresivas.",
+    "sources": [
+      {
+        "title": "BESS · Guía de hombro congelado, 2025",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12018368/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-16",
+    "stem": "Una paciente pregunta si todo hombro congelado se recupera totalmente en un plazo fijo. ¿Qué respuesta es rigurosa?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Todos recuperan exactamente el rango previo a los seis meses."
+      },
+      {
+        "id": "B",
+        "text": "El diagnóstico implica incapacidad permanente."
+      },
+      {
+        "id": "C",
+        "text": "La duración depende solo de cuántas movilizaciones reciba."
+      },
+      {
+        "id": "D",
+        "text": "El curso y la recuperación varían; debe seguirse la función."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-16",
+    "condition": "Hombro congelado",
+    "domain": "Interpretación",
+    "explanation": "Evita promesas temporales universales. El seguimiento debe detectar evolución insatisfactoria y revisar opciones compartidas.",
+    "sources": [
+      {
+        "title": "BESS · Guía de hombro congelado, 2025",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12018368/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-17",
+    "stem": "Una persona diabética desarrolla rigidez progresiva de hombro. ¿Cómo se incorpora la diabetes al razonamiento?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Como motivo para descartar tratamiento activo."
+      },
+      {
+        "id": "B",
+        "text": "Como dato sin relación posible con el cuadro."
+      },
+      {
+        "id": "C",
+        "text": "Como asociación relevante, no como confirmación diagnóstica."
+      },
+      {
+        "id": "D",
+        "text": "Como prueba suficiente de hombro congelado."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-17",
+    "condition": "Hombro congelado",
+    "domain": "Reconocimiento",
+    "explanation": "La asociación cambia la sospecha y el contexto, pero no reemplaza la evaluación del patrón clínico.",
+    "sources": [
+      {
+        "title": "BESS · Guía de hombro congelado, 2025",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12018368/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-18",
+    "stem": "¿Qué interpretación del ensayo UK FROST evita ofrecer cirugía como solución obligatoria inicial?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Eliminó la necesidad de decisión compartida."
+      },
+      {
+        "id": "B",
+        "text": "No demostró superioridad clínicamente importante de una opción a 12 meses."
+      },
+      {
+        "id": "C",
+        "text": "Probó que ninguna intervención ayuda."
+      },
+      {
+        "id": "D",
+        "text": "Mostró que todo paciente necesita liberación capsular."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-18",
+    "condition": "Hombro congelado",
+    "domain": "Interpretación",
+    "explanation": "El ensayo comparó estrategias en atención secundaria. Beneficios, riesgos, preferencias y recursos siguen importando individualmente.",
+    "sources": [
+      {
+        "title": "UK FROST · Ensayo aleatorizado",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7750869/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-19",
+    "stem": "Tras varias semanas, el dolor baja pero vestirse sigue limitado. ¿Qué conviene documentar?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Rango, actividad específica y metas, además del dolor."
+      },
+      {
+        "id": "B",
+        "text": "Solo la sensibilidad a palpación anterior."
+      },
+      {
+        "id": "C",
+        "text": "Solo el número de sesiones realizadas."
+      },
+      {
+        "id": "D",
+        "text": "Solo la mejoría de dolor al terminar terapia."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-19",
+    "condition": "Hombro congelado",
+    "domain": "Evaluación",
+    "explanation": "El alivio sintomático puede preceder o no acompañar cambios funcionales. Medir ambos evita un alta basada en una sola dimensión.",
+    "sources": [
+      {
+        "title": "UK FROST · Ensayo aleatorizado",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7750869/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-20",
+    "stem": "Una radiografía muestra artrosis glenohumeral importante en una persona con rigidez. ¿Qué implica para la etiqueta de hombro congelado primario?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La imagen confirma hombro congelado primario."
+      },
+      {
+        "id": "B",
+        "text": "La artrosis nunca limita movilidad pasiva."
+      },
+      {
+        "id": "C",
+        "text": "La rigidez debe atribuirse solo a miedo al movimiento."
+      },
+      {
+        "id": "D",
+        "text": "Hay que reconsiderar una causa articular estructural de rigidez."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-20",
+    "condition": "Hombro congelado",
+    "domain": "Interpretación",
+    "explanation": "El patrón de rigidez puede tener varias causas. Una explicación alternativa relevante impide asignar automáticamente el diagnóstico primario.",
+    "sources": [
+      {
+        "title": "AAOS · Artrosis de hombro",
+        "url": "https://www.orthoinfo.org/diseases--conditions/arthritis-of-the-shoulder/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-21",
+    "stem": "Tras caída con brazo en abducción y rotación externa hubo deformidad y reducción médica de luxación anterior. Persiste temor a esa posición. ¿Qué cuadro corresponde?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tendinopatía calcificante aislada."
+      },
+      {
+        "id": "B",
+        "text": "Hombro congelado primario."
+      },
+      {
+        "id": "C",
+        "text": "Inestabilidad anterior traumática."
+      },
+      {
+        "id": "D",
+        "text": "Artrosis glenohumeral primaria."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-21",
+    "condition": "Inestabilidad",
+    "domain": "Reconocimiento",
+    "explanation": "El episodio traumático documentado y la aprensión orientan. Después se valoran déficits, lesiones asociadas y riesgo de recurrencia.",
+    "sources": [
+      {
+        "title": "BESS/BOA · Inestabilidad anterior traumática",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4935160/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-22",
+    "stem": "¿Qué diferencia laxitud de inestabilidad?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La laxitud confirma una rotura labral."
+      },
+      {
+        "id": "B",
+        "text": "La inestabilidad implica síntomas o pérdida funcional asociados al movimiento anormal."
+      },
+      {
+        "id": "C",
+        "text": "Toda laxitud es una lesión sintomática."
+      },
+      {
+        "id": "D",
+        "text": "La inestabilidad se define solo por flexibilidad general."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-22",
+    "condition": "Inestabilidad",
+    "domain": "Fundamentos",
+    "explanation": "Una persona puede tener laxitud sin síntomas. El contexto funcional distingue variación de un problema clínico.",
+    "sources": [
+      {
+        "title": "BESS/BOA · Inestabilidad anterior traumática",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4935160/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-23",
+    "stem": "En una prueba de aprensión, el paciente refiere dolor pero no sensación de que el hombro se salga. ¿Qué precaución interpretativa corresponde?",
+    "options": [
+      {
+        "id": "A",
+        "text": "No equiparar dolor aislado con aprensión típica de inestabilidad."
+      },
+      {
+        "id": "B",
+        "text": "Registrar inestabilidad confirmada por cualquier dolor."
+      },
+      {
+        "id": "C",
+        "text": "Descartar toda patología porque no hay deformidad."
+      },
+      {
+        "id": "D",
+        "text": "Aumentar fuerza hasta producir miedo al desplazamiento."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-23",
+    "condition": "Inestabilidad",
+    "domain": "Interpretación",
+    "explanation": "Importa qué sensación reproduce la prueba. Provocar más no vuelve específico un hallazgo ambiguo.",
+    "sources": [
+      {
+        "title": "BESS/BOA · Inestabilidad anterior traumática",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4935160/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-24",
+    "stem": "¿Qué describe una lesión de Bankart en el contexto de luxación anterior?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Lesión del labrum superior en el anclaje bicipital."
+      },
+      {
+        "id": "B",
+        "text": "Defecto por impactación de la cabeza humeral."
+      },
+      {
+        "id": "C",
+        "text": "Desinserción del subescapular en la tuberosidad menor."
+      },
+      {
+        "id": "D",
+        "text": "Lesión del complejo labral anteroinferior."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-24",
+    "condition": "Inestabilidad",
+    "domain": "Fundamentos",
+    "explanation": "Se relaciona con el soporte capsulolabral anterior. No es sinónimo de cualquier dolor del hombro.",
+    "sources": [
+      {
+        "title": "BESS/BOA · Inestabilidad anterior traumática",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4935160/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-25",
+    "stem": "¿Qué representa una lesión de Hill-Sachs habitual tras luxación anterior?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Desgarro labral superior en el anclaje bicipital."
+      },
+      {
+        "id": "B",
+        "text": "Lesión del ligamento coracoclavicular."
+      },
+      {
+        "id": "C",
+        "text": "Un defecto por impactación en la cabeza humeral posterolateral."
+      },
+      {
+        "id": "D",
+        "text": "Defecto del reborde glenoideo anterior."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-25",
+    "condition": "Inestabilidad",
+    "domain": "Fundamentos",
+    "explanation": "Es una lesión ósea asociada a luxación. Su relevancia depende de magnitud y relación con otras lesiones, no solo de su nombre.",
+    "sources": [
+      {
+        "title": "BESS/BOA · Inestabilidad anterior traumática",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4935160/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-26",
+    "stem": "Después de luxación reducida, el dolor permite ejercicios básicos y existen indicaciones médicas. ¿Qué base de rehabilitación es más pertinente?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Evitar todo movimiento hasta recuperar confianza espontáneamente."
+      },
+      {
+        "id": "B",
+        "text": "Recuperar movilidad y control/capacidad de forma gradual, respetando protección indicada."
+      },
+      {
+        "id": "C",
+        "text": "Practicar de inmediato gestos de máxima aprensión."
+      },
+      {
+        "id": "D",
+        "text": "Priorizar solo elongación para aumentar laxitud."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-26",
+    "condition": "Inestabilidad",
+    "domain": "Intervención",
+    "explanation": "La progresión vincula protección, control y función. No se debe usar el gesto de luxación como ejercicio provocador inicial.",
+    "sources": [
+      {
+        "title": "BESS/BOA · Inestabilidad anterior traumática",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4935160/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-27",
+    "stem": "Un joven relata varias subluxaciones y temor al lanzar. ¿Qué información pesa al planificar?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Frecuencia, mecanismos, demandas y lesiones previas documentadas."
+      },
+      {
+        "id": "B",
+        "text": "Solo el lado dominante."
+      },
+      {
+        "id": "C",
+        "text": "Solo el rango máximo de flexión."
+      },
+      {
+        "id": "D",
+        "text": "Solo la forma de sus hombros en reposo."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-27",
+    "condition": "Inestabilidad",
+    "domain": "Evaluación",
+    "explanation": "Las recurrencias y demandas orientan evaluación especializada y rehabilitación. La postura aislada no define el problema.",
+    "sources": [
+      {
+        "title": "BESS/BOA · Inestabilidad anterior traumática",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4935160/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-28",
+    "stem": "Sin trauma importante, una persona presenta episodios de desplazamiento sintomático en varias direcciones. ¿Qué hipótesis conviene explorar?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tendinopatía aislada de manguito sin inestabilidad."
+      },
+      {
+        "id": "B",
+        "text": "Rigidez capsular primaria."
+      },
+      {
+        "id": "C",
+        "text": "Dolor exclusivamente acromioclavicular."
+      },
+      {
+        "id": "D",
+        "text": "Inestabilidad atraumática/multidireccional."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-28",
+    "condition": "Inestabilidad",
+    "domain": "Reconocimiento",
+    "explanation": "Se necesita valorar laxitud, control, síntomas y contexto. No todas las presentaciones atraumáticas tienen el mismo mecanismo.",
+    "sources": [
+      {
+        "title": "BESS/BOA · Evaluación del dolor de hombro",
+        "url": "https://bess.ac.uk/download/1421/primary-intermediate-care-guidelines/6238/shoulder-pain-primary-community-and-intermediate-care-guidelines.pdf"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-29",
+    "stem": "En inestabilidad atraumática con déficit de control, ¿qué programa resulta más coherente?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Inmovilización permanente como manejo central."
+      },
+      {
+        "id": "B",
+        "text": "Corrección de una postura única como tratamiento suficiente."
+      },
+      {
+        "id": "C",
+        "text": "Entrenamiento activo individualizado de control y capacidad funcional."
+      },
+      {
+        "id": "D",
+        "text": "Movilizaciones para aumentar todavía más la laxitud."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-29",
+    "condition": "Inestabilidad",
+    "domain": "Intervención",
+    "explanation": "La intervención no es idéntica a la de una lesión traumática aguda. Requiere progresión, adherencia y revisión de barreras.",
+    "sources": [
+      {
+        "title": "BESS/BOA · Evaluación del dolor de hombro",
+        "url": "https://bess.ac.uk/download/1421/primary-intermediate-care-guidelines/6238/shoulder-pain-primary-community-and-intermediate-care-guidelines.pdf"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-30",
+    "stem": "Tras rehabilitación, desapareció el dolor pero sigue evitando alcanzar arriba por miedo a luxarse. ¿Qué falta valorar?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Solo número de semanas de tratamiento."
+      },
+      {
+        "id": "B",
+        "text": "Confianza, aprensión y desempeño en la actividad relevante."
+      },
+      {
+        "id": "C",
+        "text": "Solo fuerza isométrica en posición neutra."
+      },
+      {
+        "id": "D",
+        "text": "Solo ausencia de dolor en reposo."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-30",
+    "condition": "Inestabilidad",
+    "domain": "Evaluación",
+    "explanation": "Dolor y estabilidad percibida no son equivalentes. La función incluye tolerancia y seguridad en las tareas que necesita realizar.",
+    "sources": [
+      {
+        "title": "BESS/BOA · Inestabilidad anterior traumática",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4935160/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-31",
+    "stem": "¿Qué superficies conecta la articulación acromioclavicular?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Acromion y extremo distal de clavícula."
+      },
+      {
+        "id": "B",
+        "text": "Cabeza humeral y glenoides."
+      },
+      {
+        "id": "C",
+        "text": "Apófisis coracoides y cabeza humeral."
+      },
+      {
+        "id": "D",
+        "text": "Manubrio esternal y clavícula proximal."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-31",
+    "condition": "Articulación acromioclavicular",
+    "domain": "Fundamentos",
+    "explanation": "Ubicar la articulación permite distinguir síntomas superiores de cuadros glenohumerales, sin diagnosticar solo por localización.",
+    "sources": [
+      {
+        "title": "AAOS · Separación acromioclavicular",
+        "url": "https://www.orthoinfo.org/diseases--conditions/shoulder-separation"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-32",
+    "stem": "Caída directa sobre la punta del hombro, dolor localizado superior y prominencia nueva cerca de la clavícula distal. ¿Qué lesión sospechas?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Hombro congelado primario."
+      },
+      {
+        "id": "B",
+        "text": "Rotura aislada de redondo menor."
+      },
+      {
+        "id": "C",
+        "text": "Artrosis glenohumeral sin traumatismo."
+      },
+      {
+        "id": "D",
+        "text": "Lesión acromioclavicular."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-32",
+    "condition": "Articulación acromioclavicular",
+    "domain": "Reconocimiento",
+    "explanation": "El mecanismo y la localización favorecen lesión AC. Se requiere valoración de gravedad y descartar fractura.",
+    "sources": [
+      {
+        "title": "AAOS · Separación acromioclavicular",
+        "url": "https://www.orthoinfo.org/diseases--conditions/shoulder-separation"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-33",
+    "stem": "La aducción horizontal reproduce dolor localizado superior sobre AC. ¿Qué conclusión es adecuada?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Confirma una rotura del supraespinoso."
+      },
+      {
+        "id": "B",
+        "text": "Excluye cualquier lesión ósea."
+      },
+      {
+        "id": "C",
+        "text": "Apoya la hipótesis AC si concuerda con el resto del examen."
+      },
+      {
+        "id": "D",
+        "text": "Define por sí sola el grado de separación."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-33",
+    "condition": "Articulación acromioclavicular",
+    "domain": "Interpretación",
+    "explanation": "La provocación orienta, pero no clasifica toda la lesión ni sustituye el estudio tras trauma cuando está indicado.",
+    "sources": [
+      {
+        "title": "AAOS · Separación acromioclavicular",
+        "url": "https://www.orthoinfo.org/diseases--conditions/shoulder-separation"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-34",
+    "stem": "¿Por qué una separación AC no es lo mismo que una luxación glenohumeral?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Porque la luxación glenohumeral solo ocurre sin trauma."
+      },
+      {
+        "id": "B",
+        "text": "Afecta una articulación y estabilizadores diferentes."
+      },
+      {
+        "id": "C",
+        "text": "Porque la separación AC nunca tiene dolor."
+      },
+      {
+        "id": "D",
+        "text": "Porque toda separación AC es una fractura."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-34",
+    "condition": "Articulación acromioclavicular",
+    "domain": "Fundamentos",
+    "explanation": "Los términos describen lesiones anatómicas distintas y llevan a evaluaciones y precauciones diferentes.",
+    "sources": [
+      {
+        "title": "AAOS · Separación acromioclavicular",
+        "url": "https://www.orthoinfo.org/diseases--conditions/shoulder-separation"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-35",
+    "stem": "Una deportista trae solo el mensaje 'esguince de hombro'. ¿Qué dato necesitas antes de aplicar un protocolo AC?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Localización/diagnóstico evaluado, gravedad e indicaciones recibidas."
+      },
+      {
+        "id": "B",
+        "text": "Presuponer que es AC por practicar deporte."
+      },
+      {
+        "id": "C",
+        "text": "Elegir el protocolo más corto disponible."
+      },
+      {
+        "id": "D",
+        "text": "Usar únicamente su intensidad de dolor actual."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-35",
+    "condition": "Articulación acromioclavicular",
+    "domain": "Evaluación",
+    "explanation": "Un rótulo genérico no identifica estructuras ni restricciones. La baja intensidad de dolor tampoco aclara el procedimiento indicado.",
+    "sources": [
+      {
+        "title": "AAOS · Separación acromioclavicular",
+        "url": "https://www.orthoinfo.org/diseases--conditions/shoulder-separation"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-36",
+    "stem": "Lesión AC leve ya evaluada, con mejoría y autorización para movilizar. ¿Qué criterio guía el paso de movilidad a carga?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Solo que desaparezca la prominencia visible."
+      },
+      {
+        "id": "B",
+        "text": "Una fecha fija sin comprobar la tarea."
+      },
+      {
+        "id": "C",
+        "text": "Dolor cero al palpar como único criterio."
+      },
+      {
+        "id": "D",
+        "text": "Tolerancia, función y estabilidad clínica, con progresión gradual."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-36",
+    "condition": "Articulación acromioclavicular",
+    "domain": "Intervención",
+    "explanation": "La deformidad residual no resume la capacidad funcional. La progresión sigue el cuadro y las indicaciones recibidas.",
+    "sources": [
+      {
+        "title": "AAOS · Separación acromioclavicular",
+        "url": "https://www.orthoinfo.org/diseases--conditions/shoulder-separation"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-37",
+    "stem": "Meses tras lesión AC, persiste una prominencia pero no dolor ni limitación. ¿Qué se puede concluir?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Se confirma necesidad quirúrgica inmediata."
+      },
+      {
+        "id": "B",
+        "text": "Debe impedirse cualquier ejercicio de fuerza."
+      },
+      {
+        "id": "C",
+        "text": "La apariencia y la discapacidad no son equivalentes."
+      },
+      {
+        "id": "D",
+        "text": "La prominencia indica fracaso de toda rehabilitación."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-37",
+    "condition": "Articulación acromioclavicular",
+    "domain": "Interpretación",
+    "explanation": "El manejo considera síntomas y función. No se decide solo por una diferencia estética persistente.",
+    "sources": [
+      {
+        "title": "AAOS · Separación acromioclavicular",
+        "url": "https://www.orthoinfo.org/diseases--conditions/shoulder-separation"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-38",
+    "stem": "Al retomar tareas de empuje tras lesión AC estable, una carga baja es tolerada y la alta provoca síntomas persistentes. ¿Qué ajuste probar?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Modificar solo el agarre sin revisar carga ni volumen."
+      },
+      {
+        "id": "B",
+        "text": "Reducir la dosis provocadora y progresar desde la tolerada."
+      },
+      {
+        "id": "C",
+        "text": "Mantener siempre la carga alta para fortalecer ligamentos."
+      },
+      {
+        "id": "D",
+        "text": "Sustituir toda actividad por reposo hasta el siguiente año."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-38",
+    "condition": "Articulación acromioclavicular",
+    "domain": "Intervención",
+    "explanation": "La respuesta a la exposición aporta un criterio práctico. No hay una carga universal válida por el nombre de la lesión.",
+    "sources": [
+      {
+        "title": "AAOS · Separación acromioclavicular",
+        "url": "https://www.orthoinfo.org/diseases--conditions/shoulder-separation"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-39",
+    "stem": "¿Qué tarea aporta información funcional en dolor AC de una persona que debe trasladar cajas?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Una tarea graduada de levantar/transportar con carga registrada."
+      },
+      {
+        "id": "B",
+        "text": "Solo medir movilidad pasiva glenohumeral."
+      },
+      {
+        "id": "C",
+        "text": "Solo evaluar fuerza isométrica de rotación externa."
+      },
+      {
+        "id": "D",
+        "text": "Solo observar la simetría de clavículas."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-39",
+    "condition": "Articulación acromioclavicular",
+    "domain": "Evaluación",
+    "explanation": "La evaluación debe representar una demanda relevante y ser segura. Registrar la carga permite comparar sesiones.",
+    "sources": [
+      {
+        "title": "AAOS · Separación acromioclavicular",
+        "url": "https://www.orthoinfo.org/diseases--conditions/shoulder-separation"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-40",
+    "stem": "Tras golpe directo hay dolor intenso sobre clavícula y deformidad que no fue evaluada. ¿Qué corresponde antes de entrenar?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Aplicar un protocolo de esguince leve sin más datos."
+      },
+      {
+        "id": "B",
+        "text": "Intentar corregir manualmente la prominencia."
+      },
+      {
+        "id": "C",
+        "text": "Probar fuerza máxima para distinguir lesión de dolor."
+      },
+      {
+        "id": "D",
+        "text": "Valoración médica para descartar fractura u otra lesión relevante."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-40",
+    "condition": "Articulación acromioclavicular",
+    "domain": "Seguridad",
+    "explanation": "No se presume una lesión AC leve ante deformidad traumática no estudiada. Evitar pruebas intensas es parte del razonamiento seguro.",
+    "sources": [
+      {
+        "title": "AAOS · Separación acromioclavicular",
+        "url": "https://www.orthoinfo.org/diseases--conditions/shoulder-separation"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-41",
+    "stem": "Persona de 72 años con dolor profundo progresivo, crepitación y restricción activa y pasiva; radiografía concordante con degeneración glenohumeral. ¿Qué hipótesis predomina?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Inestabilidad atraumática sin rigidez."
+      },
+      {
+        "id": "B",
+        "text": "Separación AC aguda."
+      },
+      {
+        "id": "C",
+        "text": "Artrosis glenohumeral."
+      },
+      {
+        "id": "D",
+        "text": "Lesión aislada del bíceps distal."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-41",
+    "condition": "Artrosis glenohumeral",
+    "domain": "Reconocimiento",
+    "explanation": "El conjunto clínico e imagen concordante apoya artrosis. La limitación pasiva ayuda a diferenciar de varias presentaciones del manguito.",
+    "sources": [
+      {
+        "title": "AAOS · Artrosis de hombro",
+        "url": "https://www.orthoinfo.org/diseases--conditions/arthritis-of-the-shoulder/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-42",
+    "stem": "En artrosis glenohumeral, ¿qué explica mejor una limitación funcional persistente?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Una inhibición voluntaria sin relación con la articulación."
+      },
+      {
+        "id": "B",
+        "text": "Interacción de cambios articulares, dolor, rigidez y capacidad muscular."
+      },
+      {
+        "id": "C",
+        "text": "Únicamente el tamaño de un osteofito."
+      },
+      {
+        "id": "D",
+        "text": "Solo la longitud del pectoral menor."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-42",
+    "condition": "Artrosis glenohumeral",
+    "domain": "Fundamentos",
+    "explanation": "La función no se interpreta desde un único tejido o hallazgo. Se necesitan medidas del movimiento y actividades relevantes.",
+    "sources": [
+      {
+        "title": "AAOS · Artrosis de hombro",
+        "url": "https://www.orthoinfo.org/diseases--conditions/arthritis-of-the-shoulder/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-43",
+    "stem": "Dos personas con artrosis similar en radiografía tienen discapacidad muy distinta. ¿Qué implica?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La imagen no cuantifica por sí sola la limitación de cada persona."
+      },
+      {
+        "id": "B",
+        "text": "Una de las dos necesariamente exagera."
+      },
+      {
+        "id": "C",
+        "text": "Ambas deben recibir exactamente la misma dosis."
+      },
+      {
+        "id": "D",
+        "text": "La radiografía permite omitir evaluación funcional."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-43",
+    "condition": "Artrosis glenohumeral",
+    "domain": "Interpretación",
+    "explanation": "La gravedad radiográfica y la experiencia clínica no son intercambiables. Las decisiones se individualizan.",
+    "sources": [
+      {
+        "title": "AAOS · Artrosis de hombro",
+        "url": "https://www.orthoinfo.org/diseases--conditions/arthritis-of-the-shoulder/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-44",
+    "stem": "Persona con artrosis de hombro quiere peinarse con menos dificultad. ¿Qué objetivo inicial es más útil?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Normalizar la radiografía antes de hacer ejercicio."
+      },
+      {
+        "id": "B",
+        "text": "Corregir toda crepitación como única meta."
+      },
+      {
+        "id": "C",
+        "text": "Fijar la misma amplitud máxima para toda persona."
+      },
+      {
+        "id": "D",
+        "text": "Mejorar una tarea definida mediante movilidad/capacidad toleradas."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-44",
+    "condition": "Artrosis glenohumeral",
+    "domain": "Intervención",
+    "explanation": "Una meta funcional observable conecta intervención y reevaluación. No exige prometer reversión de los cambios articulares.",
+    "sources": [
+      {
+        "title": "AAOS · Artrosis de hombro",
+        "url": "https://www.orthoinfo.org/diseases--conditions/arthritis-of-the-shoulder/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-45",
+    "stem": "Al seguir artrosis glenohumeral, ¿qué registro permite comparar movilidad de forma útil?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cambiar entre movimiento activo y pasivo sin anotarlo."
+      },
+      {
+        "id": "B",
+        "text": "Registrar únicamente la sensación de tope."
+      },
+      {
+        "id": "C",
+        "text": "Ángulo, posición, método y dolor asociado."
+      },
+      {
+        "id": "D",
+        "text": "Solo escribir 'rango malo' en cada sesión."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-45",
+    "condition": "Artrosis glenohumeral",
+    "domain": "Evaluación",
+    "explanation": "La repetibilidad del procedimiento hace interpretable un cambio. La medida aislada necesita contexto clínico.",
+    "sources": [
+      {
+        "title": "AAOS · Artrosis de hombro",
+        "url": "https://www.orthoinfo.org/diseases--conditions/arthritis-of-the-shoulder/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-46",
+    "stem": "¿Qué diferencia la artropatía por rotura masiva de manguito de una artrosis primaria con manguito competente?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La competencia del manguito no influye en el manejo."
+      },
+      {
+        "id": "B",
+        "text": "La insuficiencia del manguito modifica la mecánica y opciones de reconstrucción."
+      },
+      {
+        "id": "C",
+        "text": "Son siempre la misma condición con distinto nombre."
+      },
+      {
+        "id": "D",
+        "text": "La primera afecta únicamente la articulación AC."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-46",
+    "condition": "Artrosis glenohumeral",
+    "domain": "Fundamentos",
+    "explanation": "La integridad del manguito es un dato importante del cuadro; no basta con decir 'desgaste de hombro'.",
+    "sources": [
+      {
+        "title": "AAOS · Artroplastia de hombro",
+        "url": "https://www.orthoinfo.org/treatment/shoulder-joint-replacement"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-47",
+    "stem": "Dolor y limitación importantes persisten pese a manejo no quirúrgico bien realizado. ¿Qué conversación es pertinente?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Revisar respuesta, preferencias y eventual valoración especializada."
+      },
+      {
+        "id": "B",
+        "text": "Prometer que más de la misma técnica resolverá el cuadro."
+      },
+      {
+        "id": "C",
+        "text": "Indicar cirugía solo por la edad."
+      },
+      {
+        "id": "D",
+        "text": "Negar derivación porque todavía logra mover el brazo."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-47",
+    "condition": "Artrosis glenohumeral",
+    "domain": "Intervención",
+    "explanation": "La repercusión funcional y la respuesta al tratamiento orientan la decisión compartida, no una sola medida.",
+    "sources": [
+      {
+        "title": "AAOS · Artrosis de hombro",
+        "url": "https://www.orthoinfo.org/diseases--conditions/arthritis-of-the-shoulder/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-48",
+    "stem": "¿Qué afirmación sobre artrosis de hombro y ejercicio es más prudente?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La mejoría del dolor prueba regeneración del cartílago."
+      },
+      {
+        "id": "B",
+        "text": "El ejercicio sustituye siempre cualquier otra opción."
+      },
+      {
+        "id": "C",
+        "text": "Toda molestia durante movimiento indica daño nuevo."
+      },
+      {
+        "id": "D",
+        "text": "El programa debe adaptarse a capacidad y síntomas sin prometer regenerar cartílago."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-48",
+    "condition": "Artrosis glenohumeral",
+    "domain": "Interpretación",
+    "explanation": "Diferencia un objetivo clínico plausible de una promesa estructural no demostrada. Se controla la respuesta y la función.",
+    "sources": [
+      {
+        "title": "AAOS · Artrosis de hombro",
+        "url": "https://www.orthoinfo.org/diseases--conditions/arthritis-of-the-shoulder/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-49",
+    "stem": "Para evaluar autonomía en artrosis de hombro, ¿qué información falta si solo se mide flexión?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La talla como única variable adicional."
+      },
+      {
+        "id": "B",
+        "text": "Una imagen semanal independientemente de evolución."
+      },
+      {
+        "id": "C",
+        "text": "Las tareas que necesita hacer y su dificultad real."
+      },
+      {
+        "id": "D",
+        "text": "El color del vendaje preferido."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-49",
+    "condition": "Artrosis glenohumeral",
+    "domain": "Evaluación",
+    "explanation": "El ángulo no muestra por sí solo si puede vestirse, asearse o alcanzar objetos. Importa la participación.",
+    "sources": [
+      {
+        "title": "AAOS · Artrosis de hombro",
+        "url": "https://www.orthoinfo.org/diseases--conditions/arthritis-of-the-shoulder/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-50",
+    "stem": "¿Qué estructura recibe la cabeza humeral en la articulación glenohumeral?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La corredera bicipital de otro hueso."
+      },
+      {
+        "id": "B",
+        "text": "La cavidad glenoidea de la escápula."
+      },
+      {
+        "id": "C",
+        "text": "El acromion como superficie principal de carga."
+      },
+      {
+        "id": "D",
+        "text": "El extremo esternal de la clavícula."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-50",
+    "condition": "Artrosis glenohumeral",
+    "domain": "Fundamentos",
+    "explanation": "Distinguir articulación glenohumeral, AC y espacios periarticulares evita confundir cuadros y mecanismos.",
+    "sources": [
+      {
+        "title": "OpenStax · Músculos de cintura escapular y miembro superior",
+        "url": "https://openstax.org/books/anatomy-and-physiology-2e/pages/11-5-muscles-of-the-pectoral-girdle-and-upper-limbs"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-51",
+    "stem": "En una prótesis reversa de hombro, ¿qué cambio funcional es relevante?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Se modifica la mecánica para depender más del deltoides en la elevación."
+      },
+      {
+        "id": "B",
+        "text": "Reconstruir la articulación con la misma mecánica de una prótesis anatómica."
+      },
+      {
+        "id": "C",
+        "text": "Reemplazar únicamente la superficie del acromion."
+      },
+      {
+        "id": "D",
+        "text": "Restaurar automáticamente un manguito irreparable."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-51",
+    "condition": "Posoperatorio",
+    "domain": "Fundamentos",
+    "explanation": "Conocer el procedimiento evita aplicar un protocolo genérico. La capacidad y restricciones dependen del caso quirúrgico.",
+    "sources": [
+      {
+        "title": "AAOS · Artroplastia de hombro",
+        "url": "https://www.orthoinfo.org/treatment/shoulder-joint-replacement"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-52",
+    "stem": "Tras cirugía de hombro la derivación solo dice 'artroscopia'. ¿Qué debes aclarar?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Solo cuántas incisiones tiene."
+      },
+      {
+        "id": "B",
+        "text": "Solo si ya no siente dolor en reposo."
+      },
+      {
+        "id": "C",
+        "text": "Solo el tiempo de duración del pabellón."
+      },
+      {
+        "id": "D",
+        "text": "Procedimiento, tejidos reparados y restricciones específicas."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-52",
+    "condition": "Posoperatorio",
+    "domain": "Evaluación",
+    "explanation": "Artroscopia es una vía de acceso, no un diagnóstico ni un protocolo. Una reparación y una descompresión no implican la misma protección.",
+    "sources": [
+      {
+        "title": "AAOS · Reparación del manguito",
+        "url": "https://www.orthoinfo.org/treatment/rotator-cuff-tears-surgical-treatment-options/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-53",
+    "stem": "Dos semanas tras reparación del manguito, el paciente quiere levantar una pesa porque duele poco. ¿Qué principio orienta?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La carga depende solo de la motivación."
+      },
+      {
+        "id": "B",
+        "text": "Se debe probar el máximo antes de decidir."
+      },
+      {
+        "id": "C",
+        "text": "Respetar protección de la reparación y progresión indicada, además de síntomas."
+      },
+      {
+        "id": "D",
+        "text": "El dolor bajo demuestra resistencia mecánica completa."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-53",
+    "condition": "Posoperatorio",
+    "domain": "Intervención",
+    "explanation": "La tolerancia sintomática no mide la maduración de una reparación tendón-hueso. El procedimiento debe guiar la progresión.",
+    "sources": [
+      {
+        "title": "AAOS · Reparación del manguito",
+        "url": "https://www.orthoinfo.org/treatment/rotator-cuff-tears-surgical-treatment-options/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-54",
+    "stem": "¿Qué diferencia hay entre movimiento pasivo y activo de hombro?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Ambos términos describen únicamente la velocidad."
+      },
+      {
+        "id": "B",
+        "text": "El activo implica producción muscular para mover; el pasivo usa una fuerza externa."
+      },
+      {
+        "id": "C",
+        "text": "El pasivo siempre es más seguro en cualquier amplitud."
+      },
+      {
+        "id": "D",
+        "text": "El activo no genera carga sobre tejidos reparados."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-54",
+    "condition": "Posoperatorio",
+    "domain": "Fundamentos",
+    "explanation": "El modo de movimiento cambia la demanda. Ninguno queda autorizado automáticamente sin considerar las restricciones.",
+    "sources": [
+      {
+        "title": "OpenStax · Control de la tensión muscular",
+        "url": "https://openstax.org/books/anatomy-and-physiology/pages/10-4-nervous-system-control-of-muscle-tension"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-55",
+    "stem": "Al pasar a fase activa tras reparación autorizada, hay gran compensación y poca elevación humeral. ¿Qué registrar?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Movimiento, compensaciones, dolor y capacidad para graduar la tarea."
+      },
+      {
+        "id": "B",
+        "text": "Solo el rango total alcanzado con cualquier compensación."
+      },
+      {
+        "id": "C",
+        "text": "Solo la apariencia de la cicatriz."
+      },
+      {
+        "id": "D",
+        "text": "Solo que completó el número de repeticiones."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-55",
+    "condition": "Posoperatorio",
+    "domain": "Evaluación",
+    "explanation": "Un rango global puede ocultar estrategias distintas. Documentarlas ayuda a ajustar la demanda sin atribuir una falla estructural automáticamente.",
+    "sources": [
+      {
+        "title": "AAOS · Reparación del manguito",
+        "url": "https://www.orthoinfo.org/treatment/rotator-cuff-tears-surgical-treatment-options/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-56",
+    "stem": "Una persona comienza ejercicios autorizados después de cirugía y presenta empeoramiento persistente tras duplicar volumen. ¿Qué hacer primero?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Duplicar también la intensidad para equilibrar el estímulo."
+      },
+      {
+        "id": "B",
+        "text": "Interpretar todo empeoramiento como curación acelerada."
+      },
+      {
+        "id": "C",
+        "text": "Mantener el programa hasta la fecha de alta sin cambios."
+      },
+      {
+        "id": "D",
+        "text": "Revisar dosis, respuesta y posibles cambios clínicos antes de seguir progresando."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-56",
+    "condition": "Posoperatorio",
+    "domain": "Intervención",
+    "explanation": "La dosis se revisa durante el proceso. Un deterioro inesperado requiere reevaluación y, si corresponde, coordinación con el equipo.",
+    "sources": [
+      {
+        "title": "AAOS · Reparación del manguito",
+        "url": "https://www.orthoinfo.org/treatment/rotator-cuff-tears-surgical-treatment-options/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-57",
+    "stem": "Tras cirugía aparecen secreción de herida y dolor creciente. ¿Qué conducta tiene prioridad?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cubrir y esperar varias semanas."
+      },
+      {
+        "id": "B",
+        "text": "Movilizar más fuerte para drenar la zona."
+      },
+      {
+        "id": "C",
+        "text": "Comunicar prontamente al equipo quirúrgico para evaluación."
+      },
+      {
+        "id": "D",
+        "text": "Continuar porque el movimiento previene toda infección."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-57",
+    "condition": "Posoperatorio",
+    "domain": "Seguridad",
+    "explanation": "Cambios de herida no deben tratarse como una respuesta muscular habitual. La valoración de complicaciones precede a progresar ejercicio.",
+    "sources": [
+      {
+        "title": "AAOS · Artroplastia de hombro",
+        "url": "https://www.orthoinfo.org/treatment/shoulder-joint-replacement"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-58",
+    "stem": "¿Qué conjunto informa mejor la evolución posoperatoria hacia las actividades cotidianas?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Solo número de visitas asistidas."
+      },
+      {
+        "id": "B",
+        "text": "Autoinforme, movilidad, capacidad y desempeño relevantes, respetando la fase."
+      },
+      {
+        "id": "C",
+        "text": "Solo la semana posoperatoria."
+      },
+      {
+        "id": "D",
+        "text": "Solo una comparación visual de ambos hombros."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-58",
+    "condition": "Posoperatorio",
+    "domain": "Evaluación",
+    "explanation": "Calendario y asistencia no demuestran recuperación funcional. La evaluación debe ser adecuada a los tejidos y restricciones.",
+    "sources": [
+      {
+        "title": "AAOS · Reparación del manguito",
+        "url": "https://www.orthoinfo.org/treatment/rotator-cuff-tears-surgical-treatment-options/"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-59",
+    "stem": "Durante un descenso controlado del brazo, los elevadores siguen produciendo tensión mientras se alargan. ¿Qué acción predomina?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Excéntrica."
+      },
+      {
+        "id": "B",
+        "text": "Isométrica."
+      },
+      {
+        "id": "C",
+        "text": "Concéntrica de los elevadores."
+      },
+      {
+        "id": "D",
+        "text": "Movimiento completamente pasivo."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-59",
+    "condition": "Posoperatorio",
+    "domain": "Fundamentos",
+    "explanation": "La dirección del movimiento no basta: se considera cómo cambia la longitud del músculo activo bajo carga.",
+    "sources": [
+      {
+        "title": "OpenStax · Control de la tensión muscular",
+        "url": "https://openstax.org/books/anatomy-and-physiology/pages/10-4-nervous-system-control-of-muscle-tension"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-60",
+    "stem": "Tras prótesis de hombro, el informe indica proteger una reparación de subescapular. ¿Qué debe hacerse con esas indicaciones?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Aplicar un protocolo sin reparación asociada porque ya hay prótesis."
+      },
+      {
+        "id": "B",
+        "text": "Decidir las restricciones solo a partir del dolor actual."
+      },
+      {
+        "id": "C",
+        "text": "Progresar únicamente según la amplitud pasiva alcanzada."
+      },
+      {
+        "id": "D",
+        "text": "Integrarlas en la selección y progresión de movimientos y cargas."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-60",
+    "condition": "Posoperatorio",
+    "domain": "Intervención",
+    "explanation": "Los tejidos reparados importan incluso cuando hay una prótesis. No existe un programa único independiente del procedimiento.",
+    "sources": [
+      {
+        "title": "AAOS · Artroplastia de hombro",
+        "url": "https://www.orthoinfo.org/treatment/shoulder-joint-replacement"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-61",
+    "stem": "Durante la sesión aparece dolor de hombro izquierdo con opresión torácica, sudor frío y disnea. ¿Cuál es la prioridad?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Terminar las series para ver si mejora al calentar."
+      },
+      {
+        "id": "B",
+        "text": "Atribuirlo a ansiedad sin valoración."
+      },
+      {
+        "id": "C",
+        "text": "Activar atención urgente ante posible causa cardiopulmonar."
+      },
+      {
+        "id": "D",
+        "text": "Probar primero masaje y movilidad escapular."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-61",
+    "condition": "Seguridad y diferenciales",
+    "domain": "Seguridad",
+    "explanation": "No se intenta demostrar un origen musculoesquelético antes de atender un patrón de posible urgencia.",
+    "sources": [
+      {
+        "title": "NICE CG95 · Dolor de posible origen cardíaco",
+        "url": "https://www.nice.org.uk/guidance/cg95/chapter/Recommendations"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-62",
+    "stem": "Tras caída, una persona presenta hombro deformado, mano fría y alteración sensitiva nueva. ¿Qué corresponde?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Esperar a que baje la inflamación para evaluar."
+      },
+      {
+        "id": "B",
+        "text": "Derivación urgente por posible lesión neurovascular asociada."
+      },
+      {
+        "id": "C",
+        "text": "Movilización forzada para recuperar simetría."
+      },
+      {
+        "id": "D",
+        "text": "Entrenamiento de agarre como primera medida."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-62",
+    "condition": "Seguridad y diferenciales",
+    "domain": "Seguridad",
+    "explanation": "El estado neurovascular cambia la urgencia. La manipulación no entrenada de una posible luxación añade riesgo.",
+    "sources": [
+      {
+        "title": "AAOS · Luxación de hombro",
+        "url": "https://www.orthoinfo.org/diseases--conditions/dislocated-shoulder"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-63",
+    "stem": "Después de una caída, hay incapacidad nueva para elevar el brazo y marcada debilidad; el movimiento pasivo está relativamente conservado. ¿Qué sospecha merece evaluación pronta?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Rotura traumática relevante del manguito, entre otros diferenciales."
+      },
+      {
+        "id": "B",
+        "text": "Hombro congelado primario por definición."
+      },
+      {
+        "id": "C",
+        "text": "Artrosis como explicación automática."
+      },
+      {
+        "id": "D",
+        "text": "Un simple dolor postural sin necesidad de examinar."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-63",
+    "condition": "Seguridad y diferenciales",
+    "domain": "Reconocimiento",
+    "explanation": "La pérdida funcional brusca tras trauma exige descartar lesión relevante. No se confirma la estructura solo con esta viñeta.",
+    "sources": [
+      {
+        "title": "AAOS · Roturas del manguito",
+        "url": "https://www.orthoinfo.org/diseases--conditions/rotator-cuff-tears"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-64",
+    "stem": "Dolor de hombro acompañado de parestesias hasta la mano cambia con movimientos cervicales. ¿Qué región debe incluirse en el examen?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Solo articulación AC."
+      },
+      {
+        "id": "B",
+        "text": "Solo tendón del supraespinoso."
+      },
+      {
+        "id": "C",
+        "text": "Solo movilidad pasiva glenohumeral."
+      },
+      {
+        "id": "D",
+        "text": "Columna cervical y evaluación neurológica pertinente."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-64",
+    "condition": "Seguridad y diferenciales",
+    "domain": "Interpretación",
+    "explanation": "La distribución y respuesta cervical amplían el diferencial. Dolor en hombro no garantiza origen local.",
+    "sources": [
+      {
+        "title": "BESS/BOA · Evaluación del dolor de hombro",
+        "url": "https://bess.ac.uk/download/1421/primary-intermediate-care-guidelines/6238/shoulder-pain-primary-community-and-intermediate-care-guidelines.pdf"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-65",
+    "stem": "Hombro rápidamente doloroso, caliente y muy limitado, con malestar general y sin trauma. ¿Qué conducta priorizas?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Esperar un ciclo completo de ejercicios domiciliarios."
+      },
+      {
+        "id": "B",
+        "text": "Aplicar calor y revalorar al mes."
+      },
+      {
+        "id": "C",
+        "text": "Evaluación médica urgente para descartar infección u otra causa aguda."
+      },
+      {
+        "id": "D",
+        "text": "Un ensayo intenso de fuerza como prueba diagnóstica."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-65",
+    "condition": "Seguridad y diferenciales",
+    "domain": "Seguridad",
+    "explanation": "La combinación exige descartar causas graves antes de asumir tendinopatía. Ausencia de trauma no equivale a bajo riesgo.",
+    "sources": [
+      {
+        "title": "BESS/BOA · Evaluación del dolor de hombro",
+        "url": "https://bess.ac.uk/download/1421/primary-intermediate-care-guidelines/6238/shoulder-pain-primary-community-and-intermediate-care-guidelines.pdf"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-66",
+    "stem": "¿Qué pregunta aporta contexto de seguridad antes de una evaluación de hombro?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Solo el deporte que más le gusta."
+      },
+      {
+        "id": "B",
+        "text": "Trauma, cambios sistémicos y síntomas neurológicos nuevos."
+      },
+      {
+        "id": "C",
+        "text": "Solo cuántas horas usa el teléfono."
+      },
+      {
+        "id": "D",
+        "text": "Solo si duerme boca arriba."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-66",
+    "condition": "Seguridad y diferenciales",
+    "domain": "Evaluación",
+    "explanation": "El cribado no reemplaza examen, pero orienta urgencia y diferencial. Las preguntas se adaptan al motivo de consulta.",
+    "sources": [
+      {
+        "title": "BESS/BOA · Evaluación del dolor de hombro",
+        "url": "https://bess.ac.uk/download/1421/primary-intermediate-care-guidelines/6238/shoulder-pain-primary-community-and-intermediate-care-guidelines.pdf"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-67",
+    "stem": "¿Qué músculo participa de forma importante en protracción y rotación superior escapular?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Serrato anterior."
+      },
+      {
+        "id": "B",
+        "text": "Romboides mayor como principal rotador superior."
+      },
+      {
+        "id": "C",
+        "text": "Redondo mayor como único estabilizador escapular."
+      },
+      {
+        "id": "D",
+        "text": "Subescapular como músculo de protracción de la escápula."
+      }
+    ],
+    "correct": "A",
+    "objective": "SHOULDER-67",
+    "condition": "Seguridad y diferenciales",
+    "domain": "Fundamentos",
+    "explanation": "La escápula se mueve por acción coordinada. Saber anatomía no significa atribuir todo dolor a una posición escapular.",
+    "sources": [
+      {
+        "title": "OpenStax · Músculos de cintura escapular y miembro superior",
+        "url": "https://openstax.org/books/anatomy-and-physiology-2e/pages/11-5-muscles-of-the-pectoral-girdle-and-upper-limbs"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-68",
+    "stem": "Se observa asimetría escapular sin dolor, debilidad ni limitación. ¿Qué inferencia evita sobrediagnóstico?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Confirma la causa de cualquier dolor futuro."
+      },
+      {
+        "id": "B",
+        "text": "Demuestra un síndrome de acortamiento."
+      },
+      {
+        "id": "C",
+        "text": "Exige impedir ejercicios sobre cabeza."
+      },
+      {
+        "id": "D",
+        "text": "Es una observación que necesita relevancia clínica, no un diagnóstico por sí sola."
+      }
+    ],
+    "correct": "D",
+    "objective": "SHOULDER-68",
+    "condition": "Seguridad y diferenciales",
+    "domain": "Interpretación",
+    "explanation": "Una variación de movimiento o postura no establece causalidad. Debe relacionarse con la queja y el desempeño.",
+    "sources": [
+      {
+        "title": "JOSPT · Guía de tendinopatía del manguito, 2025",
+        "url": "https://doi.org/10.2519/jospt.2025.13182"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-69",
+    "stem": "¿Qué mejora la comparación de fuerza de rotación externa entre sesiones?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Comparar fuerza con dolor un día y sin dolor otro, sin anotarlo."
+      },
+      {
+        "id": "B",
+        "text": "Usar la impresión visual como único registro."
+      },
+      {
+        "id": "C",
+        "text": "Mantener posición, brazo de palanca, dispositivo e instrucciones."
+      },
+      {
+        "id": "D",
+        "text": "Cambiar el brazo de palanca sin registrarlo."
+      }
+    ],
+    "correct": "C",
+    "objective": "SHOULDER-69",
+    "condition": "Seguridad y diferenciales",
+    "domain": "Evaluación",
+    "explanation": "La fuerza medida depende del procedimiento y de los síntomas. Estandarizar reduce confusión al interpretar progreso.",
+    "sources": [
+      {
+        "title": "JOSPT · Guía de tendinopatía del manguito, 2025",
+        "url": "https://doi.org/10.2519/jospt.2025.13182"
+      }
+    ]
+  },
+  {
+    "id": "shoulder-v1-70",
+    "stem": "Un ejercicio de hombro resulta fácil: completa 12 repeticiones y podría hacer 12 más. El objetivo es fuerza. ¿Qué variable conviene reconsiderar?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Mantener exactamente la misma dosis por diagnóstico."
+      },
+      {
+        "id": "B",
+        "text": "La resistencia y el esfuerzo relativo, según tolerancia."
+      },
+      {
+        "id": "C",
+        "text": "Solo el color de la banda sin valorar tensión."
+      },
+      {
+        "id": "D",
+        "text": "Únicamente añadir más modalidades pasivas."
+      }
+    ],
+    "correct": "B",
+    "objective": "SHOULDER-70",
+    "condition": "Seguridad y diferenciales",
+    "domain": "Intervención",
+    "explanation": "El número de repeticiones no describe todo el estímulo. La progresión necesita evaluar esfuerzo, técnica y respuesta.",
+    "sources": [
+      {
+        "title": "JOSPT · Guía de tendinopatía del manguito, 2025",
+        "url": "https://doi.org/10.2519/jospt.2025.13182"
+      }
+    ]
+  }
+]

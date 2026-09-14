@@ -1,0 +1,1157 @@
+[
+  {
+    "id": "knee-v1-36",
+    "stem": "En una sentadilla con mayor flexión, la demanda patelofemoral cambia. ¿Qué combinación determina el estrés articular, no solo la fuerza?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Solo el ángulo Q en reposo."
+      },
+      {
+        "id": "B",
+        "text": "Solo la longitud del tendón patelar."
+      },
+      {
+        "id": "C",
+        "text": "Fuerza de reacción y área de contacto."
+      },
+      {
+        "id": "D",
+        "text": "Solo el peso corporal total."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-36",
+    "condition": "Dolor patelofemoral",
+    "domain": "Fundamentos",
+    "explanation": "El estrés depende de cómo se distribuye la fuerza. Una mayor fuerza no describe por sí sola estrés ni tolerancia individual.",
+    "sources": [
+      {
+        "title": "Guía de buenas prácticas patelofemorales, 2024",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/39401870/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-37",
+    "stem": "Dolor anterior al correr coexiste con crepitación indolora. ¿Qué dato pesa más para ajustar el entrenamiento?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La simetría visual de ambas patelas."
+      },
+      {
+        "id": "B",
+        "text": "La relación entre carga, síntomas y capacidad."
+      },
+      {
+        "id": "C",
+        "text": "La intensidad del ruido por sí sola."
+      },
+      {
+        "id": "D",
+        "text": "La necesidad de eliminar toda crepitación."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-37",
+    "condition": "Dolor patelofemoral",
+    "domain": "Interpretación",
+    "explanation": "Los sonidos aislados no cuantifican lesión. Se prioriza el problema que limita la actividad y su respuesta a la exposición.",
+    "sources": [
+      {
+        "title": "Guía de buenas prácticas patelofemorales, 2024",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/39401870/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-38",
+    "stem": "En dolor patelofemoral, ¿qué diferencia ayuda frente a tendinopatía patelar?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Dolor peripatelar difuso versus dolor tendinoso focal concordante con carga."
+      },
+      {
+        "id": "B",
+        "text": "La presencia de dolor durante cualquier deporte."
+      },
+      {
+        "id": "C",
+        "text": "La edad como único criterio."
+      },
+      {
+        "id": "D",
+        "text": "Una palpación dolorosa inespecífica en toda la rodilla."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-38",
+    "condition": "Dolor patelofemoral",
+    "domain": "Evaluación",
+    "explanation": "La distribución concordante modifica probabilidades. Puede haber coexistencia: no es una regla diagnóstica absoluta.",
+    "sources": [
+      {
+        "title": "Guía de buenas prácticas patelofemorales, 2024",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/39401870/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-39",
+    "stem": "Se toleran sentadillas parciales, pero la variante profunda deja empeoramiento prolongado. ¿Qué progresión es más defendible?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Añadir profundidad e intensidad simultáneamente en cada sesión."
+      },
+      {
+        "id": "B",
+        "text": "Mantener únicamente ejercicios de cadera indefinidamente."
+      },
+      {
+        "id": "C",
+        "text": "Esperar ausencia de cualquier sensación antes de cargar."
+      },
+      {
+        "id": "D",
+        "text": "Partir del rango tolerado y ajustar amplitud/carga según respuesta."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-39",
+    "condition": "Dolor patelofemoral",
+    "domain": "Intervención",
+    "explanation": "La graduación conserva práctica útil sin insistir en una dosis mal tolerada. El objetivo y la evolución guían el avance.",
+    "sources": [
+      {
+        "title": "Guía de buenas prácticas patelofemorales, 2024",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/39401870/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-40",
+    "stem": "Un vendaje patelar reduce dolor al bajar un escalón. ¿Qué uso encaja mejor con la evidencia?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Prueba de que recolocó permanentemente la patela."
+      },
+      {
+        "id": "B",
+        "text": "Confirmación de una lesión específica del cartílago."
+      },
+      {
+        "id": "C",
+        "text": "Apoyo temporal para facilitar actividad y ejercicio."
+      },
+      {
+        "id": "D",
+        "text": "Tratamiento suficiente que sustituye toda carga activa."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-40",
+    "condition": "Dolor patelofemoral",
+    "domain": "Intervención",
+    "explanation": "Una ayuda puede facilitar la tarea sin demostrar un mecanismo de realineación permanente. Se integra al programa activo.",
+    "sources": [
+      {
+        "title": "Guía de buenas prácticas patelofemorales, 2024",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/39401870/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-41",
+    "stem": "¿Qué distingue fuerza lenta de una tarea de almacenamiento y liberación rápida de energía en tendinopatía patelar?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Que las repeticiones describen ambas demandas por completo."
+      },
+      {
+        "id": "B",
+        "text": "La velocidad y exigencia mecánica de la carga tendinosa."
+      },
+      {
+        "id": "C",
+        "text": "Que la carga lenta no usa el tendón."
+      },
+      {
+        "id": "D",
+        "text": "Que toda tarea rápida equivale a fuerza máxima."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-41",
+    "condition": "Tendinopatía patelar",
+    "domain": "Fundamentos",
+    "explanation": "Tolerar fuerza lenta no garantiza tolerar saltos. La progresión debe representar las demandas que la persona necesita recuperar.",
+    "sources": [
+      {
+        "title": "Breda et al. · Ensayo de carga progresiva patelar",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/33219115/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-42",
+    "stem": "Un saltador tolera fortalecimiento lento, pero no ha realizado cargas rápidas. ¿Qué paso aporta información antes de volver a partidos completos?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Introducir exposición graduada a saltos y comprobar respuesta."
+      },
+      {
+        "id": "B",
+        "text": "Volver directamente porque el dolor en reposo desapareció."
+      },
+      {
+        "id": "C",
+        "text": "Repetir solo isométricos aunque necesite saltar."
+      },
+      {
+        "id": "D",
+        "text": "Aumentar saltos y partidos sin registrar volumen."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-42",
+    "condition": "Tendinopatía patelar",
+    "domain": "Intervención",
+    "explanation": "La rehabilitación debe cubrir la demanda de energía elástica además de fuerza. El calendario no sustituye esa comprobación.",
+    "sources": [
+      {
+        "title": "Breda et al. · Ensayo de carga progresiva patelar",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/33219115/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-43",
+    "stem": "Se utiliza VISA-P en tendinopatía patelar. ¿Cómo se interpreta?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Como prueba de integridad estructural del tendón."
+      },
+      {
+        "id": "B",
+        "text": "Como diagnóstico independiente de anamnesis."
+      },
+      {
+        "id": "C",
+        "text": "Como medición directa de fuerza máxima."
+      },
+      {
+        "id": "D",
+        "text": "Como autoinforme de síntomas/función, junto con evaluación clínica."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-43",
+    "condition": "Tendinopatía patelar",
+    "domain": "Evaluación",
+    "explanation": "Un cuestionario no mide estructura ni fuerza. Complementa tareas y otras medidas relevantes.",
+    "sources": [
+      {
+        "title": "Breda et al. · Ensayo de carga progresiva patelar",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/33219115/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-44",
+    "stem": "Tras aumentar saltos, la tarea estandarizada duele más al día siguiente varias veces seguidas. ¿Qué sugiere?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Que la adaptación exige siempre empeorar cada día."
+      },
+      {
+        "id": "B",
+        "text": "Que solo importa el dolor durante el primer salto."
+      },
+      {
+        "id": "C",
+        "text": "Revisar la relación entre exposición y recuperación."
+      },
+      {
+        "id": "D",
+        "text": "Que todo dolor tardío prueba nueva rotura."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-44",
+    "condition": "Tendinopatía patelar",
+    "domain": "Interpretación",
+    "explanation": "La evolución posterior aporta información de tolerancia. No se usa una única sensación para concluir daño anatómico.",
+    "sources": [
+      {
+        "title": "Breda et al. · Ensayo de carga progresiva patelar",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/33219115/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-45",
+    "stem": "Si cambia la carga externa pero no se registra esfuerzo, ¿qué dificultad aparece al comparar dos programas de tendón?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Todos los programas se vuelven equivalentes."
+      },
+      {
+        "id": "B",
+        "text": "No se conoce bien la demanda relativa para cada persona."
+      },
+      {
+        "id": "C",
+        "text": "Ya no es posible medir ningún resultado."
+      },
+      {
+        "id": "D",
+        "text": "Las series dejan de tener significado."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-45",
+    "condition": "Tendinopatía patelar",
+    "domain": "Fundamentos",
+    "explanation": "La dosis incluye intensidad relativa y exposición total. Anotar solo el ejercicio deja información insuficiente para reproducirlo.",
+    "sources": [
+      {
+        "title": "Breda et al. · Ensayo de carga progresiva patelar",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/33219115/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-46",
+    "stem": "Una persona de 63 años con artrosis estable presenta ahora deterioro rápido y articulación muy inflamada. ¿Qué cambia en el razonamiento?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Hay características atípicas que requieren reevaluar la explicación habitual."
+      },
+      {
+        "id": "B",
+        "text": "Todo cambio se atribuye a la misma artrosis sin revisar."
+      },
+      {
+        "id": "C",
+        "text": "La edad descarta causas adicionales."
+      },
+      {
+        "id": "D",
+        "text": "El ejercicio previo confirma sobrecarga como causa única."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-46",
+    "condition": "Artrosis",
+    "domain": "Reconocimiento",
+    "explanation": "Un diagnóstico previo no inmuniza frente a otra enfermedad. Un cambio importante obliga a revisar seguridad y diferencial.",
+    "sources": [
+      {
+        "title": "NICE NG226 · Artrosis",
+        "url": "https://www.nice.org.uk/guidance/NG226/chapter/recommendations"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-47",
+    "stem": "¿Cuál es la función de considerar músculo y capacidad aeróbica al tratar artrosis?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Regenerar necesariamente todas las superficies articulares."
+      },
+      {
+        "id": "B",
+        "text": "Sustituir el diagnóstico por un test de fuerza."
+      },
+      {
+        "id": "C",
+        "text": "Evitar cualquier intervención educativa."
+      },
+      {
+        "id": "D",
+        "text": "Abordar limitaciones modificables que influyen en la función."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-47",
+    "condition": "Artrosis",
+    "domain": "Fundamentos",
+    "explanation": "El tratamiento no se restringe al cartílago. Puede mejorar capacidad sin demostrar reversión estructural de la artrosis.",
+    "sources": [
+      {
+        "title": "NICE NG226 · Artrosis",
+        "url": "https://www.nice.org.uk/guidance/NG226/chapter/recommendations"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-48",
+    "stem": "Una usuaria con artrosis y poca actividad dice que solo dispone de diez minutos seguidos. ¿Qué estrategia favorece adherencia?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Entregar un programa extenso sin explorar barreras."
+      },
+      {
+        "id": "B",
+        "text": "Centrarse exclusivamente en tratamiento pasivo."
+      },
+      {
+        "id": "C",
+        "text": "Negociar bloques viables de actividad con progresión."
+      },
+      {
+        "id": "D",
+        "text": "Descartar actividad porque no llega a una hora."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-48",
+    "condition": "Artrosis",
+    "domain": "Intervención",
+    "explanation": "La dosis debe poder realizarse. La adherencia y la progresión forman parte de una prescripción individualizada.",
+    "sources": [
+      {
+        "title": "NICE NG226 · Artrosis",
+        "url": "https://www.nice.org.uk/guidance/NG226/chapter/recommendations"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-49",
+    "stem": "Después de una sesión siente dolor leve que vuelve a su nivel habitual sin empeorar función. ¿Qué dato diferenciaría una respuesta preocupante?",
+    "options": [
+      {
+        "id": "A",
+        "text": "El mero hecho de tener artrosis."
+      },
+      {
+        "id": "B",
+        "text": "Deterioro persistente, nueva inflamación relevante o signos adicionales."
+      },
+      {
+        "id": "C",
+        "text": "Cualquier cambio transitorio de sensación."
+      },
+      {
+        "id": "D",
+        "text": "Un ruido aislado sin síntomas."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-49",
+    "condition": "Artrosis",
+    "domain": "Interpretación",
+    "explanation": "La respuesta se interpreta por intensidad, duración, función y contexto, no por una regla de dolor igual a daño.",
+    "sources": [
+      {
+        "title": "NICE NG226 · Artrosis",
+        "url": "https://www.nice.org.uk/guidance/NG226/chapter/recommendations"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-50",
+    "stem": "Quiere caminar 20 minutos y actualmente tolera 8. ¿Qué indicador expresa mejor avance hacia esa meta?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tiempo tolerado con síntomas y condiciones registradas."
+      },
+      {
+        "id": "B",
+        "text": "Solo el perímetro de muslo."
+      },
+      {
+        "id": "C",
+        "text": "Solo el dolor al palpar la interlínea."
+      },
+      {
+        "id": "D",
+        "text": "Solo el número de sesiones asistidas."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-50",
+    "condition": "Artrosis",
+    "domain": "Evaluación",
+    "explanation": "Las medidas deben conectar con la actividad elegida. Fuerza u otras variables pueden complementar, no reemplazar la meta funcional.",
+    "sources": [
+      {
+        "title": "NICE NG226 · Artrosis",
+        "url": "https://www.nice.org.uk/guidance/NG226/chapter/recommendations"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-51",
+    "stem": "¿Por qué la región de una lesión meniscal influye en la posibilidad de reparación biológica?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Todas las regiones reciben idéntico aporte sanguíneo."
+      },
+      {
+        "id": "B",
+        "text": "La sensibilidad dolorosa mide directamente su vascularización."
+      },
+      {
+        "id": "C",
+        "text": "La edad identifica por sí sola la zona lesionada."
+      },
+      {
+        "id": "D",
+        "text": "La vascularización varía entre regiones del menisco."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-51",
+    "condition": "Menisco",
+    "domain": "Fundamentos",
+    "explanation": "El aporte vascular es uno de varios factores. Patrón de rotura, procedimiento y contexto también influyen en rehabilitación.",
+    "sources": [
+      {
+        "title": "ESSKA-AOSSM-AASPT · Consenso meniscal, parte I",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12310086/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-52",
+    "stem": "Tras meniscectomía parcial y tras reparación, ambos pacientes tienen poco dolor. ¿Por qué no se equipara su progresión automáticamente?",
+    "options": [
+      {
+        "id": "A",
+        "text": "El dolor bajo demuestra igual capacidad tisular."
+      },
+      {
+        "id": "B",
+        "text": "La duración del pabellón determina toda restricción."
+      },
+      {
+        "id": "C",
+        "text": "Uno puede tener tejido suturado que requiere protección específica."
+      },
+      {
+        "id": "D",
+        "text": "Toda cirugía de menisco tiene la misma biología."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-52",
+    "condition": "Menisco",
+    "domain": "Interpretación",
+    "explanation": "El procedimiento importa. Los síntomas no son el único criterio para decidir carga y movimientos.",
+    "sources": [
+      {
+        "title": "ESSKA-AOSSM-AASPT · Consenso meniscal, parte I",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12310086/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-53",
+    "stem": "¿Qué diferencia un bloqueo verdadero de una sensación ocasional de chasquido?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Un crujido que no altera la actividad."
+      },
+      {
+        "id": "B",
+        "text": "Una limitación mecánica persistente del movimiento que necesita valoración."
+      },
+      {
+        "id": "C",
+        "text": "La presencia de cualquier ruido indoloro."
+      },
+      {
+        "id": "D",
+        "text": "Dolor difuso sin pérdida de movimiento."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-53",
+    "condition": "Menisco",
+    "domain": "Evaluación",
+    "explanation": "La historia debe aclarar qué significa 'se bloquea'. Etiquetas vagas pueden llevar a decisiones equivocadas.",
+    "sources": [
+      {
+        "title": "ESSKA-AOSSM-AASPT · Consenso meniscal, parte II",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12163282/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-54",
+    "stem": "Lesión meniscal degenerativa sin bloqueo verdadero ni alarma, con debilidad y limitación funcional. ¿Qué principio orienta rehabilitación?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Programa activo y seguimiento individualizado antes de asumir cirugía necesaria."
+      },
+      {
+        "id": "B",
+        "text": "Todo informe meniscal implica meniscectomía."
+      },
+      {
+        "id": "C",
+        "text": "La imagen impide usar ejercicio de fuerza."
+      },
+      {
+        "id": "D",
+        "text": "Solo el masaje puede modificar sus síntomas."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-54",
+    "condition": "Menisco",
+    "domain": "Intervención",
+    "explanation": "La lesión en imagen no determina por sí sola la necesidad quirúrgica. Se evalúa la respuesta a manejo no operatorio.",
+    "sources": [
+      {
+        "title": "ESSKA-AOSSM-AASPT · Consenso meniscal, parte II",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12163282/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-55",
+    "stem": "Después de reparación, aumenta derrame y pierde extensión tras progresar carga. ¿Qué información debe revisar el interno?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Solo la edad del paciente."
+      },
+      {
+        "id": "B",
+        "text": "Solo si alcanzó una fecha de protocolo."
+      },
+      {
+        "id": "C",
+        "text": "Solo la puntuación de dolor en reposo."
+      },
+      {
+        "id": "D",
+        "text": "Dosis reciente, procedimiento, restricciones y evolución de los nuevos signos."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-55",
+    "condition": "Menisco",
+    "domain": "Evaluación",
+    "explanation": "Una regresión objetiva importa aunque el dolor sea bajo. Puede requerir ajustar carga y consultar según el contexto.",
+    "sources": [
+      {
+        "title": "ESSKA-AOSSM-AASPT · Consenso meniscal, parte I",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12310086/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-56",
+    "stem": "¿Qué función se atribuye principalmente al LCP?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Producir extensión activa de rodilla."
+      },
+      {
+        "id": "B",
+        "text": "Unir directamente patela y fémur."
+      },
+      {
+        "id": "C",
+        "text": "Resistir la traslación posterior tibial respecto del fémur."
+      },
+      {
+        "id": "D",
+        "text": "Resistir exclusivamente el desplazamiento lateral patelar."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-56",
+    "condition": "Ligamentos",
+    "domain": "Fundamentos",
+    "explanation": "Conocer la función ayuda a relacionar mecanismo y examen, sin convertir una maniobra aislada en diagnóstico definitivo.",
+    "sources": [
+      {
+        "title": "AAOS · Lesiones de rodilla",
+        "url": "https://www.orthoinfo.org/diseases--conditions/common-knee-injuries/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-57",
+    "stem": "La rodilla tiene derrame y el cuádriceps genera poca fuerza. ¿Qué comparación mejora la interpretación?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Usar únicamente el dolor referido en reposo."
+      },
+      {
+        "id": "B",
+        "text": "Activación, fuerza, dolor y movilidad, con técnica consistente."
+      },
+      {
+        "id": "C",
+        "text": "Solo comparar contorno muscular."
+      },
+      {
+        "id": "D",
+        "text": "Asumir atrofia como causa exclusiva."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-57",
+    "condition": "Ligamentos",
+    "domain": "Evaluación",
+    "explanation": "El déficit puede incluir componentes neurales y musculares. Un único indicador no permite separarlos.",
+    "sources": [
+      {
+        "title": "Aspetar · Rehabilitación tras reconstrucción de LCA",
+        "url": "https://bjsm.bmj.com/content/57/9/500"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-58",
+    "stem": "Tras reconstrucción LCA, ¿qué criterio evita avanzar solo por semanas?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Combinar recuperación clínica, capacidad y requisitos de la tarea con tiempo biológico."
+      },
+      {
+        "id": "B",
+        "text": "Usar solo la fecha de operación."
+      },
+      {
+        "id": "C",
+        "text": "Usar únicamente ausencia de dolor."
+      },
+      {
+        "id": "D",
+        "text": "Usar solamente la motivación del deportista."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-58",
+    "condition": "Ligamentos",
+    "domain": "Intervención",
+    "explanation": "La progresión es multidimensional. Ni calendario ni un resultado aislado reemplazan el conjunto de criterios.",
+    "sources": [
+      {
+        "title": "Aspetar · Rehabilitación tras reconstrucción de LCA",
+        "url": "https://bjsm.bmj.com/content/57/9/500"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-59",
+    "stem": "Una persona consigue simetría del 95% en una prueba, pero ambas piernas están desacondicionadas. ¿Qué información adicional necesitas?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Solo redondear la simetría al 100%."
+      },
+      {
+        "id": "B",
+        "text": "La altura corporal como único dato."
+      },
+      {
+        "id": "C",
+        "text": "El lado dominante sin medir otra variable."
+      },
+      {
+        "id": "D",
+        "text": "Capacidad absoluta y calidad de ejecución, además de simetría."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-59",
+    "condition": "Ligamentos",
+    "domain": "Interpretación",
+    "explanation": "Una referencia contralateral baja puede ocultar déficits. La simetría no equivale a capacidad suficiente.",
+    "sources": [
+      {
+        "title": "Aspetar · Rehabilitación tras reconstrucción de LCA",
+        "url": "https://bjsm.bmj.com/content/57/9/500"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-60",
+    "stem": "En una contracción isométrica de cuádriceps, ¿qué permanece aproximadamente constante en la tarea?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La fuerza, necesariamente igual en todo momento."
+      },
+      {
+        "id": "B",
+        "text": "La activación neural, que desaparece."
+      },
+      {
+        "id": "C",
+        "text": "El ángulo articular mientras se genera tensión."
+      },
+      {
+        "id": "D",
+        "text": "Toda actividad metabólica del músculo."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-60",
+    "condition": "Ligamentos",
+    "domain": "Fundamentos",
+    "explanation": "Isométrico describe una condición mecánica, no ausencia de trabajo fisiológico ni de variación de esfuerzo.",
+    "sources": [
+      {
+        "title": "OpenStax · Control de la tensión muscular",
+        "url": "https://openstax.org/books/anatomy-and-physiology/pages/10-4-nervous-system-control-of-muscle-tension"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-61",
+    "stem": "¿Qué estructura es un estabilizador medial relevante frente al desplazamiento lateral patelar cerca de extensión?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Ligamento colateral lateral."
+      },
+      {
+        "id": "B",
+        "text": "Ligamento patelofemoral medial."
+      },
+      {
+        "id": "C",
+        "text": "Ligamento cruzado posterior."
+      },
+      {
+        "id": "D",
+        "text": "Tendón del bíceps femoral exclusivamente."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-61",
+    "condition": "Inestabilidad patelar",
+    "domain": "Fundamentos",
+    "explanation": "La estabilidad patelar combina estructuras pasivas y factores dinámicos. No depende de un solo músculo aislado.",
+    "sources": [
+      {
+        "title": "AAOS · Lesiones de rodilla",
+        "url": "https://www.orthoinfo.org/diseases--conditions/common-knee-injuries/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-62",
+    "stem": "Tras episodio de luxación patelar hay derrame importante y dolor persistente. ¿Qué debe considerarse además de control muscular?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Lesiones asociadas, incluida lesión osteocondral."
+      },
+      {
+        "id": "B",
+        "text": "Solo la longitud del cuádriceps."
+      },
+      {
+        "id": "C",
+        "text": "Que toda luxación reducida está resuelta sin seguimiento."
+      },
+      {
+        "id": "D",
+        "text": "Que el derrame demuestra artrosis avanzada."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-62",
+    "condition": "Inestabilidad patelar",
+    "domain": "Evaluación",
+    "explanation": "La reducción no descarta daño asociado. El contexto clínico puede justificar evaluación adicional antes de progresar.",
+    "sources": [
+      {
+        "title": "AAOS · Lesiones de rodilla",
+        "url": "https://www.orthoinfo.org/diseases--conditions/common-knee-injuries/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-63",
+    "stem": "Al recuperar una luxación patelar evaluada, el paciente evita escaleras por temor. ¿Qué intervención es más completa?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Medir únicamente la alineación de pie."
+      },
+      {
+        "id": "B",
+        "text": "Trabajar solo una porción muscular en toda persona."
+      },
+      {
+        "id": "C",
+        "text": "Evitar toda tarea que le produzca inseguridad sin progresión."
+      },
+      {
+        "id": "D",
+        "text": "Recuperar capacidad y practicar tareas graduadas abordando confianza."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-63",
+    "condition": "Inestabilidad patelar",
+    "domain": "Intervención",
+    "explanation": "El desempeño requiere capacidad y confianza. La exposición se adapta a estabilidad clínica y tolerancia.",
+    "sources": [
+      {
+        "title": "AAOS · Lesiones de rodilla",
+        "url": "https://www.orthoinfo.org/diseases--conditions/common-knee-injuries/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-64",
+    "stem": "El alumno observa valgo en una sentadilla. ¿Qué puede afirmar con ese único dato?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Demuestra lesión del ligamento colateral medial."
+      },
+      {
+        "id": "B",
+        "text": "Explica todos los episodios de luxación."
+      },
+      {
+        "id": "C",
+        "text": "Describe una estrategia que necesita contexto, no una causa suficiente de lesión."
+      },
+      {
+        "id": "D",
+        "text": "Confirma debilidad aislada de glúteo medio."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-64",
+    "condition": "Inestabilidad patelar",
+    "domain": "Interpretación",
+    "explanation": "La observación no identifica por sí sola el mecanismo causal ni una estructura débil. Se contrasta con evaluación específica.",
+    "sources": [
+      {
+        "title": "Guía de buenas prácticas patelofemorales, 2024",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/39401870/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-65",
+    "stem": "¿Qué pregunta clarifica mejor 'la rodilla se me va'?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Qué técnica prefiere recibir."
+      },
+      {
+        "id": "B",
+        "text": "Qué se desplaza o falla, en qué tarea y con qué síntomas."
+      },
+      {
+        "id": "C",
+        "text": "Si le gusta practicar deporte."
+      },
+      {
+        "id": "D",
+        "text": "Si alguna vez oyó crujidos."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-65",
+    "condition": "Inestabilidad patelar",
+    "domain": "Evaluación",
+    "explanation": "Puede referirse a aprensión, fallo por dolor, debilidad o inestabilidad. Precisar la experiencia evita etiquetar prematuramente.",
+    "sources": [
+      {
+        "title": "AAOS · Lesiones de rodilla",
+        "url": "https://www.orthoinfo.org/diseases--conditions/common-knee-injuries/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-66",
+    "stem": "¿Por qué la analgesia tras artroplastia no implica fuerza recuperada?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Dolor y capacidad neuromuscular son dimensiones distintas."
+      },
+      {
+        "id": "B",
+        "text": "La prótesis reemplaza también los músculos."
+      },
+      {
+        "id": "C",
+        "text": "Toda pérdida de fuerza es voluntaria."
+      },
+      {
+        "id": "D",
+        "text": "La fuerza depende únicamente de la radiografía."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-66",
+    "condition": "Artroplastia",
+    "domain": "Fundamentos",
+    "explanation": "La cirugía no restaura automáticamente fuerza y desempeño. Deben medirse y entrenarse según evolución.",
+    "sources": [
+      {
+        "title": "AAOS · Artroplastia total de rodilla",
+        "url": "https://www.orthoinfo.org/treatment/total-knee-replacement/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-67",
+    "stem": "Tras artroplastia, sentarse desde una silla alta se tolera y desde una baja no. ¿Qué modificación es razonable?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Usar siempre la silla más baja posible."
+      },
+      {
+        "id": "B",
+        "text": "Retirar toda práctica de transferencias."
+      },
+      {
+        "id": "C",
+        "text": "Progresar por número de sesiones sin observar la tarea."
+      },
+      {
+        "id": "D",
+        "text": "Graduar la altura y asistencia, registrando progresión."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-67",
+    "condition": "Artroplastia",
+    "domain": "Intervención",
+    "explanation": "La altura modifica la demanda. Adaptar la tarea facilita práctica funcional sin perder su objetivo.",
+    "sources": [
+      {
+        "title": "AAOS · Artroplastia total de rodilla",
+        "url": "https://www.orthoinfo.org/treatment/total-knee-replacement/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-68",
+    "stem": "Hay extensión pasiva completa pero déficit activo después de prótesis. ¿Qué medida NO basta para describir recuperación extensora?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Diferencia entre extensión activa y pasiva."
+      },
+      {
+        "id": "B",
+        "text": "Desempeño funcional relevante."
+      },
+      {
+        "id": "C",
+        "text": "Solo el rango pasivo."
+      },
+      {
+        "id": "D",
+        "text": "Fuerza con procedimiento documentado."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-68",
+    "condition": "Artroplastia",
+    "domain": "Evaluación",
+    "explanation": "La extensión pasiva completa no asegura control activo. La evaluación distingue movilidad disponible y capacidad para usarla.",
+    "sources": [
+      {
+        "title": "AAOS · Artroplastia total de rodilla",
+        "url": "https://www.orthoinfo.org/treatment/total-knee-replacement/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-69",
+    "stem": "Para mejorar fuerza tras prótesis, ¿qué información vuelve más reproducible '3 series de 10'?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Solo la duración total del proceso quirúrgico."
+      },
+      {
+        "id": "B",
+        "text": "Carga/esfuerzo, descanso, frecuencia y progresión."
+      },
+      {
+        "id": "C",
+        "text": "Solo el nombre del aparato."
+      },
+      {
+        "id": "D",
+        "text": "Solo la fecha de próxima consulta."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-69",
+    "condition": "Artroplastia",
+    "domain": "Intervención",
+    "explanation": "La misma cuenta de repeticiones puede representar estímulos muy distintos. La dosis necesita contexto individual.",
+    "sources": [
+      {
+        "title": "AAOS · Artroplastia total de rodilla",
+        "url": "https://www.orthoinfo.org/treatment/total-knee-replacement/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-70",
+    "stem": "Al alta, mejoró fuerza medida, pero no logra el objetivo de subir escalones con seguridad. ¿Qué concluyes?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Hay recuperación parcial; debe revisarse la limitación funcional pendiente."
+      },
+      {
+        "id": "B",
+        "text": "La fuerza aislada garantiza cumplimiento del objetivo."
+      },
+      {
+        "id": "C",
+        "text": "El objetivo funcional ya no importa."
+      },
+      {
+        "id": "D",
+        "text": "Una prueba de fuerza favorable confirma recuperación total."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-70",
+    "condition": "Artroplastia",
+    "domain": "Evaluación",
+    "explanation": "Mejorar una deficiencia no garantiza transferencia completa. Se comprueba la actividad y se ajusta el plan.",
+    "sources": [
+      {
+        "title": "AAOS · Artroplastia total de rodilla",
+        "url": "https://www.orthoinfo.org/treatment/total-knee-replacement/"
+      }
+    ]
+  }
+]

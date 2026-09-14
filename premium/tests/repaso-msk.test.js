@@ -13,9 +13,44 @@ function load(file, dependencies = {}) {
 }
 const types = load('src/lib/repaso-msk/types.ts');
 const { advanceAttempt } = load('src/lib/repaso-msk/engine.ts', { './types': types });
-const { attemptView, bankQuestions } = load('src/lib/repaso-msk/server.ts', { './knee-bank.json': bank, './hip-bank.json': hipBank, '@/lib/server/firebaseAdmin': {} });
+const jsonBanks = Object.fromEntries(['knee-bank', 'hip-bank', 'knee-additional', 'hip-additional', 'shoulder-bank', 'revisions'].map(name => [`./${name}.json`, require(`../src/lib/repaso-msk/${name}.json`)]));
+const { attemptView, bankQuestions } = load('src/lib/repaso-msk/server.ts', { ...jsonBanks, '@/lib/server/firebaseAdmin': {} });
+const selection = load('src/lib/repaso-msk/selection.ts', { './types': types });
 const catalog = load('src/lib/repaso-msk/catalog.ts');
 const bankState = load('src/lib/repaso-msk/bank-state.ts');
+test('dos tests de 35 no comparten familias; sólo el tercero requiere repetición explícita', () => {
+  for (const version of ['knee-v1', 'hip-v1', 'shoulder-v1']) {
+    const questions = bankQuestions(version);
+    for (let seed = 1; seed <= 20; seed++) {
+      let n = seed; const random = max => { n = (n * 1664525 + 1013904223) >>> 0; return n % max; };
+      const first = selection.selectQuestions(questions, [], false, random);
+      const used = first.questions.map(selection.family);
+      const second = selection.selectQuestions(questions, used, false, random);
+      assert.equal(first.questions.length, 35); assert.equal(second.questions.length, 35);
+      assert.equal(new Set([...used, ...second.questions.map(selection.family)]).size, 70);
+      assert.equal(first.repeated, false); assert.equal(second.repeated, false);
+      assert.ok(new Set(first.questions.map(q => q.condition)).size >= 7);
+      const all = questions.map(selection.family);
+      assert.throws(() => selection.selectQuestions(questions, all, false, random), /BANK_USED/);
+      assert.equal(selection.selectQuestions(questions, all, true, random).repeatedCount, 35);
+      const mixed = selection.selectQuestions(questions, all.slice(0, 60), true, random);
+      assert.equal(mixed.repeatedCount, 25);
+      assert.ok(all.slice(60).every(id => mixed.questions.some(q => selection.family(q) === id)));
+    }
+  }
+});
+test('revisiones mantienen historial original y no se presentan como nuevas familias', () => {
+  const original = hipBank.find(q => q.id === 'hip-v1-12');
+  const active = bankQuestions('hip-v1').find(q => q.familyId === original.id);
+  assert.ok(active); assert.notEqual(active.stem, original.stem);
+  const oldView = attemptView({ questionIds: [original.id], status: 'completed', answers: [] });
+  assert.equal(oldView.review[0].stem, original.stem);
+  const legacySeen = bankState.seenFamilies({ banks: { 'hip-v1': { used: true } } }, 'hip-v1');
+  const fresh = selection.selectQuestions(bankQuestions('hip-v1'), legacySeen, false, () => 0);
+  assert.equal(fresh.questions.length, 35);
+  assert.ok(fresh.questions.every(q => !legacySeen.includes(selection.family(q))));
+  assert.ok(fresh.questions.every(q => Number(q.id.slice(-2)) >= 36));
+});
 const make = () => ({ id: 'test', version: 'knee-v1', questionIds: bank.map(q => q.id), answers: [], revision: 0,
   status: 'active', remainingMs: 60000, selected: null, createdAt: '2026-09-14', updatedAt: '2026-09-14', repeated: false });
 const answer = (a, values = {}) => ({ type: 'answer', revision: a.revision, index: a.answers.length,
@@ -89,10 +124,10 @@ test('API bloquea anónimos e internos antes de leer el banco o Firestore', asyn
   }
 });
 
-test('cadera y rodilla tienen 35 ítems distintos y claves equilibradas', () => {
+test('tres zonas tienen 70 ítems activos, cuatro alternativas y fundamentos', () => {
   assert.equal(new Set([...bank, ...hipBank].map(q => q.id)).size, 70);
-  for (const version of ['knee-v1', 'hip-v1']) {
-    const questions = bankQuestions(version); assert.equal(questions.length, 35);
+  for (const version of ['knee-v1', 'hip-v1', 'shoulder-v1']) {
+    const questions = bankQuestions(version); assert.equal(questions.length, 70);
     for (const q of questions) {
       assert.ok(q.id.startsWith(version)); assert.equal(q.options.length, 4);
       assert.equal(new Set(q.options.map(o => o.text)).size, 4);
@@ -134,6 +169,7 @@ test('API crea cada banco una vez, retoma el correcto y exige permiso para repet
     '@/lib/server/apiResponse': { getRequestId: () => 'test', handleApiError: () => ({ status: 500 }) },
     '@/lib/repaso-msk/server': { attemptsRef: () => ref, bankQuestions, attemptView },
     '@/lib/repaso-msk/catalog': catalog, '@/lib/repaso-msk/bank-state': bankState,
+    '@/lib/repaso-msk/selection': selection,
   });
   const post = body => route.POST({ headers: new Headers(), json: async () => body });
   assert.equal((await post({ version: 'unknown' })).status, 400);
@@ -144,6 +180,11 @@ test('API crea cada banco una vez, retoma el correcto y exige permiso para repet
   const again = await (await post({ version: 'hip-v1' })).json(); assert.equal(again.attempt.id, hip.attempt.id); assert.equal(writes, 1);
   assert.equal(documents.get('marker').activeId, 'legacy');
   documents.set(hip.attempt.id, { ...hip.attempt, status: 'completed' });
+  const second = await (await post({ version: 'hip-v1' })).json();
+  assert.equal(second.attempt.repeated, false);
+  assert.equal(second.questions.filter(q => hip.questions.some(old => old.id === q.id)).length, 0);
+  assert.equal(documents.get('marker').banks['hip-v1'].seenFamilies.length, 70);
+  documents.set(second.attempt.id, { ...second.attempt, status: 'completed' });
   assert.equal((await post({ version: 'hip-v1' })).status, 409);
   const replay = await (await post({ version: 'hip-v1', replay: true })).json();
   assert.equal(replay.attempt.repeated, true); assert.notEqual(replay.attempt.id, hip.attempt.id);

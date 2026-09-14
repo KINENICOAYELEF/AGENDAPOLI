@@ -4,6 +4,7 @@ export type Question = {
   objective: string; condition: string; domain: string;
 };
 export type ReviewedQuestion = Question & {
+  familyId?: string; replaces?: string;
   correct: string; explanation: string; sources: { title: string; url: string }[];
 };
 export type Answer = {
@@ -11,11 +12,12 @@ export type Answer = {
   reason: 'answer' | 'skip' | 'timeout'; elapsedMs: number; correct: boolean;
 };
 export type Attempt = {
-  id: string; version: 'knee-v1' | 'hip-v1'; questionIds: string[]; answers: Answer[];
+  id: string; version: 'knee-v1' | 'hip-v1' | 'shoulder-v1'; questionIds: string[]; answers: Answer[];
   revision: number; status: 'active' | 'completed'; remainingMs: number;
   selected: OptionId | null; createdAt: string; updatedAt: string; repeated: boolean;
 };
 export type AttemptView = { attempt: Attempt; questions: Question[]; review?: ReviewedQuestion[] };
+export type BankAvailability = { version: Attempt['version']; total: number; unseen: number; used: number; activeId?: string };
 export type AttemptSummary = Pick<Attempt, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'repeated'> & { version?: Attempt['version'];
   answered: number; correct: number; total: number;
 };
@@ -25,6 +27,7 @@ export type QuizAction = {
   | { type: 'checkpoint'; remainingMs: number; selected: OptionId | null });
 
 export const QUESTION_MS = 60_000;
+export const TEST_SIZE = 35;
 
 export function summarise(attempt: Attempt, questions: Question[], group: 'domain' | 'condition' = 'domain') {
   const domains = [...new Set(questions.map(q => q[group]))];

@@ -3,16 +3,23 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { requireTeacher } from '@/lib/server/firebaseAdmin';
 import { handleApiError, getRequestId } from '@/lib/server/apiResponse';
 import { attemptsRef, bankQuestions, attemptView } from '@/lib/repaso-msk/server';
-import { validVersion } from '@/lib/repaso-msk/catalog';
-import { readBankState } from '@/lib/repaso-msk/bank-state';
+import { catalog, validVersion, type BankVersion } from '@/lib/repaso-msk/catalog';
+import { readBankState, seenFamilies } from '@/lib/repaso-msk/bank-state';
+import { family, selectQuestions } from '@/lib/repaso-msk/selection';
 import type { Attempt } from '@/lib/repaso-msk/types';
 
 export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   try {
     const { uid } = await requireTeacher(req.headers.get('authorization'));
-    const docs = await attemptsRef(uid).orderBy('createdAt', 'desc').limit(40).get();
-    return NextResponse.json({ history: docs.docs.map(doc => {
+    const ref = attemptsRef(uid);
+    const [docs, marker] = await Promise.all([ref.orderBy('createdAt', 'desc').limit(40).get(), ref.parent!.get()]);
+    const banks = (Object.keys(catalog) as BankVersion[]).map(version => {
+      const questions = bankQuestions(version), seen = new Set(seenFamilies(marker.data(), version));
+      const used = questions.filter(q => seen.has(family(q))).length;
+      return { version, total: questions.length, used, unseen: questions.length - used, activeId: readBankState(marker.data(), version).activeId };
+    });
+    return NextResponse.json({ banks, history: docs.docs.map(doc => {
       const a = doc.data() as Attempt;
       return { id: a.id, version: a.version, status: a.status, createdAt: a.createdAt, updatedAt: a.updatedAt, repeated: a.repeated,
         answered: a.answers.length, correct: a.status === 'completed' ? a.answers.filter(x => x.correct).length : 0, total: a.questionIds.length };
@@ -40,20 +47,19 @@ export async function POST(req: Request) {
         const old = await tx.get(ref.doc(selectedBank.activeId));
         if (old.exists && old.data()?.status === 'active' && old.data()?.version === version) return old.data() as Attempt;
       }
-      if (selectedBank.used && body.replay !== true) throw new Error('BANK_USED');
-      const ids = bankQuestions(version).map(q => q.id);
-      if (ids.length !== 35) throw new Error('Invalid bank size');
-      for (let i = ids.length - 1; i > 0; i--) { const j = randomInt(i + 1); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+      const seen = seenFamilies(state, version);
+      const selection = selectQuestions(bankQuestions(version), seen, body.replay === true, randomInt);
+      const ids = selection.questions.map(q => q.id);
       const now = new Date().toISOString();
       const a: Attempt = { id: randomUUID(), version, questionIds: ids, answers: [], revision: 0,
-        status: 'active', remainingMs: 60_000, selected: null, createdAt: now, updatedAt: now, repeated: !!selectedBank.used };
+        status: 'active', remainingMs: 60_000, selected: null, createdAt: now, updatedAt: now, repeated: selection.repeated };
       tx.create(ref.doc(a.id), a);
-      tx.set(marker, { banks: { [version]: { activeId: a.id, used: true } } }, { merge: true });
+      tx.set(marker, { banks: { [version]: { activeId: a.id, used: true, seenFamilies: [...new Set([...seen, ...selection.questions.map(family)])] } } }, { merge: true });
       return a;
     });
     return NextResponse.json(attemptView(attempt));
   } catch (e) {
-    if (e instanceof Error && e.message === 'BANK_USED') return NextResponse.json({ error: 'Ya revisaste este banco. Confirma el ensayo docente para repetirlo.' }, { status: 409 });
+    if (e instanceof Error && e.message === 'BANK_USED') return NextResponse.json({ error: 'No quedan 35 preguntas inéditas. Revisa tu historial o autoriza un ensayo con repetición.' }, { status: 409 });
     return handleApiError(e, getRequestId(req));
   }
 }

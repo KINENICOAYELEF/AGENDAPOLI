@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCircle2, ChevronRight, Clock3, History, LockKeyhole, Pause, Play, RotateCcw, ShieldCheck, Target, X } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { QUESTION_MS, summarise } from '@/lib/repaso-msk/types';
-import type { AttemptSummary, AttemptView, OptionId, QuizAction } from '@/lib/repaso-msk/types';
+import type { AttemptSummary, AttemptView, BankAvailability, OptionId, QuizAction } from '@/lib/repaso-msk/types';
 import { catalog, type BankVersion } from '@/lib/repaso-msk/catalog';
 import styles from './repaso.module.css';
 
@@ -30,6 +30,7 @@ async function api<T>(path = '', body?: unknown): Promise<T> {
 
 export default function RepasoMsk({ uid, request = api }: { uid: string; request?: typeof api }) {
   const [history, setHistory] = useState<AttemptSummary[]>([]);
+  const [banks, setBanks] = useState<BankAvailability[]>([]);
   const [version, setVersion] = useState<BankVersion>('knee-v1');
   const [view, setView] = useState<AttemptView | null>(null);
   const [tab, setTab] = useState<'study' | 'history'>('study');
@@ -65,7 +66,7 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
     const ms = Math.max(0, Math.min(next.attempt.remainingMs, draft?.remainingMs ?? next.attempt.remainingMs));
     const option = draft?.selected ?? next.attempt.selected;
     viewRef.current = next; remainRef.current = ms; selectedRef.current = option; pendingRef.current = draft?.pending ?? null;
-    setView(next); setRemaining(ms); setSelected(option); setPending(draft?.pending ?? null);
+    setView(next); setVersion(next.attempt.version); setRemaining(ms); setSelected(option); setPending(draft?.pending ?? null);
     setRunning(false);
     if (next.attempt.status === 'completed') {
       try { localStorage.removeItem(key(next.attempt.id)); } catch { /* Server copy is already complete. */ }
@@ -75,7 +76,7 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
 
   const loadHome = useCallback(async () => {
     setLoading(true); setError('');
-    try { const result = await request<{ history: AttemptSummary[] }>(); setHistory(result.history); }
+    try { const result = await request<{ history: AttemptSummary[]; banks: BankAvailability[] }>(); setHistory(result.history); setBanks(result.banks ?? []); setRepeat(false); }
     catch (e) { setError(e instanceof Error ? e.message : 'No se pudo cargar el historial.'); }
     finally { setLoading(false); }
   }, [request]);
@@ -157,7 +158,8 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
   };
   const selectedBank = catalog[version];
   const active = history.find(a => a.status === 'active' && (a.version ?? 'knee-v1') === version);
-  const completed = history.filter(a => a.status === 'completed' && (a.version ?? 'knee-v1') === version);
+  const availability = banks.find(b => b.version === version);
+  const needsRepeat = !availability || availability.unseen < 35;
   const a = view?.attempt;
   const attemptTitle = catalog[a?.version ?? version].title;
   const index = a?.answers.length ?? 0;
@@ -182,10 +184,10 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
       {tab === 'study' ? <>
         <section className={styles.hero}>
           <div><span className={styles.heroTag}>BANCO · {selectedBank.title.toUpperCase()}</span><h2>De las bases<br />a la decisión clínica.</h2>
-            <p>35 preguntas sobre cuadros frecuentes, mecanismos, evaluación e intervención. Sin respuestas escritas.</p>
-            <div className={styles.heroFacts}><span><Clock3 size={17} /> 60 s por pregunta</span><span><Target size={17} /> 7 cuadros clínicos</span></div>
+            <p>Tests de 35 preguntas de un banco de {availability?.total ?? '…'}. Cuadros frecuentes, mecanismos, evaluación e intervención. Sin respuestas escritas.</p>
+            <div className={styles.heroFacts}><span><Clock3 size={17} /> 60 s por pregunta</span><span><Target size={17} /> {availability?.unseen ?? '…'} preguntas sin usar</span></div>
             <button className={styles.heroButton} disabled={!!error} onClick={() => active ? void openAttempt(active.id) : setStartModal(true)}>
-              {active ? 'Continuar mi intento' : completed.length ? 'Revisar de nuevo como docente' : 'Probar cuestionario'} <ArrowRight size={18} />
+              {active ? 'Continuar mi intento' : needsRepeat ? 'Ensayo con repetición' : 'Nuevo test de 35'} <ArrowRight size={18} />
             </button>
             {active && <small>{active.answered} de {active.total} respuestas guardadas</small>}
           </div>
@@ -195,10 +197,10 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
             <li><b>03</b><div><strong>Decisiones fundamentadas</strong><p>Objetivos, dosis y seguridad.</p></div></li>
           </ol></div>
         </section>
-        <section className={styles.section}><div className={styles.sectionHeading}><div><h2>Explorar por zona</h2><p>Elige Rodilla o Cadera e ingle. Cada banco tiene 35 preguntas y conserva su propio intento.</p></div><span>02 / 08</span></div>
+        <section className={styles.section}><div className={styles.sectionHeading}><div><h2>Explorar por zona</h2><p>Rodilla, Cadera e ingle y Hombro: 70 preguntas por zona. Cada test selecciona 35 y conserva su propio intento.</p></div><span>03 / 08</span></div>
           <div className={styles.zones}>{zones.map((zone, i) => {
             const entry = (Object.entries(catalog) as [BankVersion, typeof catalog[BankVersion]][]).find(([, value]) => value.zone === zone);
-            return entry ? <button key={zone} aria-pressed={version === entry[0]} className={styles.readyZone} onClick={() => { setVersion(entry[0]); setRepeat(false); }}><span>0{i + 1}</span><strong>{zone}</strong><small>{version === entry[0] ? 'Seleccionado · 35 preguntas' : 'Elegir · 35 preguntas'} <ChevronRight size={14} /></small></button> : <div key={zone} className={styles.zone}><span>0{i + 1}</span><strong>{zone}</strong><small><LockKeyhole size={13} /> En preparación</small></div>;
+            return entry ? <button key={zone} aria-pressed={version === entry[0]} className={styles.readyZone} onClick={() => { setVersion(entry[0]); setRepeat(false); }}><span>0{i + 1}</span><strong>{zone}</strong><small>{version === entry[0] ? 'Seleccionado · 70 preguntas' : 'Elegir · 70 preguntas'} <ChevronRight size={14} /></small></button> : <div key={zone} className={styles.zone}><span>0{i + 1}</span><strong>{zone}</strong><small><LockKeyhole size={13} /> En preparación</small></div>;
           })}</div>
         </section>
         <section className={styles.syllabus} id="bank-syllabus"><div><p className={styles.eyebrow}>CONTENIDO DEL BANCO</p><h2>{selectedBank.title}, sin saltarse las bases</h2><p>Todos los cuadros se mezclan en este ensayo. La selección por condición estará disponible cuando existan suficientes variantes.</p><button className={styles.primary} disabled={!!error} onClick={() => active ? void openAttempt(active.id) : setStartModal(true)}>{active ? 'Continuar' : 'Comenzar'} {selectedBank.title}<ArrowRight size={18} /></button></div>
@@ -257,9 +259,10 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
     }}><section role="dialog" aria-modal="true" aria-labelledby="quiz-start-title" className={styles.modal}>
       <button autoFocus className={styles.close} aria-label="Cerrar instrucciones" disabled={busy} onClick={() => setStartModal(false)}><X size={22} /></button><p className={styles.eyebrow}>ANTES DE EMPEZAR</p><h2 id="quiz-start-title">{selectedBank.title} · 35 preguntas</h2><p>Un minuto por pregunta, sin tiempo mínimo. Calcula hasta 35 minutos para responder y tiempo adicional para revisar.</p>
       <ul><li>Selecciona y confirma para avanzar antes.</li><li>Al terminar el minuto se envía la opción seleccionada, o queda sin respuesta.</li><li>Puedes guardar y pausar. No se reinicia el minuto al volver.</li><li>Las explicaciones se consultan al finalizar.</li></ul>
-      {completed.length > 0 && <label className={styles.repeat}><input type="checkbox" checked={repeat} onChange={e => setRepeat(e.target.checked)} /> Entiendo que repetiré preguntas vistas. Es un ensayo docente, no una medición nueva de aprendizaje.</label>}
+      <p>{availability?.unseen ?? 0} preguntas sin usar de {availability?.total ?? 0}. Al crear el intento se reservan sus 35 preguntas, aunque lo pauses. No se vuelven a incluir en otro test nuevo.</p>
+      {needsRepeat && <label className={styles.repeat}><input type="checkbox" checked={repeat} onChange={e => setRepeat(e.target.checked)} /> Autorizo completar el test con preguntas ya usadas. Se incluyen primero las inéditas disponibles. Es un ensayo docente, no una medición nueva de aprendizaje.</label>}
       {error && <p role="alert" className={styles.error}>{error}</p>}
-      <button className={styles.primary} disabled={busy || (completed.length > 0 && !repeat)} onClick={() => void create()}>{busy ? 'Preparando intento…' : 'Crear mi intento'}<ArrowRight size={18} /></button>
+      <button className={styles.primary} disabled={busy || !availability || (needsRepeat && !repeat)} onClick={() => void create()}>{busy ? 'Preparando intento…' : 'Crear mi intento'}<ArrowRight size={18} /></button>
     </section></div>}
   </div>;
 }

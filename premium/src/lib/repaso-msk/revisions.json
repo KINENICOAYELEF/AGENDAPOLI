@@ -1,0 +1,212 @@
+[
+  {
+    "id": "knee-v1-27-r2",
+    "stem": "¿Qué afirmación distingue mejor dolor patelofemoral y condromalacia?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Ambos términos describen el mismo hallazgo; sólo cambia la gravedad del cuadro."
+      },
+      {
+        "id": "B",
+        "text": "El dolor patelofemoral se define por lesión cartilaginosa más dolor al cargar."
+      },
+      {
+        "id": "C",
+        "text": "La condromalacia es el término clínico y el dolor patelofemoral el término histológico."
+      },
+      {
+        "id": "D",
+        "text": "Dolor patelofemoral describe una presentación clínica, sin demostrar por sí solo daño cartilaginoso."
+      }
+    ],
+    "correct": "D",
+    "objective": "R-PF0",
+    "condition": "Dolor patelofemoral",
+    "domain": "Conocimientos esenciales",
+    "explanation": "El dolor patelofemoral se reconoce por su patrón clínico, habitualmente dolor alrededor o detrás de la patela durante tareas de carga. Condromalacia alude a cambios del cartílago. No son términos intercambiables: una presentación dolorosa no establece automáticamente lesión cartilaginosa ni causalidad estructural.",
+    "sources": [
+      {
+        "title": "Consenso de definiciones patelofemorales",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4975817/"
+      }
+    ],
+    "familyId": "knee-v1-27",
+    "replaces": "knee-v1-27"
+  },
+  {
+    "id": "knee-v1-34-r2",
+    "stem": "Una persona con artrosis pregunta si el dolor proviene necesariamente del cartílago que aparece alterado en su radiografía.\n\n¿Qué explicación es más correcta?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Varios tejidos y procesos pueden contribuir; la radiografía no determina por sí sola fuente ni intensidad."
+      },
+      {
+        "id": "B",
+        "text": "La disminución del espacio articular permite atribuir el dolor directamente al cartílago."
+      },
+      {
+        "id": "C",
+        "text": "Si hay cambios radiográficos, el examen de síntomas y función aporta poco a la prescripción."
+      },
+      {
+        "id": "D",
+        "text": "La discordancia entre dolor e imagen indica que el problema debe clasificarse como psicológico."
+      }
+    ],
+    "correct": "A",
+    "objective": "R-OA2 / T01",
+    "condition": "Artrosis",
+    "domain": "Conocimientos esenciales",
+    "explanation": "La artrosis involucra la articulación como conjunto. La relación entre cambios radiográficos y dolor no es uno a uno; una imagen no sustituye la entrevista ni la valoración funcional. La discordancia tampoco demuestra un origen psicológico ni invalida el dolor de la persona.",
+    "sources": [
+      {
+        "title": "OARSI: enfermedad articular",
+        "url": "https://oarsi.org/what-osteoarthritis"
+      }
+    ],
+    "familyId": "knee-v1-34",
+    "replaces": "knee-v1-34"
+  },
+  {
+    "id": "hip-v1-02-r2",
+    "stem": "Una usuaria pregunta si la artrosis significa que su cartílago se gastó y por eso ya no debe cargar la cadera. ¿Qué explicación es más adecuada?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Es un proceso de varios tejidos; la capacidad funcional puede mejorar con ejercicio adaptado."
+      },
+      {
+        "id": "B",
+        "text": "El grado radiográfico permite dosificar la carga sin considerar síntomas ni función."
+      },
+      {
+        "id": "C",
+        "text": "El fortalecimiento sólo se justifica cuando se ha recuperado el espacio articular."
+      },
+      {
+        "id": "D",
+        "text": "El ejercicio debería posponerse hasta que no quede dolor en las actividades cotidianas."
+      }
+    ],
+    "correct": "A",
+    "objective": "H-02",
+    "condition": "Artrosis de cadera",
+    "domain": "Fundamentos",
+    "explanation": "La artrosis no se reduce a desgaste de cartílago: intervienen múltiples tejidos y procesos biológicos y mecánicos. El ejercicio se adapta a síntomas, capacidad y objetivos; no requiere restaurar la imagen ni ausencia total de dolor. NICE recomienda ejercicio terapéutico y educación.",
+    "sources": [
+      {
+        "title": "NICE NG226 · Artrosis",
+        "url": "https://www.nice.org.uk/guidance/NG226/chapter/recommendations"
+      }
+    ],
+    "familyId": "hip-v1-02",
+    "replaces": "hip-v1-02"
+  },
+  {
+    "id": "hip-v1-07-r2",
+    "stem": "Una persona con dolor anterior de cadera tiene FADIR doloroso. No hay imágenes y el resto del examen aún no se completa. ¿Qué conclusión es más defendible?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La maniobra localiza el dolor en el labrum y permite priorizar esa estructura."
+      },
+      {
+        "id": "B",
+        "text": "El resultado hace innecesario explorar otras fuentes de dolor inguinal."
+      },
+      {
+        "id": "C",
+        "text": "El resultado basta para clasificar un síndrome FAI aunque falten otros criterios."
+      },
+      {
+        "id": "D",
+        "text": "La maniobra reproduce síntomas, pero aún hay que integrar historia y otros hallazgos."
+      }
+    ],
+    "correct": "D",
+    "objective": "H-07",
+    "condition": "Dolor no artrósico y FAI",
+    "domain": "Interpretación",
+    "explanation": "Una maniobra provocadora puede reproducir el síntoma sin identificar su fuente. Hay que comprobar si es el dolor conocido, integrar el resto del examen y considerar alternativas. Un resultado positivo aislado no confirma lesión labral ni síndrome FAI.",
+    "sources": [
+      {
+        "title": "JOSPT · Dolor de cadera no artrósico, 2023",
+        "url": "https://doi.org/10.2519/jospt.2023.0302"
+      }
+    ],
+    "familyId": "hip-v1-07",
+    "replaces": "hip-v1-07"
+  },
+  {
+    "id": "hip-v1-12-r2",
+    "stem": "Una usuaria con tendinopatía glútea persistente puede asistir a rehabilitación. Se busca una estrategia activa respaldada por el ensayo LEAP. ¿Qué propuesta refleja mejor la intervención estudiada?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Movilidad repetida en aducción como componente principal, sin seguimiento de cargas."
+      },
+      {
+        "id": "B",
+        "text": "Fortalecimiento genérico de miembros inferiores, sin educación ni adaptación de actividades."
+      },
+      {
+        "id": "C",
+        "text": "Educación sobre manejo de cargas y ejercicio específico, progresado según respuesta."
+      },
+      {
+        "id": "D",
+        "text": "Analgesia y retorno a las actividades habituales, dejando el ejercicio para las recaídas."
+      }
+    ],
+    "correct": "C",
+    "objective": "H-12",
+    "condition": "Dolor lateral de cadera",
+    "domain": "Intervención",
+    "explanation": "LEAP evaluó un programa de educación sobre cargas y ejercicio específico, no ejercicio aislado ni cualquier combinación de técnicas. Sus resultados apoyan ese enfoque, pero no establecen una dosis universal. La elección de carga y progresión sigue requiriendo valorar tolerancia y objetivos.",
+    "sources": [
+      {
+        "title": "Mellor et al. · Educación y ejercicio, ensayo LEAP",
+        "url": "https://www.bmj.com/content/361/bmj.k1662"
+      }
+    ],
+    "familyId": "hip-v1-12",
+    "replaces": "hip-v1-12"
+  },
+  {
+    "id": "hip-v1-32-r2",
+    "stem": "Al evaluar fuerza de abducción, aparece dolor y la persona produce poca fuerza. ¿Qué interpretación evita una conclusión excesiva?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La diferencia representa el déficit estructural del abductor, independiente de cómo se midió."
+      },
+      {
+        "id": "B",
+        "text": "La fuerza observada permite graduar la magnitud de una lesión tendinosa sin otros datos."
+      },
+      {
+        "id": "C",
+        "text": "Hay menor fuerza en una prueba dolorosa; dolor, esfuerzo y método pueden influir."
+      },
+      {
+        "id": "D",
+        "text": "El resultado debería descartarse por completo: una prueba dolorosa no aporta información."
+      }
+    ],
+    "correct": "C",
+    "objective": "H-32",
+    "condition": "Evaluación y razonamiento",
+    "domain": "Interpretación",
+    "explanation": "Se ha medido menor producción de fuerza en esas condiciones, no el tamaño de una lesión. El dolor, esfuerzo, posición y estabilización pueden influir. Se registra el resultado y sus condiciones; descartarlo o convertirlo directamente en diagnóstico anatómico serían conclusiones excesivas.",
+    "sources": [
+      {
+        "title": "JOSPT · Dolor de cadera no artrósico, 2023",
+        "url": "https://doi.org/10.2519/jospt.2023.0302"
+      }
+    ],
+    "familyId": "hip-v1-32",
+    "replaces": "hip-v1-32"
+  }
+]
