@@ -1,0 +1,84 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const ts = require('typescript');
+const bank = require('../src/lib/repaso-msk/knee-bank.json');
+function load(file, dependencies = {}) {
+  const module = { exports: {} };
+  vm.runInNewContext(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText,
+    { module, exports: module.exports, require: id => dependencies[id], Set, Error, Math, Number });
+  return module.exports;
+}
+const types = load('src/lib/repaso-msk/types.ts');
+const { advanceAttempt } = load('src/lib/repaso-msk/engine.ts', { './types': types });
+const { attemptView } = load('src/lib/repaso-msk/server.ts', { './knee-bank.json': bank, '@/lib/server/firebaseAdmin': {} });
+const make = () => ({ id: 'test', version: 'knee-v1', questionIds: bank.map(q => q.id), answers: [], revision: 0,
+  status: 'active', remainingMs: 60000, selected: null, createdAt: '2026-09-14', updatedAt: '2026-09-14', repeated: false });
+const answer = (a, values = {}) => ({ type: 'answer', revision: a.revision, index: a.answers.length,
+  option: bank[a.answers.length].correct, reason: 'answer', elapsedMs: 14000, ...values });
+
+test('banco íntegro: 35 preguntas originales identificables, claves y feedback', () => {
+  assert.equal(bank.length, 35); assert.equal(new Set(bank.map(q => q.id)).size, 35);
+  for (const q of bank) { assert.equal(q.options.length, 4); assert.ok(q.options.some(o => o.id === q.correct)); assert.ok(q.explanation.length > 30); assert.ok(q.objective); }
+});
+test('completar 35 conserva todos los resultados y cierra el intento', () => {
+  let a = make(); for (let i = 0; i < 35; i++) a = advanceAttempt(a, answer(a), bank, 'now');
+  assert.equal(a.answers.length, 35); assert.equal(a.status, 'completed'); assert.ok(a.answers.every(a => a.correct));
+});
+test('tiempo agotado sin elección se distingue de una elección enviada al límite', () => {
+  let a = make(); a = advanceAttempt(a, answer(a, { reason: 'timeout', elapsedMs: 60000, option: null }), bank, 'now');
+  assert.equal(a.answers[0].option, null); assert.equal(a.answers[0].reason, 'timeout');
+  a = advanceAttempt(a, answer(a, { reason: 'timeout', elapsedMs: 60000 }), bank, 'now');
+  assert.equal(a.answers[1].correct, true);
+});
+test('pasar no registra selección ni cuenta como respuesta correcta', () => {
+  const a = advanceAttempt(make(), answer(make(), { reason: 'skip', option: null }), bank, 'now');
+  assert.equal(a.answers[0].reason, 'skip'); assert.equal(a.answers[0].correct, false);
+  assert.throws(() => advanceAttempt(make(), answer(make(), { reason: 'skip' }), bank, 'now'), /INVALID/);
+});
+test('pausar nunca recupera tiempo consumido', () => {
+  let a = advanceAttempt(make(), { type: 'checkpoint', revision: 0, index: 0, remainingMs: 20000, selected: 'B' }, bank, 'now');
+  a = advanceAttempt(a, { type: 'checkpoint', revision: 1, index: 0, remainingMs: 50000, selected: 'B' }, bank, 'now');
+  assert.equal(a.remainingMs, 20000); assert.equal(a.answers.length, 0);
+});
+test('doble envío y pestañas desfasadas no avanzan dos veces', () => {
+  const old = make(), action = answer(old); const a = advanceAttempt(old, action, bank, 'now');
+  assert.throws(() => advanceAttempt(a, action, bank, 'now'), /CONFLICT/);
+  assert.throws(() => advanceAttempt(old, { ...action, index: 2 }, bank, 'now'), /CONFLICT/);
+});
+test('rechaza cronómetros fuera de rango y timeout prematuro', () => {
+  for (const values of [{ elapsedMs: -1 }, { elapsedMs: 60001 }, { reason: 'timeout', elapsedMs: 40000 }, { option: 'Z' }]) {
+    assert.throws(() => advanceAttempt(make(), answer(make(), values), bank, 'now'), /INVALID/);
+  }
+});
+test('no entrega claves ni feedback durante el intento', () => {
+  const active = advanceAttempt(make(), answer(make()), bank, 'now');
+  const data = attemptView(active);
+  assert.equal(data.review, undefined); assert.equal(data.questions[0].correct, undefined);
+  assert.equal(data.questions[0].explanation, undefined); assert.equal(data.attempt.answers[0].correct, false);
+  assert.equal(attemptView({ ...active, status: 'completed' }).review.length, 35);
+});
+test('resumen informa denominadores y separa omisiones', () => {
+  const a = advanceAttempt(make(), answer(make(), { option: null, reason: 'skip' }), bank, 'now');
+  const result = types.summarise(a, bank).find(d => d.domain === bank[0].domain);
+  assert.equal(result.total, 1); assert.equal(result.correct, 0); assert.equal(result.skipped, 1);
+});
+
+test('API bloquea anónimos e internos antes de leer el banco o Firestore', async () => {
+  for (const role of ['anonymous', 'INTERNO']) {
+    const dependencies = {
+      'next/server': require('next/server'), zod: require('zod'), 'node:crypto': require('node:crypto'),
+      '@/lib/server/firebaseAdmin': { requireTeacher: async () => { throw new Error(role === 'anonymous' ? 'Unauthorized' : 'Forbidden'); } },
+      '@/lib/server/apiResponse': { getRequestId: () => 'test', handleApiError: e => ({ status: e.message === 'Unauthorized' ? 401 : 403 }) },
+      '@/lib/repaso-msk/server': { attemptsRef: () => { throw new Error('Unexpected DB access'); }, bank, attemptView },
+      '@/lib/repaso-msk/engine': { advanceAttempt },
+    };
+    const list = load('src/app/api/repaso-msk/route.ts', dependencies);
+    const detail = load('src/app/api/repaso-msk/[attemptId]/route.ts', dependencies);
+    const req = { headers: new Headers(), json: async () => ({}) };
+    for (const route of [list, detail]) for (const method of ['GET', 'POST']) {
+      assert.equal((await route[method](req, { params: Promise.resolve({ attemptId: 'not-used' }) })).status, role === 'anonymous' ? 401 : 403);
+    }
+  }
+});

@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "render:am-pdf": "node scripts/render-adulto-mayor-pdf.mjs",
-    "test": "node --test tests/stabilization.test.js tests/station-voice.test.js && tsc --noEmit"
+    "test": "node --test tests/stabilization.test.js tests/station-voice.test.js tests/repaso-msk.test.js && tsc --noEmit"
   },
   "dependencies": {
     "@google/genai": "^1.43.0",

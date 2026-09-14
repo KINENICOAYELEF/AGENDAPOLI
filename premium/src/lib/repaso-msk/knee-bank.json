@@ -1,0 +1,1152 @@
+[
+  {
+    "id": "knee-v1-01",
+    "stem": "Una persona de 27 años consulta por dolor difuso alrededor y detrás de la patela. Comenzó gradualmente al retomar carrera. Se reproduce al bajar escaleras y hacer sentadillas. No identifica dolor focal en el tendón, episodios de desplazamiento patelar ni traumatismo.\n\n¿Qué hipótesis tiene más peso con estos datos?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tendinopatía patelar."
+      },
+      {
+        "id": "B",
+        "text": "Dolor patelofemoral."
+      },
+      {
+        "id": "C",
+        "text": "Inestabilidad patelar recurrente."
+      },
+      {
+        "id": "D",
+        "text": "Lesión meniscal traumática."
+      }
+    ],
+    "correct": "B",
+    "objective": "R-PF1",
+    "condition": "Dolor patelofemoral",
+    "domain": "Reconocimiento",
+    "explanation": "La distribución y las tareas provocadoras favorecen dolor patelofemoral. El tendón sería un competidor más fuerte con dolor focal y una relación de carga concordante. Esta viñeta orienta una hipótesis; no reemplaza evaluación ni excluye coexistencia.",
+    "sources": [
+      {
+        "title": "Guía de dolor anterior de rodilla",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11792096/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-02",
+    "stem": "Durante un cambio de dirección sin contacto, un futbolista de 22 años siente un chasquido, no puede continuar y desarrolla un derrame importante durante las primeras horas. En la evaluación posterior, el Lachman muestra mayor traslación anterior y un tope menos firme que la otra rodilla.\n\n¿Cuál lesión es la hipótesis principal?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Lesión del ligamento cruzado anterior."
+      },
+      {
+        "id": "B",
+        "text": "Lesión aislada del ligamento cruzado posterior."
+      },
+      {
+        "id": "C",
+        "text": "Lesión meniscal degenerativa."
+      },
+      {
+        "id": "D",
+        "text": "Lesión aislada del ligamento colateral medial."
+      }
+    ],
+    "correct": "A",
+    "objective": "R-LI1",
+    "condition": "Ligamentos",
+    "domain": "Reconocimiento",
+    "explanation": "El mecanismo, derrame precoz y laxitud anterior concordante aumentan la sospecha de lesión de LCA. El mecanismo solo no identifica la lesión y pueden coexistir daños meniscales u otros. La pregunta tampoco determina automáticamente una indicación quirúrgica.",
+    "sources": [
+      {
+        "title": "Guía AAOS de LCA",
+        "url": "https://www.aaos.org/quality/quality-programs/anterior-cruciate-ligament-injuries/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-03",
+    "stem": "Una persona de 66 años presenta dolor de rodilla de inicio gradual, mayor al caminar y subir escaleras. La rigidez al levantarse dura aproximadamente diez minutos. Hay pérdida moderada de movilidad. No refiere traumatismo reciente, fiebre ni deterioro brusco.\n\n¿Qué cuadro explica mejor esta presentación?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tendinopatía patelar aislada."
+      },
+      {
+        "id": "B",
+        "text": "Lesión aguda del ligamento cruzado anterior."
+      },
+      {
+        "id": "C",
+        "text": "Artrosis de rodilla."
+      },
+      {
+        "id": "D",
+        "text": "Luxación patelar reciente."
+      }
+    ],
+    "correct": "C",
+    "objective": "R-OA1",
+    "condition": "Artrosis",
+    "domain": "Reconocimiento",
+    "explanation": "Edad, inicio gradual, dolor con actividad y rigidez breve favorecen artrosis. El diagnóstico clínico no depende de solicitar imágenes rutinariamente en toda presentación típica. Fiebre, inicio brusco o deterioro inesperado exigirían reconsiderar.",
+    "sources": [
+      {
+        "title": "NICE NG226",
+        "url": "https://www.nice.org.uk/guidance/NG226/chapter/recommendations"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-04",
+    "stem": "Un basquetbolista de 25 años describe dolor localizado con un dedo en el polo inferior de la patela. Se reproduce especialmente al saltar y frenar. El problema comenzó tras aumentar la cantidad de entrenamientos; no hay derrame ni bloqueo.\n\n¿Qué hipótesis priorizarías?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Dolor patelofemoral."
+      },
+      {
+        "id": "B",
+        "text": "Lesión del ligamento colateral medial."
+      },
+      {
+        "id": "C",
+        "text": "Lesión meniscal lateral."
+      },
+      {
+        "id": "D",
+        "text": "Tendinopatía patelar."
+      }
+    ],
+    "correct": "D",
+    "objective": "R-TP1",
+    "condition": "Tendinopatía patelar",
+    "domain": "Reconocimiento",
+    "explanation": "La localización focal y la provocación con saltos/frenadas favorecen tendinopatía patelar. Practicar básquetbol no basta para diagnosticarla: son los datos clínicos concordantes los que importan. Un deportista también puede presentar dolor patelofemoral.",
+    "sources": [
+      {
+        "title": "Guía de dolor anterior de rodilla",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11792096/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-05",
+    "stem": "Una persona de 32 años gira sobre la rodilla apoyada al jugar fútbol. Desde entonces tiene dolor en la interlínea medial, derrame de aparición posterior y episodios de atrapamiento. No relata desplazamiento de la patela. La exploración orientada al menisco reproduce su dolor conocido.\n\n¿Qué hipótesis merece prioridad, sin considerarla confirmada?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Lesión meniscal medial traumática."
+      },
+      {
+        "id": "B",
+        "text": "Tendinopatía de la pata de ganso."
+      },
+      {
+        "id": "C",
+        "text": "Dolor patelofemoral."
+      },
+      {
+        "id": "D",
+        "text": "Tendinopatía patelar."
+      }
+    ],
+    "correct": "A",
+    "objective": "R-ME1",
+    "condition": "Menisco",
+    "domain": "Reconocimiento",
+    "explanation": "Historia traumática, interlínea y síntomas concordantes justifican priorizar menisco. Ninguna maniobra aislada establece toda la explicación. Un atrapamiento intermitente debe distinguirse de un bloqueo verdadero persistente, que cambia la necesidad de valoración.",
+    "sources": [
+      {
+        "title": "Consenso meniscal, parte II",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12163282/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-06",
+    "stem": "Una adolescente relata que al girar vio la patela desplazada hacia afuera. Volvió a su posición al extender la rodilla. Quedó con derrame, dolor medial peripatelar y temor a que vuelva a desplazarse.\n\n¿Qué evento describe mejor la historia?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Luxación tibiofemoral reducida."
+      },
+      {
+        "id": "B",
+        "text": "Rotura aislada del tendón patelar."
+      },
+      {
+        "id": "C",
+        "text": "Lesión meniscal medial aislada."
+      },
+      {
+        "id": "D",
+        "text": "Luxación lateral de patela reducida."
+      }
+    ],
+    "correct": "D",
+    "objective": "R-IP1",
+    "condition": "Inestabilidad patelar",
+    "domain": "Reconocimiento",
+    "explanation": "El desplazamiento lateral visible de la patela con reducción es el dato principal. El derrame posterior requiere atención a posibles lesiones asociadas; no debe tratarse como simple dolor anterior. Una luxación tibiofemoral corresponde a otro evento y riesgo.",
+    "sources": [
+      {
+        "title": "Consenso ESSKA, parte I",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12022820/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-07",
+    "stem": "En un accidente, una persona recibe un golpe en la cara anterior de la tibia proximal con la rodilla flexionada. Ya se descartó una lesión ósea aguda. La evaluación posterior muestra caída posterior de la tibia y mayor desplazamiento en el cajón posterior respecto del otro lado.\n\n¿Qué estructura es la principal sospechosa?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Ligamento cruzado anterior."
+      },
+      {
+        "id": "B",
+        "text": "Ligamento cruzado posterior."
+      },
+      {
+        "id": "C",
+        "text": "Ligamento colateral lateral."
+      },
+      {
+        "id": "D",
+        "text": "Tendón del cuádriceps."
+      }
+    ],
+    "correct": "B",
+    "objective": "R-LI1",
+    "condition": "Ligamentos",
+    "domain": "Reconocimiento",
+    "explanation": "El golpe anterior sobre la tibia con rodilla flexionada y el desplazamiento posterior concordante orientan a LCP. El mecanismo genera sospecha; los hallazgos la refuerzan. Sigue siendo necesario valorar estructuras asociadas y contexto.",
+    "sources": [
+      {
+        "title": "AAOS: estructuras y lesiones de rodilla",
+        "url": "https://orthoinfo.aaos.org/globalassets/pdfs/about-your-knee.pdf"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-08",
+    "stem": "Un jugador recibe un golpe en la cara lateral de la rodilla. Presenta dolor medial y mayor apertura medial durante estrés en valgo a unos 30° de flexión. No se observa aumento evidente de apertura en extensión completa.\n\n¿Qué estructura resulta más compatible con los hallazgos?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Ligamento colateral lateral."
+      },
+      {
+        "id": "B",
+        "text": "Ligamento cruzado posterior."
+      },
+      {
+        "id": "C",
+        "text": "Ligamento colateral medial."
+      },
+      {
+        "id": "D",
+        "text": "Tendón patelar."
+      }
+    ],
+    "correct": "C",
+    "objective": "R-LI1",
+    "condition": "Ligamentos",
+    "domain": "Reconocimiento",
+    "explanation": "La fuerza descrita tensiona las estructuras mediales. Dolor y apertura concordantes orientan al colateral medial. La prueba no determina por sí sola toda la extensión de la lesión. En este caso, la estabilidad en extensión aporta contexto, sin excluir automáticamente lesiones asociadas.",
+    "sources": [
+      {
+        "title": "AAOS: estructuras y lesiones de rodilla",
+        "url": "https://orthoinfo.aaos.org/globalassets/pdfs/about-your-knee.pdf"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-09",
+    "stem": "Tres semanas después de una artroplastia de rodilla sin complicaciones conocidas, una persona alcanza 0° de extensión pasiva, pero durante extensión activa queda a 12° de completar el movimiento. La fuerza del cuádriceps es baja.\n\n¿Cómo interpretarías principalmente esta diferencia?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Existe una restricción fija de extensión de 12°."
+      },
+      {
+        "id": "B",
+        "text": "El resultado demuestra por sí solo una complicación del implante."
+      },
+      {
+        "id": "C",
+        "text": "La movilidad pasiva descarta una limitación funcional relevante."
+      },
+      {
+        "id": "D",
+        "text": "Hay un déficit de extensión activa que requiere valorar capacidad y activación."
+      }
+    ],
+    "correct": "D",
+    "objective": "R-AT1",
+    "condition": "Artroplastia",
+    "domain": "Evaluación e interpretación",
+    "explanation": "El rango pasivo disponible y el déficit activo son fenómenos diferentes. Corresponde valorar capacidad extensora, activación y factores limitantes; no inferir una restricción fija o fallo del implante sólo desde este resultado.",
+    "sources": [
+      {
+        "title": "Guía de artroplastia, revisión 2026",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13403188/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-10",
+    "stem": "Una persona con artrosis quiere levantarse de su silla con menos dificultad. Decides seguir su desempeño con la prueba de levantarse de la silla durante 30 segundos.\n\n¿Qué comparación permitiría interpretar mejor su evolución?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Primera prueba desde una silla baja; segunda desde una más alta."
+      },
+      {
+        "id": "B",
+        "text": "Primera sin brazos; segunda con apoyo de brazos permitido."
+      },
+      {
+        "id": "C",
+        "text": "Repetir altura, uso de brazos, instrucciones y procedimiento de registro."
+      },
+      {
+        "id": "D",
+        "text": "Comparar únicamente su resultado con el de otra persona de edad similar."
+      }
+    ],
+    "correct": "C",
+    "objective": "T06 / R-OA3",
+    "condition": "Artrosis",
+    "domain": "Evaluación e interpretación",
+    "explanation": "Cambiar silla o apoyo puede mejorar el resultado sin que mejore la capacidad. Mantener condiciones permite una comparación más interpretable. Después se valora si el cambio supera el error de medición y si importa para la persona. Aplicación metodológica al seguimiento funcional; .",
+    "sources": [
+      {
+        "title": "guía de evaluación y manejo de artrosis",
+        "url": "https://www.nice.org.uk/guidance/NG226/chapter/recommendations"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-11",
+    "stem": "Tras reconstrucción de LCA, la fuerza extensora de la pierna operada es de 100 unidades y la contralateral de 105, medidas con el mismo procedimiento. Un registro previo fiable mostraba 150 unidades en la pierna contralateral. La persona pregunta si esa simetría significa recuperación completa.\n\n¿Qué interpretación es más adecuada?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "La simetría es alta, pero puede coexistir con una capacidad insuficiente en ambas piernas."
+      },
+      {
+        "id": "B",
+        "text": "La simetría alta indica que la capacidad de fuerza ya está recuperada."
+      },
+      {
+        "id": "C",
+        "text": "La fuerza contralateral actual debe asumirse como referencia normal individual."
+      },
+      {
+        "id": "D",
+        "text": "La diferencia pequeña hace innecesario evaluar tareas funcionales adicionales."
+      }
+    ],
+    "correct": "A",
+    "objective": "R-LI3",
+    "condition": "Ligamentos",
+    "domain": "Evaluación e interpretación",
+    "explanation": "La relación es aproximadamente 95%, pero la referencia contralateral cayó respecto del registro previo. La simetría no demuestra capacidad suficiente para las demandas de la persona. Se necesitan fuerza absoluta/contextualizada y otros indicadores, no un único porcentaje de alta.",
+    "sources": [
+      {
+        "title": "Guía Aspetar de reconstrucción de LCA",
+        "url": "https://bjsm.bmj.com/content/57/9/500"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-12",
+    "stem": "Un deportista tiene una ecografía con cambios en el tendón patelar. No presenta dolor localizado durante las tareas de carga evaluadas ni limitación relacionada con ese tendón.\n\n¿Qué conclusión está mejor sustentada?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tiene tendinopatía sintomática aunque niegue dolor."
+      },
+      {
+        "id": "B",
+        "text": "La imagen sola no establece una tendinopatía clínicamente sintomática."
+      },
+      {
+        "id": "C",
+        "text": "Necesita suspender el entrenamiento hasta normalizar la imagen."
+      },
+      {
+        "id": "D",
+        "text": "Los cambios permiten anticipar cuándo comenzarán los síntomas."
+      }
+    ],
+    "correct": "B",
+    "objective": "R-TP2",
+    "condition": "Tendinopatía patelar",
+    "domain": "Evaluación e interpretación",
+    "explanation": "Los cambios de imagen pueden aparecer sin síntomas. Su significado necesita concordancia con clínica y función; no predicen individualmente cuándo comenzará dolor. Tampoco esta viñeta demuestra que toda imagen carezca de utilidad.",
+    "sources": [
+      {
+        "title": "Clinical Management of Patellar Tendinopathy",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9528703/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-13",
+    "stem": "La derivación de una persona operada hace diez días dice únicamente “cirugía de menisco”. No conoces el procedimiento ni las instrucciones posoperatorias. Debes decidir la progresión de apoyo y flexión cargada.\n\n¿Qué información necesitas primero?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Su mejor marca deportiva anterior a la lesión."
+      },
+      {
+        "id": "B",
+        "text": "Procedimiento realizado, lesión tratada y restricciones indicadas."
+      },
+      {
+        "id": "C",
+        "text": "Sólo la intensidad actual del dolor en reposo."
+      },
+      {
+        "id": "D",
+        "text": "El protocolo que se usó con el paciente anterior."
+      }
+    ],
+    "correct": "B",
+    "objective": "R-ME4",
+    "condition": "Menisco",
+    "domain": "Evaluación e interpretación",
+    "explanation": "Una reparación y una meniscectomía pueden requerir decisiones diferentes; también importan el tipo de lesión y procedimientos asociados. Dolor bajo no sustituye esa información. La progresión debe integrar protección biológica y criterios clínicos.",
+    "sources": [
+      {
+        "title": "Consenso meniscal, parte I",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12099113/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-14",
+    "stem": "En una tarea simplificada de extensión de rodilla, una resistencia perpendicular de 40 N actúa a 0,30 m del eje. Mantienes postura y fuerza, pero la acercas a 0,15 m. Considera sólo el momento de esa resistencia; omite el peso del segmento y otras fuerzas.\n\n¿Qué ocurre con el momento externo?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Sube de 6 a 12 N·m."
+      },
+      {
+        "id": "B",
+        "text": "Permanece en 12 N·m."
+      },
+      {
+        "id": "C",
+        "text": "Baja de 12 a 3 N·m."
+      },
+      {
+        "id": "D",
+        "text": "Baja de 12 a 6 N·m."
+      }
+    ],
+    "correct": "D",
+    "objective": "T02",
+    "condition": "Fundamentos transversales",
+    "domain": "Conocimientos esenciales",
+    "explanation": "Momento = fuerza × distancia perpendicular. Pasa de 40 × 0,30 = 12 N·m a 40 × 0,15 = 6 N·m. Es una aplicación de estática elemental: no significa que todas las fuerzas internas articulares se reduzcan exactamente a la mitad. En un ejercicio real también intervienen otras fuerzas.",
+    "sources": []
+  },
+  {
+    "id": "knee-v1-15",
+    "stem": "Después de una lesión con derrame, una persona tiene dificultad marcada para activar voluntariamente el cuádriceps. La magnitud inicial del déficit no parece explicarse sólo por pérdida de masa muscular.\n\n¿Qué mecanismo puede contribuir?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Inhibición muscular artrogénica asociada a cambios en la activación neural."
+      },
+      {
+        "id": "B",
+        "text": "Fatiga periférica por entrenamiento como única explicación del déficit."
+      },
+      {
+        "id": "C",
+        "text": "Menor capacidad aeróbica como explicación principal de la activación voluntaria."
+      },
+      {
+        "id": "D",
+        "text": "Atrofia como única explicación del déficit de activación."
+      }
+    ],
+    "correct": "A",
+    "objective": "R-LI3 / T03",
+    "condition": "Ligamentos",
+    "domain": "Conocimientos esenciales",
+    "explanation": "Tras lesión o cirugía puede alterarse la activación voluntaria del cuádriceps, además de existir atrofia. Reconocer esa contribución evita interpretar toda debilidad como pérdida de masa o falta de esfuerzo. Esta descripción no mide directamente su mecanismo en una persona concreta.",
+    "sources": [
+      {
+        "title": "Revisión de inhibición muscular artrogénica",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11904826/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-16",
+    "stem": "Una persona con artrosis inicia ejercicio acordado con su kinesiólogo. Nota una molestia leve y transitoria que vuelve a su nivel habitual; no hay nuevo derrame, deterioro de marcha ni otros síntomas de alarma.\n\n¿Qué interpretación es más apropiada?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "La respuesta puede ser tolerable; importa seguir su evolución y ajustar la dosis."
+      },
+      {
+        "id": "B",
+        "text": "Toda molestia debe ignorarse si el ejercicio busca fortalecer."
+      },
+      {
+        "id": "C",
+        "text": "La molestia demuestra progresión del daño articular."
+      },
+      {
+        "id": "D",
+        "text": "El ejercicio sólo puede retomarse cuando no exista ninguna sensación dolorosa."
+      }
+    ],
+    "correct": "A",
+    "objective": "T01 / R-OA5",
+    "condition": "Artrosis",
+    "domain": "Conocimientos esenciales",
+    "explanation": "Una molestia transitoria no equivale automáticamente a daño. Tampoco autoriza ignorar empeoramiento sostenido: hay que observar trayectoria, función y otros cambios para ajustar. El mensaje educativo debe permitir actividad con seguimiento, sin imponer una regla universal de dolor cero.",
+    "sources": [
+      {
+        "title": "NICE NG226",
+        "url": "https://www.nice.org.uk/guidance/NG226/chapter/recommendations"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-17",
+    "stem": "Una persona con tendinopatía patelar realiza una sesión de isométricos y no obtiene alivio inmediato. La tarea fue tolerada y no hay empeoramiento relevante posterior.\n\n¿Qué conclusión corresponde?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Debe descartarse el diagnóstico porque no respondió a isométricos."
+      },
+      {
+        "id": "B",
+        "text": "La ausencia de analgesia inmediata no determina por sí sola el valor del programa de carga."
+      },
+      {
+        "id": "C",
+        "text": "Debe aumentar el esfuerzo hasta conseguir analgesia durante esa sesión."
+      },
+      {
+        "id": "D",
+        "text": "La falta de analgesia demuestra que el tendón no tolera ejercicio."
+      }
+    ],
+    "correct": "B",
+    "objective": "R-TP3",
+    "condition": "Tendinopatía patelar",
+    "domain": "Conocimientos esenciales",
+    "explanation": "La respuesta analgésica inmediata a isométricos es variable. No funciona como prueba diagnóstica ni decide por sí sola el beneficio de un programa progresivo. Deben distinguirse el efecto inmediato de una sesión y los resultados funcionales a lo largo del tiempo.",
+    "sources": [
+      {
+        "title": "Revisión de intervenciones para tendinopatía patelar",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8634001/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-18",
+    "stem": "Una persona con dolor patelofemoral quiere volver a subir escaleras con menos molestias. Tiene menor capacidad de extensores de rodilla y tolera ejercicios adaptados. No se han identificado señales que requieran derivación.\n\n¿Qué base de tratamiento seleccionarías?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Taping como intervención principal y ejercicio sólo si éste falla."
+      },
+      {
+        "id": "B",
+        "text": "Movilización patelar como intervención principal hasta alcanzar dolor cero."
+      },
+      {
+        "id": "C",
+        "text": "Entrenamiento exclusivo de cadera con independencia de la evaluación."
+      },
+      {
+        "id": "D",
+        "text": "Educación y ejercicio de rodilla, incorporando otros componentes según sus necesidades."
+      }
+    ],
+    "correct": "D",
+    "objective": "R-PF4",
+    "condition": "Dolor patelofemoral",
+    "domain": "Intervención",
+    "explanation": "Ejercicio dirigido a rodilla y educación constituyen la base; pueden añadirse ejercicio de cadera y otras intervenciones según evaluación y preferencias. El taping o la terapia manual pueden cumplir un papel de apoyo, sin desplazar sistemáticamente el trabajo activo.",
+    "sources": [
+      {
+        "title": "Guía de buenas prácticas 2024",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/39401870/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-19",
+    "stem": "Un voleibolista con tendinopatía patelar realiza fortalecimiento y ha añadido dos sesiones de saltos. Durante varios días empeoran su tarea de control y su tolerancia a las escaleras. No hubo traumatismo nuevo ni otro cambio de salud.\n\n¿Qué ajuste inicial tiene más sentido?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Retirar toda actividad física hasta que la ecografía cambie."
+      },
+      {
+        "id": "B",
+        "text": "Mantener las nuevas sesiones y añadir más carga de fuerza para compensar."
+      },
+      {
+        "id": "C",
+        "text": "Reducir la exposición recientemente añadida y reevaluar la respuesta del programa completo."
+      },
+      {
+        "id": "D",
+        "text": "Sustituir el seguimiento funcional por la intensidad de dolor en reposo exclusivamente."
+      }
+    ],
+    "correct": "C",
+    "objective": "R-TP4 / T05",
+    "condition": "Tendinopatía patelar",
+    "domain": "Intervención",
+    "explanation": "La nueva exposición y el empeoramiento justifican revisar la carga total. Ajustar los saltos añadidos permite probar una hipótesis de dosificación y seguir la respuesta, manteniendo lo tolerable. No se pretende deducir daño nuevo ni un porcentaje universal de reducción.",
+    "sources": [
+      {
+        "title": "Ensayo de carga progresiva del tendón patelar",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8070614/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-20",
+    "stem": "Una persona con artrosis, estable y sin restricciones adicionales, hace extensión de rodilla con carga para mejorar fuerza. Completa 3 series de 12 repeticiones, tres días semanales. En dos sesiones consecutivas podría hacer muchas repeticiones adicionales; conserva técnica y no empeora después.\n\n¿Qué ajuste probarías primero si el objetivo sigue siendo fuerza?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Reducir el descanso entre series sin cambiar la resistencia."
+      },
+      {
+        "id": "B",
+        "text": "Mantener la misma demanda mientras complete todas las repeticiones."
+      },
+      {
+        "id": "C",
+        "text": "Aumentar moderadamente la resistencia y comprobar esfuerzo, técnica y respuesta posterior."
+      },
+      {
+        "id": "D",
+        "text": "Duplicar la frecuencia y mantener la resistencia actual."
+      }
+    ],
+    "correct": "C",
+    "objective": "R-OA4 / T04",
+    "condition": "Artrosis",
+    "domain": "Intervención",
+    "explanation": "El esfuerzo es bajo para el objetivo planteado. Probar mayor resistencia y verificar respuesta es más directo que aumentar indiscriminadamente frecuencia o fatiga. Las 3 × 12 son datos del caso, no una dosis universal. Principio de prescripción adaptado a clínica; las recomendaciones ACSM para adultos sanos no se trasladan automáticamente a artrosis.",
+    "sources": [
+      {
+        "title": "Actualización ACSM 2026",
+        "url": "https://acsm.org/science-spotlight-acsm-releases-new-position-stand-on-resistance-training/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-21",
+    "stem": "Cuatro semanas después de artroplastia, una persona quiere levantarse de la silla del comedor sin usar las manos. Actualmente necesita ambos brazos. Se ha comprobado que puede entrenar la tarea con seguridad y que existe debilidad extensora.\n\n¿Qué objetivo permite vincular intervención y reevaluación?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Levantarse de esa silla sin brazos, verificando la tarea con el mismo procedimiento en el plazo acordado."
+      },
+      {
+        "id": "B",
+        "text": "Alcanzar una imagen posoperatoria idéntica a la rodilla contralateral."
+      },
+      {
+        "id": "C",
+        "text": "Completar un número fijo de sesiones, independientemente de su función."
+      },
+      {
+        "id": "D",
+        "text": "Recuperar una flexión máxima sin registrar el desempeño al levantarse."
+      }
+    ],
+    "correct": "A",
+    "objective": "R-AT3 / T09",
+    "condition": "Artroplastia",
+    "domain": "Intervención",
+    "explanation": "La meta conecta una dificultad real con una tarea observable y repetible. Fuerza y movilidad ayudan a explicar y tratar esa limitación, pero completar sesiones no demuestra recuperación. El plazo se acuerda según la situación; esta pregunta no impone uno universal.",
+    "sources": [
+      {
+        "title": "Guía de artroplastia, revisión 2026",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13403188/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-22",
+    "stem": "Una persona de 58 años tiene dolor gradual de rodilla y una resonancia que informa lesión meniscal degenerativa. No presenta bloqueo verdadero, traumatismo reciente ni señales de alarma. Todavía no ha realizado un programa de rehabilitación.\n\n¿Qué decisión inicial resulta más defendible?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Suspender la carga de la rodilla hasta una nueva resonancia."
+      },
+      {
+        "id": "B",
+        "text": "Considerar la artroscopia como paso obligatorio por el informe de imagen."
+      },
+      {
+        "id": "C",
+        "text": "Limitar el manejo a modalidades pasivas mientras persista la lesión en la imagen."
+      },
+      {
+        "id": "D",
+        "text": "Iniciar manejo no quirúrgico individualizado y seguir síntomas, capacidad y función."
+      }
+    ],
+    "correct": "D",
+    "objective": "R-ME1",
+    "condition": "Menisco",
+    "domain": "Intervención",
+    "explanation": "Una lesión degenerativa en imagen no impone artroscopia. En esta presentación corresponde manejo no quirúrgico y seguimiento. La decisión puede cambiar con bloqueo verdadero, evolución desfavorable u otros hallazgos; no se generaliza a toda lesión traumática o reparable.",
+    "sources": [
+      {
+        "title": "Consenso meniscal, parte II",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12163282/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-23",
+    "stem": "Una persona desarrolla en 24 horas una rodilla muy dolorosa, caliente y con derrame, junto con fiebre y malestar. No hubo traumatismo. Acude a una sesión programada por molestias previas leves.\n\n¿Qué acción tiene prioridad?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Probar ejercicio suave para decidir si el dolor se comporta mecánicamente."
+      },
+      {
+        "id": "B",
+        "text": "Suspender la sesión y facilitar evaluación médica urgente por posible infección articular u otra causa aguda."
+      },
+      {
+        "id": "C",
+        "text": "Aplicar frío y esperar a la próxima sesión si disminuye el dolor."
+      },
+      {
+        "id": "D",
+        "text": "Completar primero las pruebas meniscales y ligamentarias antes de decidir derivación."
+      }
+    ],
+    "correct": "B",
+    "objective": "T11",
+    "condition": "Fundamentos transversales",
+    "domain": "Seguridad",
+    "explanation": "La presentación obliga a descartar infección articular u otra causa aguda importante. No se confirma por la viñeta y la ausencia de fiebre tampoco excluiría infección. La evaluación médica urgente tiene prioridad sobre completar pruebas MSK.",
+    "sources": [
+      {
+        "title": "Guía SANJO",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9901514/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-24",
+    "stem": "Doce días después de artroplastia de rodilla, una persona presenta nueva hinchazón unilateral de pantorrilla y dolor distinto al habitual. No tiene disnea ni dolor torácico. El cambio apareció desde el día anterior.\n\n¿Qué conducta inicial es más adecuada?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Masajear la pantorrilla y reevaluar al final de la sesión."
+      },
+      {
+        "id": "B",
+        "text": "Descartar trombosis mediante una maniobra provocadora aislada."
+      },
+      {
+        "id": "C",
+        "text": "Interrumpir la sesión y gestionar valoración médica urgente por sospecha de trombosis."
+      },
+      {
+        "id": "D",
+        "text": "Aumentar la caminata y revisar en una semana si persiste."
+      }
+    ],
+    "correct": "C",
+    "objective": "R-AT4 / T11",
+    "condition": "Artroplastia",
+    "domain": "Seguridad",
+    "explanation": "Cirugía reciente y cambio unilateral justifican valoración urgente por posible trombosis. Una maniobra aislada no permite descartarla. Si aparecieran disnea, dolor torácico o colapso, corresponde activar atención de emergencia por posible embolia.",
+    "sources": [
+      {
+        "title": "NICE NG158",
+        "url": "https://www.nice.org.uk/guidance/ng158/chapter/Recommendations"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-25",
+    "stem": "¿Qué descripción representa mejor la artrosis de rodilla?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Una pérdida de cartílago aislada, sin participación de otros tejidos."
+      },
+      {
+        "id": "B",
+        "text": "Una enfermedad definida por infección persistente de la sinovial."
+      },
+      {
+        "id": "C",
+        "text": "Una enfermedad articular con cambios en varios tejidos y alteración de sus procesos de mantenimiento y reparación."
+      },
+      {
+        "id": "D",
+        "text": "Una respuesta muscular transitoria que se define por dolor después del ejercicio."
+      }
+    ],
+    "correct": "C",
+    "objective": "R-OA0 / T03",
+    "condition": "Artrosis",
+    "domain": "Conocimientos esenciales",
+    "explanation": "La artrosis compromete la articulación como conjunto, no sólo el cartílago. Incluye procesos biológicos y mecánicos en distintos tejidos. Definirla únicamente como desgaste resulta insuficiente; tampoco implica deterioro sintomático inevitable o lineal.",
+    "sources": [
+      {
+        "title": "Definición OARSI",
+        "url": "https://oarsi.org/what-osteoarthritis"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-26",
+    "stem": "¿Qué describe mejor el término clínico tendinopatía?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Dolor tendinoso persistente y pérdida de función relacionados con carga mecánica."
+      },
+      {
+        "id": "B",
+        "text": "Una rotura parcial demostrada por imágenes, cualquiera sea su presentación clínica."
+      },
+      {
+        "id": "C",
+        "text": "Una inflamación aguda demostrada histológicamente en todos los casos."
+      },
+      {
+        "id": "D",
+        "text": "Cualquier aumento del grosor del tendón, aunque no haya síntomas ni limitación."
+      }
+    ],
+    "correct": "A",
+    "objective": "R-TP0",
+    "condition": "Tendinopatía patelar",
+    "domain": "Conocimientos esenciales",
+    "explanation": "Tendinopatía es un término clínico relacionado con dolor persistente y función bajo carga. No exige confirmar una rotura ni una inflamación uniforme mediante biopsia. Esto no significa negar toda participación de procesos inflamatorios; evita confundir una definición clínica con una histológica.",
+    "sources": [
+      {
+        "title": "Consenso ICON de terminología",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/31399426/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-27",
+    "stem": "¿Qué afirmación distingue mejor dolor patelofemoral y condromalacia?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Ambos términos confirman la misma lesión del cartílago."
+      },
+      {
+        "id": "B",
+        "text": "Dolor patelofemoral exige que la resonancia muestre una lesión del cartílago."
+      },
+      {
+        "id": "C",
+        "text": "Condromalacia describe una alteración de fuerza del cuádriceps, no del cartílago."
+      },
+      {
+        "id": "D",
+        "text": "Dolor patelofemoral es una presentación clínica; no demuestra por sí sola una lesión del cartílago patelar."
+      }
+    ],
+    "correct": "D",
+    "objective": "R-PF0",
+    "condition": "Dolor patelofemoral",
+    "domain": "Conocimientos esenciales",
+    "explanation": "Dolor patelofemoral se define por una presentación clínica relacionada con dolor peripatelar o retropatelar y actividades de carga. No es sinónimo de lesión cartilaginosa demostrada. Usar condromalacia indistintamente puede atribuir una estructura causal que no se ha establecido.",
+    "sources": [
+      {
+        "title": "Consenso de definiciones patelofemorales",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4975817/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-28",
+    "stem": "¿Cuál es una función relevante de los meniscos de la rodilla?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Producir la fuerza activa necesaria para extender la rodilla."
+      },
+      {
+        "id": "B",
+        "text": "Distribuir cargas y contribuir a la congruencia y estabilidad articular."
+      },
+      {
+        "id": "C",
+        "text": "Transmitir directamente la fuerza del cuádriceps a la tuberosidad tibial."
+      },
+      {
+        "id": "D",
+        "text": "Actuar como principal freno ligamentario del desplazamiento posterior de la tibia."
+      }
+    ],
+    "correct": "B",
+    "objective": "R-ME0 / T02",
+    "condition": "Menisco",
+    "domain": "Conocimientos esenciales",
+    "explanation": "Los meniscos son estructuras fibrocartilaginosas que contribuyen a distribuir carga y a la estabilidad. No generan extensión activa ni cumplen la función del tendón patelar o del LCP. Esta anatomía ayuda a entender por qué conservar tejido meniscal y conocer el procedimiento importan.",
+    "sources": [
+      {
+        "title": "AAOS: anatomía de rodilla",
+        "url": "https://www.orthoinfo.org/diseases--conditions/common-knee-injuries/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-29",
+    "stem": "¿Qué función corresponde principalmente al ligamento cruzado anterior?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Producir activamente extensión de rodilla durante la marcha."
+      },
+      {
+        "id": "B",
+        "text": "Transmitir la fuerza de la patela a la tuberosidad tibial."
+      },
+      {
+        "id": "C",
+        "text": "Limitar la traslación anterior de la tibia respecto del fémur y contribuir al control rotacional."
+      },
+      {
+        "id": "D",
+        "text": "Constituir el principal freno de la traslación posterior de la tibia."
+      }
+    ],
+    "correct": "C",
+    "objective": "R-LI0 / T02",
+    "condition": "Ligamentos",
+    "domain": "Conocimientos esenciales",
+    "explanation": "El LCA contribuye a limitar traslación anterior y a la estabilidad rotacional. No produce fuerza muscular. Esta función permite relacionar mecanismo y exploración, sin reducir la estabilidad funcional a un único ligamento.",
+    "sources": [
+      {
+        "title": "AAOS: anatomía de rodilla",
+        "url": "https://www.orthoinfo.org/diseases--conditions/common-knee-injuries/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-30",
+    "stem": "Durante un ejercicio sentado, el cuádriceps controla el descenso de la pierna desde extensión hacia flexión contra una resistencia. La rodilla se flexiona mientras los extensores continúan generando tensión.\n\n¿Cómo se denomina principalmente esa acción de los extensores?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Excéntrica."
+      },
+      {
+        "id": "B",
+        "text": "Concéntrica."
+      },
+      {
+        "id": "C",
+        "text": "Isométrica."
+      },
+      {
+        "id": "D",
+        "text": "Movimiento pasivo sin acción muscular."
+      }
+    ],
+    "correct": "A",
+    "objective": "T04",
+    "condition": "Fundamentos transversales",
+    "domain": "Conocimientos esenciales",
+    "explanation": "En la tarea descrita, los extensores producen tensión mientras se alargan: acción excéntrica. No debe confundirse “bajar la carga” con relajarse. Identificar la acción no demuestra que ese tipo de ejercicio sea siempre superior a otros.",
+    "sources": [
+      {
+        "title": "Fisiología de la contracción muscular",
+        "url": "https://openstax.org/books/anatomy-and-physiology/pages/10-4-nervous-system-control-of-muscle-tension"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-31",
+    "stem": "Dos personas realizan 3 series de 10 extensiones de rodilla. Una termina cada serie pudiendo hacer apenas dos repeticiones adicionales; la otra estima que podría hacer diez más, con la misma técnica.\n\n¿Qué dimensión de la dosis no queda representada sólo por “3 × 10”?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "La cantidad de series indicada."
+      },
+      {
+        "id": "B",
+        "text": "El número de repeticiones realizado por serie."
+      },
+      {
+        "id": "C",
+        "text": "La identidad del ejercicio seleccionado."
+      },
+      {
+        "id": "D",
+        "text": "El esfuerzo relativo o proximidad al límite de repeticiones de cada persona."
+      }
+    ],
+    "correct": "D",
+    "objective": "T04",
+    "condition": "Fundamentos transversales",
+    "domain": "Conocimientos esenciales",
+    "explanation": "Series y repeticiones no describen toda la demanda. La capacidad de realizar repeticiones adicionales ayuda a contextualizar esfuerzo; su estimación no es una medición perfecta. No se indica aquí una proximidad al fallo universal para rehabilitación.",
+    "sources": [
+      {
+        "title": "ACSM: prescripción de fuerza",
+        "url": "https://acsm.org/science-spotlight-acsm-releases-new-position-stand-on-resistance-training/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-32",
+    "stem": "¿Qué significa mecanotransducción al explicar una adaptación al ejercicio?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "La desaparición inmediata del dolor tras aplicar una carga."
+      },
+      {
+        "id": "B",
+        "text": "La conversión de estímulos mecánicos en señales y respuestas celulares."
+      },
+      {
+        "id": "C",
+        "text": "La equivalencia directa entre la fuerza aplicada y la cantidad de tejido reparado."
+      },
+      {
+        "id": "D",
+        "text": "El desplazamiento de una articulación a su posición ideal mediante ejercicio."
+      }
+    ],
+    "correct": "B",
+    "objective": "T03",
+    "condition": "Fundamentos transversales",
+    "domain": "Conocimientos esenciales",
+    "explanation": "Las células pueden responder a estímulos mecánicos mediante señalización biológica. Ese fundamento no prueba que cualquier ejercicio repare cualquier tejido, ni permite deducir la dosis óptima. El mecanismo plausible y la eficacia clínica son niveles distintos de evidencia.",
+    "sources": [
+      {
+        "title": "Fundamento de mecanotransducción en rehabilitación",
+        "url": "https://doi.org/10.1136/bjsm.2008.054239"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-33",
+    "stem": "Después de una reparación meniscal, una persona refiere poco dolor y pide volver de inmediato a giros rápidos con carga.\n\n¿Qué principio biológico debe incorporarse a esa decisión?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Dolor bajo demuestra que la reparación recuperó toda su resistencia."
+      },
+      {
+        "id": "B",
+        "text": "Las suturas sustituyen la necesidad de reparación biológica."
+      },
+      {
+        "id": "C",
+        "text": "La respuesta sintomática y la recuperación de tolerancia mecánica no son equivalentes; importan reparación, procedimiento y criterios de progresión."
+      },
+      {
+        "id": "D",
+        "text": "La cicatrización permite volver a cualquier carga al cumplirse un plazo idéntico para todas las reparaciones."
+      }
+    ],
+    "correct": "C",
+    "objective": "R-ME4 / T03",
+    "condition": "Menisco",
+    "domain": "Conocimientos esenciales",
+    "explanation": "Poco dolor no certifica resistencia de una reparación. Deben considerarse procedimiento, lesión y progresión permitida junto a criterios clínicos. No se trata de esperar un número universal de semanas ni de usar exclusivamente los síntomas como autorización.",
+    "sources": [
+      {
+        "title": "Consenso meniscal, parte I",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12099113/"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-34",
+    "stem": "Una persona con artrosis pregunta si el dolor proviene necesariamente del cartílago que aparece alterado en su radiografía.\n\n¿Qué explicación es más correcta?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "Pueden contribuir diferentes tejidos articulares y procesos de dolor; la imagen del cartílago no identifica por sí sola la fuente ni la intensidad del dolor."
+      },
+      {
+        "id": "B",
+        "text": "La intensidad del dolor permite calcular directamente cuánto cartílago se perdió."
+      },
+      {
+        "id": "C",
+        "text": "El cartílago es la única estructura que puede explicar dolor en una rodilla con artrosis."
+      },
+      {
+        "id": "D",
+        "text": "Si radiografía y dolor no coinciden, debe concluirse que el dolor carece de una base real."
+      }
+    ],
+    "correct": "A",
+    "objective": "R-OA2 / T01",
+    "condition": "Artrosis",
+    "domain": "Conocimientos esenciales",
+    "explanation": "La artrosis involucra varios tejidos y la relación estructura-dolor no es directa. Una discrepancia con la imagen no invalida el dolor. Esta pregunta enseña los límites de la atribución causal; no identifica qué estructura duele en esa persona.",
+    "sources": [
+      {
+        "title": "OARSI: enfermedad articular",
+        "url": "https://oarsi.org/what-osteoarthritis"
+      }
+    ]
+  },
+  {
+    "id": "knee-v1-35",
+    "stem": "¿Qué describe mejor una artroplastia total de rodilla habitual?\n",
+    "options": [
+      {
+        "id": "A",
+        "text": "La sustitución de todos los músculos y ligamentos por componentes artificiales."
+      },
+      {
+        "id": "B",
+        "text": "La reparación de una lesión meniscal conservando intactas todas las superficies articulares."
+      },
+      {
+        "id": "C",
+        "text": "La unión permanente del fémur y la tibia para impedir el movimiento."
+      },
+      {
+        "id": "D",
+        "text": "La sustitución de superficies articulares por componentes protésicos, manteniendo la necesidad de recuperar capacidad muscular y función."
+      }
+    ],
+    "correct": "D",
+    "objective": "R-AT0",
+    "condition": "Artroplastia",
+    "domain": "Conocimientos esenciales",
+    "explanation": "La artroplastia sustituye superficies articulares, no toda la rodilla ni su musculatura. La recuperación de fuerza, movilidad y tareas sigue siendo necesaria. Los detalles del implante y procedimiento pueden variar y deben conocerse al planificar rehabilitación.",
+    "sources": [
+      {
+        "title": "AAOS: artroplastia total de rodilla",
+        "url": "https://www.orthoinfo.org/treatment/total-knee-replacement/"
+      }
+    ]
+  }
+]

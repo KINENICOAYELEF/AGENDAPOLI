@@ -258,6 +258,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             </Link>
 
                             <Link
+                                href="/app/repaso-msk"
+                                onClick={() => setIsSidebarOpen(false)}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${isActive('/app/repaso-msk') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
+                            >
+                                <BookOpen className="w-4 h-4 text-emerald-400" />
+                                <span>Repaso Clínico <span className="ml-1 rounded bg-emerald-400/15 px-1.5 py-0.5 text-[9px] text-emerald-300">BETA</span></span>
+                            </Link>
+
+                            <Link
                                 href="/app/simulador-estaciones"
                                 onClick={() => setIsSidebarOpen(false)}
                                 className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
