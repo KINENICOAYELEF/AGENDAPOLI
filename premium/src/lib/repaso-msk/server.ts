@@ -9,15 +9,11 @@ import hipBatch3 from './hip-batch3.json';
 import shoulderData from './shoulder-bank.json';
 import shoulderBatch2 from './shoulder-batch2.json';
 import revisions from './revisions.json';
-import { reconstructAsAdvancedItem } from './advanced-item';
 import type { Attempt, AttemptView, ReviewedQuestion } from './types';
 
 // Keep immutable originals for attempts already saved; select only current revisions for new attempts.
 const sourceBank = [...bankData, ...hipData, ...kneeAdditional, ...kneeBatch3, ...hipAdditional, ...hipBatch3, ...shoulderData, ...shoulderBatch2, ...revisions] as ReviewedQuestion[];
-// Every active item is reconstructed at the delivery boundary.  Historical
-// source records remain immutable for audit, while both the teacher panel and
-// a newly created attempt receive the same intermediate/high decision item.
-export const bank = sourceBank.map(reconstructAsAdvancedItem);
+export const bank = sourceBank;
 const replaced = new Set(revisions.map(q => q.replaces));
 export const bankQuestions = (version: Attempt['version']) => bank.filter(q => q.id.startsWith(`${version}-`) && !replaced.has(q.id));
 export const bankQuestionsVisible = (version: Attempt['version'], hiddenIds: Iterable<string> = []) => {

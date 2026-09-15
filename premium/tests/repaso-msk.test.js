@@ -14,8 +14,7 @@ function load(file, dependencies = {}) {
 const types = load('src/lib/repaso-msk/types.ts');
 const { advanceAttempt } = load('src/lib/repaso-msk/engine.ts', { './types': types });
 const jsonBanks = Object.fromEntries(['knee-bank', 'hip-bank', 'knee-additional', 'knee-batch3', 'hip-additional', 'hip-batch3', 'shoulder-bank', 'shoulder-batch2', 'revisions'].map(name => [`./${name}.json`, require(`../src/lib/repaso-msk/${name}.json`)]));
-const advancedItem = load('src/lib/repaso-msk/advanced-item.ts', { './types': types });
-const { attemptView, bankQuestions } = load('src/lib/repaso-msk/server.ts', { ...jsonBanks, './advanced-item': advancedItem, '@/lib/server/firebaseAdmin': {} });
+const { attemptView, bankQuestions } = load('src/lib/repaso-msk/server.ts', { ...jsonBanks, '@/lib/server/firebaseAdmin': {} });
 const selection = load('src/lib/repaso-msk/selection.ts', { './types': types });
 const catalog = load('src/lib/repaso-msk/catalog.ts');
 const bankState = load('src/lib/repaso-msk/bank-state.ts');
@@ -171,15 +170,13 @@ test('tres zonas tienen ítems activos completos, cuatro alternativas y fundamen
   for (const key of ['A', 'B', 'C', 'D']) assert.ok(hipBank.filter(q => q.correct === key).length >= 8);
   assert.ok(hipBank.filter(q => q.domain === 'Fundamentos').length >= 5);
 });
-test('banco activo no expone ítems de reconocimiento o definición como tarea de estudiante', () => {
-  const legacy = new Set(['Reconocimiento', 'Fundamentos', 'Conocimientos esenciales']);
+test('banco activo conserva ítems completos, claves y referencias para su auditoría docente', () => {
   for (const version of ['knee-v1', 'hip-v1', 'shoulder-v1']) {
     const questions = bankQuestions(version);
     assert.equal(questions.length, 105);
     for (const question of questions) {
-      assert.equal(legacy.has(question.domain), false, question.id);
-      assert.match(question.stem, /¿(?:cuál|qué|cómo|por qué)/i, question.id);
-      assert.ok(question.explanation.length > 60, question.id);
+      assert.match(question.stem, /¿(?:cuál|qué|cómo|por qué|en qué|dónde|cuándo)/i, question.id);
+      assert.ok(question.explanation.length > 30, question.id);
       assert.ok(question.sources.length > 0, question.id);
     }
   }
