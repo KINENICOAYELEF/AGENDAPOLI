@@ -197,11 +197,11 @@ export default function RepasoMsk({ uid, request = api }: { uid: string; request
             <li><b>03</b><div><strong>Decisiones fundamentadas</strong><p>Objetivos, dosis y seguridad.</p></div></li>
           </ol></div>
         </section>
-        <section className={styles.section}><div className={styles.sectionHeading}><div><h2>Explorar por zona</h2><p>Rodilla (105), Cadera e ingle (70) y Hombro (70). Cada test selecciona 35 preguntas y conserva su propio intento.</p></div><span>03 / 08</span></div>
+        <section className={styles.section}><div className={styles.sectionHeading}><div><h2>Explorar por zona</h2><p>Rodilla, cadera e ingle y hombro cuentan con 105 preguntas cada una. Cada test selecciona 35 preguntas y conserva su propio intento.</p></div><span>03 / 08</span></div>
           <div className={styles.zones}>{zones.map((zone, i) => {
             const entry = (Object.entries(catalog) as [BankVersion, typeof catalog[BankVersion]][]).find(([, value]) => value.zone === zone);
             const zoneBank = entry ? banks.find(b => b.version === entry[0]) : undefined;
-            const countLabel = zoneBank ? `${zoneBank.total} preguntas` : entry ? (entry[0] === 'knee-v1' ? '105 preguntas' : '70 preguntas') : 'En preparación';
+            const countLabel = zoneBank ? `${zoneBank.total} preguntas` : entry ? '105 preguntas' : 'En preparación';
             return entry ? <button key={zone} aria-pressed={version === entry[0]} className={styles.readyZone} onClick={() => { setVersion(entry[0]); setRepeat(false); }}><span>0{i + 1}</span><strong>{zone}</strong><small>{version === entry[0] ? `Seleccionado · ${countLabel}` : `Elegir · ${countLabel}`} <ChevronRight size={14} /></small></button> : <div key={zone} className={styles.zone}><span>0{i + 1}</span><strong>{zone}</strong><small><LockKeyhole size={13} /> En preparación</small></div>;
           })}</div>
         </section>

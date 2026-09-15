@@ -454,7 +454,12 @@
     "condition": "Fundamentos transversales",
     "domain": "Conocimientos esenciales",
     "explanation": "Momento = fuerza × distancia perpendicular. Pasa de 40 × 0,30 = 12 N·m a 40 × 0,15 = 6 N·m. Es una aplicación de estática elemental: no significa que todas las fuerzas internas articulares se reduzcan exactamente a la mitad. En un ejercicio real también intervienen otras fuerzas.",
-    "sources": []
+    "sources": [
+      {
+        "title": "OpenStax · Torque y equilibrio estático",
+        "url": "https://openstax.org/books/college-physics-2e/pages/9-3-stability"
+      }
+    ]
   },
   {
     "id": "knee-v1-15",
