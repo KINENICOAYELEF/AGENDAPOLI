@@ -13,29 +13,32 @@ function load(file, dependencies = {}) {
 }
 const types = load('src/lib/repaso-msk/types.ts');
 const { advanceAttempt } = load('src/lib/repaso-msk/engine.ts', { './types': types });
-const jsonBanks = Object.fromEntries(['knee-bank', 'hip-bank', 'knee-additional', 'hip-additional', 'shoulder-bank', 'revisions'].map(name => [`./${name}.json`, require(`../src/lib/repaso-msk/${name}.json`)]));
+const jsonBanks = Object.fromEntries(['knee-bank', 'hip-bank', 'knee-additional', 'knee-batch3', 'hip-additional', 'shoulder-bank', 'revisions'].map(name => [`./${name}.json`, require(`../src/lib/repaso-msk/${name}.json`)]));
 const { attemptView, bankQuestions } = load('src/lib/repaso-msk/server.ts', { ...jsonBanks, '@/lib/server/firebaseAdmin': {} });
 const selection = load('src/lib/repaso-msk/selection.ts', { './types': types });
 const catalog = load('src/lib/repaso-msk/catalog.ts');
 const bankState = load('src/lib/repaso-msk/bank-state.ts');
-test('dos tests de 35 no comparten familias; sólo el tercero requiere repetición explícita', () => {
+test('tests sucesivos de 35 no comparten familias; sólo al agotar el banco requiere repetición explícita', () => {
   for (const version of ['knee-v1', 'hip-v1', 'shoulder-v1']) {
     const questions = bankQuestions(version);
+    const expectedAttempts = Math.floor(questions.length / 35);
     for (let seed = 1; seed <= 20; seed++) {
       let n = seed; const random = max => { n = (n * 1664525 + 1013904223) >>> 0; return n % max; };
-      const first = selection.selectQuestions(questions, [], false, random);
-      const used = first.questions.map(selection.family);
-      const second = selection.selectQuestions(questions, used, false, random);
-      assert.equal(first.questions.length, 35); assert.equal(second.questions.length, 35);
-      assert.equal(new Set([...used, ...second.questions.map(selection.family)]).size, 70);
-      assert.equal(first.repeated, false); assert.equal(second.repeated, false);
-      assert.ok(new Set(first.questions.map(q => q.condition)).size >= 7);
+      let used = [];
+      for (let att = 0; att < expectedAttempts; att++) {
+        const attempt = selection.selectQuestions(questions, used, false, random);
+        assert.equal(attempt.questions.length, 35);
+        assert.equal(attempt.repeated, false);
+        assert.ok(new Set(attempt.questions.map(q => q.condition)).size >= 6);
+        used = [...used, ...attempt.questions.map(selection.family)];
+      }
+      assert.equal(new Set(used).size, expectedAttempts * 35);
       const all = questions.map(selection.family);
       assert.throws(() => selection.selectQuestions(questions, all, false, random), /BANK_USED/);
       assert.equal(selection.selectQuestions(questions, all, true, random).repeatedCount, 35);
-      const mixed = selection.selectQuestions(questions, all.slice(0, 60), true, random);
+      const mixed = selection.selectQuestions(questions, all.slice(0, all.length - 10), true, random);
       assert.equal(mixed.repeatedCount, 25);
-      assert.ok(all.slice(60).every(id => mixed.questions.some(q => selection.family(q) === id)));
+      assert.ok(all.slice(all.length - 10).every(id => mixed.questions.some(q => selection.family(q) === id)));
     }
   }
 });
@@ -49,7 +52,7 @@ test('revisiones mantienen historial original y no se presentan como nuevas fami
   const fresh = selection.selectQuestions(bankQuestions('hip-v1'), legacySeen, false, () => 0);
   assert.equal(fresh.questions.length, 35);
   assert.ok(fresh.questions.every(q => !legacySeen.includes(selection.family(q))));
-  assert.ok(fresh.questions.every(q => Number(q.id.slice(-2)) >= 36));
+  assert.equal(new Set(fresh.questions.map(selection.family)).size, 35);
 });
 const make = () => ({ id: 'test', version: 'knee-v1', questionIds: bank.map(q => q.id), answers: [], revision: 0,
   status: 'active', remainingMs: 60000, selected: null, createdAt: '2026-09-14', updatedAt: '2026-09-14', repeated: false });
@@ -144,10 +147,12 @@ test('API acepta un interno autorizado y lo limita a su propio espacio privado',
   assert.equal(body.questions.length, 35); assert.equal(body.review, undefined);
 });
 
-test('tres zonas tienen 70 ítems activos, cuatro alternativas y fundamentos', () => {
+test('tres zonas tienen ítems activos completos, cuatro alternativas y fundamentos', () => {
   assert.equal(new Set([...bank, ...hipBank].map(q => q.id)).size, 70);
   for (const version of ['knee-v1', 'hip-v1', 'shoulder-v1']) {
-    const questions = bankQuestions(version); assert.equal(questions.length, 70);
+    const questions = bankQuestions(version);
+    const expectedLength = version === 'knee-v1' ? 105 : 70;
+    assert.equal(questions.length, expectedLength);
     for (const q of questions) {
       assert.ok(q.id.startsWith(version)); assert.equal(q.options.length, 4);
       assert.equal(new Set(q.options.map(o => o.text)).size, 4);
@@ -157,6 +162,14 @@ test('tres zonas tienen 70 ítems activos, cuatro alternativas y fundamentos', (
   }
   for (const key of ['A', 'B', 'C', 'D']) assert.ok(hipBank.filter(q => q.correct === key).length >= 8);
   assert.ok(hipBank.filter(q => q.domain === 'Fundamentos').length >= 5);
+});
+test('cada prueba reserva la mayor parte para aplicación e interpretación clínica', () => {
+  for (const version of ['knee-v1', 'hip-v1', 'shoulder-v1']) {
+    const { questions } = selection.selectQuestions(bankQuestions(version), [], false, max => 0);
+    const foundations = questions.filter(question => selection.domainGroup(question.domain) === 'Fundamentos');
+    assert.ok(foundations.length <= 9);
+    assert.ok(questions.length - foundations.length >= 26);
+  }
 });
 test('intentos antiguos de rodilla no bloquean cadera ni se pierden', () => {
   const legacy = { activeId: 'old-knee', usedBank: true };

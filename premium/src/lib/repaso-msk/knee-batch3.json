@@ -1,0 +1,1192 @@
+[
+  {
+    "id": "knee-v1-71",
+    "stem": "Al analizar la biomecánica patelofemoral, ¿cómo se comportan las fuerzas de reacción articular (PFJRF) y el área de contacto durante una sentadilla en cadena cerrada versus una extensión de rodilla en camilla en cadena abierta?",
+    "options": [
+      {
+        "id": "A",
+        "text": "En cadena cerrada el estrés es máximo a 15° de flexión y en abierta a 90°."
+      },
+      {
+        "id": "B",
+        "text": "En cadena cerrada el estrés disminuye con la flexión y en abierta es nulo."
+      },
+      {
+        "id": "C",
+        "text": "En cadena cerrada el estrés aumenta con la flexión y en abierta a 0°-30°."
+      },
+      {
+        "id": "D",
+        "text": "En ambas cadenas el estrés articular pico se concentra siempre entre 45° y 60°."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-71",
+    "condition": "Dolor patelofemoral",
+    "domain": "Fundamentos",
+    "explanation": "En cadena cerrada, el estrés patelofemoral se incrementa con la flexión por mayor PFJRF superando el aumento de área de contacto. En cadena abierta, el brazo de palanca resistivo externo aumenta hacia la extensión completa (0°-30°), elevando drásticamente el estrés patelofemoral en dicho rango articular.",
+    "sources": [
+      {
+        "title": "Powers et al. · Biomecánica patelofemoral en cadena abierta y cerrada, JOSPT",
+        "url": "https://doi.org/10.2519/jospt.2014.5295"
+      }
+    ],
+    "familyId": "knee-v1-71"
+  },
+  {
+    "id": "knee-v1-72",
+    "stem": "Una basquetbolista de 21 años presenta dolor subpatelar anterior tras saltos repetidos. La palpación del polo patelar inferior con cuádriceps contraído no reproduce dolor, pero la hiperextensión pasiva forzada desencadena dolor agudo e irradiado detrás del tendón. ¿Qué cuadro sospechas?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Pinzamiento o irritación mecánica de la almohadilla grasa de Hoffa."
+      },
+      {
+        "id": "B",
+        "text": "Tendinopatía rotuliana del tercio medio con desorganización de colágeno."
+      },
+      {
+        "id": "C",
+        "text": "Desgarro del cuerno anterior meniscal lateral sin derrame articular agudo."
+      },
+      {
+        "id": "D",
+        "text": "Avulsión microestructural del polo inferior por tracción osteotendinosa."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-72",
+    "condition": "Dolor patelofemoral",
+    "domain": "Reconocimiento",
+    "explanation": "El dolor provocado por la hiperextensión forzada y la sensibilidad retro/infrarrotuliana sin dolor focal en el tendón patelar con el polo inferior basculado orienta fuertemente a hoffitis (síndrome de la grasa de Hoffa). La tendinopatía patelar presenta dolor focal concordante al palpar el polo inferior con cuádriceps relajado y carga de salto.",
+    "sources": [
+      {
+        "title": "Dragoo et al. · Pad Fat Hoffa Syndrome Evaluation and Management, JAAOS",
+        "url": "https://doi.org/10.5435/JAAOS-D-11-00177"
+      }
+    ],
+    "familyId": "knee-v1-72"
+  },
+  {
+    "id": "knee-v1-73",
+    "stem": "Durante un test de sentadilla unipodal, una corredora con gonalgia patelofemoral manifiesta colapso dinámico medial en valgo pronunciado. Al colocar un vendaje patelar medial o corregir manualmente el tracking no hay mejoría del dolor, pero al asistir externamente la rotación de cadera el dolor disminuye de 6/10 a 1/10. ¿Qué inferencia clínica es más acertada?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La etiología es una hipomovilidad capsular intrínseca del retropié."
+      },
+      {
+        "id": "B",
+        "text": "El déficit primario es de control lumbopélvico y abductores de cadera."
+      },
+      {
+        "id": "C",
+        "text": "Existe una alteración estructural anatómica de la tróclea femoral."
+      },
+      {
+        "id": "D",
+        "text": "El dolor depende de una falta aislada de flexibilidad en isquiotibiales."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-73",
+    "condition": "Dolor patelofemoral",
+    "domain": "Interpretación",
+    "explanation": "La reducción drástica del dolor al modificar proximalmente la cinemática de cadera (evitando aducción y rotación interna de fémur bajo la patela) demuestra que el desencadenante mecánico predominante es proximal y no local patelar, orientando el tratamiento hacia el fortalecimiento de glúteo medio y rotadores externos.",
+    "sources": [
+      {
+        "title": "Crossley et al. · Patellofemoral Pain Clinical Practice Guideline, JOSPT",
+        "url": "https://doi.org/10.2519/jospt.2016.0301"
+      }
+    ],
+    "familyId": "knee-v1-73"
+  },
+  {
+    "id": "knee-v1-74",
+    "stem": "Una persona con dolor patelofemoral bilateral en fase reactiva no tolera la sentadilla libre a más de 40° ni la prensa de piernas. Según las guías clínicas de JOSPT, ¿cuál es la prescripción angular de ejercicios combinados con menor estrés articular inicial?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cadena abierta de 0° a 30° combinada con sentadillas profundas a 90°."
+      },
+      {
+        "id": "B",
+        "text": "Cadena cerrada de 60° a 90° combinada con isometría estricta a 0° de extensión."
+      },
+      {
+        "id": "C",
+        "text": "Reposo estricto de cuádriceps y trabajo enfocado únicamente en tríceps sural."
+      },
+      {
+        "id": "D",
+        "text": "Cadena cerrada de 0° a 45° combinada con extensión en camilla a 90°-45°."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-74",
+    "condition": "Dolor patelofemoral",
+    "domain": "Intervención",
+    "explanation": "Para minimizar las fuerzas de reacción patelofemorales manteniendo el estímulo del cuádriceps, la guía CPG de JOSPT recomienda trabajar en cadena cerrada entre 0° y 45° de flexión (donde el estrés es menor) y en cadena abierta entre 90° y 45° de flexión (donde el brazo de momento externo es mínimo y el área de contacto es favorable).",
+    "sources": [
+      {
+        "title": "Willy et al. · Patellofemoral Pain CPG, JOSPT",
+        "url": "https://doi.org/10.2519/jospt.2019.0302"
+      }
+    ],
+    "familyId": "knee-v1-74"
+  },
+  {
+    "id": "knee-v1-75",
+    "stem": "Un corredor recreacional con dolor patelofemoral persistente presenta una cadencia espontánea de 156 pasos por minuto con oscilación vertical elevada y zancada larga (overstriding). ¿Qué intervención biomecánica de carrera cuenta con mayor respaldo de evidencia?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Forzar un aterrizaje en antepié manteniendo la longitud de la zancada."
+      },
+      {
+        "id": "B",
+        "text": "Prescribir zapatillas con drop de 12 mm y control rígido de pronación."
+      },
+      {
+        "id": "C",
+        "text": "Incrementar la cadencia entre 5% y 10% mediante metrónomo auditivo."
+      },
+      {
+        "id": "D",
+        "text": "Disminuir la cadencia a 140 ppm para permitir mayor tiempo de amortiguación."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-75",
+    "condition": "Dolor patelofemoral",
+    "domain": "Intervención",
+    "explanation": "Aumentar la cadencia entre un 5% y un 10% reduce el overstriding, disminuye el ángulo de flexión de rodilla al contacto inicial y atenúa significativamente las fuerzas de reacción patelofemoral pico por zancada y por kilómetro acumulado, aliviando síntomas sin sobrecargar estructuras distales.",
+    "sources": [
+      {
+        "title": "Barton et al. · Running Retraining to Treat Patellofemoral Pain, BJSM",
+        "url": "https://doi.org/10.1136/bjsports-2015-095047"
+      }
+    ],
+    "familyId": "knee-v1-75"
+  },
+  {
+    "id": "knee-v1-76",
+    "stem": "Según el modelo de continuum de la tendinopatía de Cook & Purdam, ¿cuál es la principal diferencia biológica y clínica entre una tendinopatía reactiva aguda y una degenerativa crónica?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La reactiva presenta inflamación neutrofílica masiva con necrosis celular."
+      },
+      {
+        "id": "B",
+        "text": "La reactiva muestra proliferación de proteoglicanos con potencial de reversibilidad."
+      },
+      {
+        "id": "C",
+        "text": "La degenerativa tiene alta celularidad metabólicamente activa capaz de regenerar."
+      },
+      {
+        "id": "D",
+        "text": "Ambas etapas cursan con rotura estructural irreversible del colágeno fascicular."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-76",
+    "condition": "Tendinopatía patelar",
+    "domain": "Fundamentos",
+    "explanation": "La tendinopatía reactiva es una respuesta celular proliferativa no inflamatoria ante sobrecarga aguda, caracterizada por aumento de agrecano y agua, conservando la integridad de la matriz de colágeno y manteniendo alto potencial de reversibilidad si se ajusta la carga. La degenerativa presenta desorganización matricial y apoptosis.",
+    "sources": [
+      {
+        "title": "Cook & Purdam · Is tendon pathology a continuum? A pathology model, BJSM",
+        "url": "https://doi.org/10.1136/bjsm.2008.051193"
+      }
+    ],
+    "familyId": "knee-v1-76"
+  },
+  {
+    "id": "knee-v1-77",
+    "stem": "Un jugador de voleibol de 15 años presenta gonalgia anterior asociada a saltos. Presenta tumefacción ósea marcada y dolor selectivo a la palpación sobre la tuberosidad tibial anterior, sin dolor en el polo patelar inferior ni en el cuerpo del tendón. ¿Qué cuadro clínico explica esta presentación?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tendinopatía patelar del tercio medio en etapa reactiva hipertrófica."
+      },
+      {
+        "id": "B",
+        "text": "Síndrome de Sinding-Larsen-Johansson del polo inferior patelar."
+      },
+      {
+        "id": "C",
+        "text": "Fractura aguda por avulsión de la eminencia intercondílea tibial."
+      },
+      {
+        "id": "D",
+        "text": "Enfermedad de Osgood-Schlatter (apofisitis por tracción de la tuberosidad)."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-77",
+    "condition": "Tendinopatía patelar",
+    "domain": "Reconocimiento",
+    "explanation": "La apofisitis por tracción sobre el cartílago de crecimiento de la tuberosidad tibial anterior en adolescentes deportistas corresponde a la enfermedad de Osgood-Schlatter. Sinding-Larsen-Johansson afecta al polo inferior de la patela, y la tendinopatía del adulto afecta al tejido tendinoso propiamente tal.",
+    "sources": [
+      {
+        "title": "Neuhaus et al. · Osgood-Schlatter Disease Management, Curr Opin Pediatr",
+        "url": "https://doi.org/10.1097/MOP.0000000000000985"
+      }
+    ],
+    "familyId": "knee-v1-77"
+  },
+  {
+    "id": "knee-v1-78",
+    "stem": "Al evaluar una tendinopatía patelar con el test de sentadilla en declive a 25° (single-leg decline squat), la persona refiere dolor 3/10 durante el test en consulta, pero al día siguiente a primera hora refiere rigidez y dolor 6/10 al bajar escaleras. ¿Cómo se interpreta esta respuesta clínica?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La carga mecánica evaluada superó la capacidad de tolerancia del tendón."
+      },
+      {
+        "id": "B",
+        "text": "El tendón sufrió una microrrotura estructural durante la prueba en declive."
+      },
+      {
+        "id": "C",
+        "text": "El test fue un falso negativo y el dolor proviene de compresión meniscal."
+      },
+      {
+        "id": "D",
+        "text": "La respuesta tardía es normal y autoriza a duplicar la dosis de entrenamiento."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-78",
+    "condition": "Tendinopatía patelar",
+    "domain": "Interpretación",
+    "explanation": "El comportamiento clásico de la tendinopatía patelar es la respuesta diferida a las 24 horas. El dolor tolerable durante la sesión puede subestimar la carga; el aumento matinal de dolor o rigidez al día siguiente es el indicador estándar de que la dosis aplicada excedió la capacidad tisular actual del tendón.",
+    "sources": [
+      {
+        "title": "Malliaras et al. · Patellar Tendinopathy: Clinical Diagnosis, Load Management, JOSPT",
+        "url": "https://doi.org/10.2519/jospt.2015.5987"
+      }
+    ],
+    "familyId": "knee-v1-78"
+  },
+  {
+    "id": "knee-v1-79",
+    "stem": "Un jugador de baloncesto en temporada de competencia presenta tendinopatía patelar muy reactiva e irritable que le impide entrenar por dolor 7/10 en el salto. ¿Qué estrategia kinesiológica inmediata cuenta con mayor respaldo para inducir analgesia rápida sin fatigar el tendón?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Series máximas excéntricas en plano declinado hasta el agotamiento."
+      },
+      {
+        "id": "B",
+        "text": "Inmovilización rígida con rodillera articulada bloqueada a 0° por dos semanas."
+      },
+      {
+        "id": "C",
+        "text": "Contracciones isométricas de cuádriceps mantenidas a 60° de flexión."
+      },
+      {
+        "id": "D",
+        "text": "Punción seca intratendinosa profunda combinada con estiramiento balístico."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-79",
+    "condition": "Tendinopatía patelar",
+    "domain": "Intervención",
+    "explanation": "Las contracciones isométricas pesadas (ej. 5 series de 45 segundos al 70% de la contracción isométrica máxima en silla de cuádriceps o prensa a 60° de flexión) modulan la inhibición cortical y producen analgesia inmediata de varias horas de duración en tendón patelar sin generar sobrecarga energética elástica.",
+    "sources": [
+      {
+        "title": "Rio et al. · Isometric exercise induces analgesia and reduces inhibition in tendinopathy, BJSM",
+        "url": "https://doi.org/10.1136/bjsports-2014-094386"
+      }
+    ],
+    "familyId": "knee-v1-79"
+  },
+  {
+    "id": "knee-v1-80",
+    "stem": "Tras 8 semanas de entrenamiento de fuerza lenta pesada (Heavy Slow Resistance), un atleta no presenta dolor en la vida diaria ni en sentadilla pesada (EVA 0-1/10). Para avanzar hacia la fase de almacenamiento y liberación de energía elástica, ¿qué criterio funcional debe cumplirse?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Ausencia total de cualquier señal hipoecoica en la ecografía de control."
+      },
+      {
+        "id": "B",
+        "text": "Simetría de fuerza en cuádriceps y buena tolerancia a saltos submáximos."
+      },
+      {
+        "id": "C",
+        "text": "Haber completado un mes de reposo absoluto posterior a la etapa pesada."
+      },
+      {
+        "id": "D",
+        "text": "Mantener un arco de movimiento de flexión pasiva mayor a 150° bilateral."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-80",
+    "condition": "Tendinopatía patelar",
+    "domain": "Interpretación",
+    "explanation": "El paso a la fase pliométrica y deportiva exige una base sólida de fuerza muscular (LSI >85-90% en cuádriceps y pantorrilla) y tolerancia clínica demostrada a la introducción de carga elástica progresiva (saltos de baja intensidad sin dolor diferido a 24h). La imagen ecográfica no se normaliza necesariamente y no debe retrasar la progresión.",
+    "sources": [
+      {
+        "title": "Kongsgaard et al. · Corticosteroid injections, eccentric decline squat and HSR in patellar tendinopathy, Scand J Med Sci Sports",
+        "url": "https://doi.org/10.1111/j.1600-0838.2009.00949.x"
+      }
+    ],
+    "familyId": "knee-v1-80"
+  },
+  {
+    "id": "knee-v1-81",
+    "stem": "¿Cuál es el mecanismo fisiológico por el cual la carga mecánica dinámica intermitente favorece la salud del cartílago articular en personas con artrosis de rodilla?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Induce la osificación endocondral acelerada de la superficie articular."
+      },
+      {
+        "id": "B",
+        "text": "Elimina de forma irreversible toda la inervación nociceptiva subcondral."
+      },
+      {
+        "id": "C",
+        "text": "Restablece el espesor anatómico original del cartílago a nivel macroscópico."
+      },
+      {
+        "id": "D",
+        "text": "Estimula la difusión de líquido sinovial y síntesis de proteoglicanos."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-81",
+    "condition": "Artrosis",
+    "domain": "Fundamentos",
+    "explanation": "El cartílago articular es avascular y depende de la presurización y deformación cíclica intermitente para la difusión de nutrientes y metabolitos desde el líquido sinovial. Esta mecanoestimulación en rangos fisiológicos favorece la producción de matriz extracelular por los condrocitos sin pretender regenerar macroscópicamente el espesor original.",
+    "sources": [
+      {
+        "title": "Hunter & Bierma-Zeinstra · Osteoarthritis, The Lancet",
+        "url": "https://doi.org/10.1016/S0140-6736(19)30417-9"
+      }
+    ],
+    "familyId": "knee-v1-81"
+  },
+  {
+    "id": "knee-v1-82",
+    "stem": "Una persona de 64 años con artrosis femorotibial medial conocida consulta por gonalgia medial aguda tras tropezar. Presenta dolor exquisito a la palpación 3 cm distal a la interlínea articular sobre la cara anteromedial de la tibia, con dolor a la flexión resistida de rodilla en rotación interna, sin dolor en la interlínea ni derrame articular. ¿Qué cuadro coincide?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Bursitis anserina o tendinopatía de la pata de ganso concomitante."
+      },
+      {
+        "id": "B",
+        "text": "Progresión acelerada del desgaste cartilaginoso femorotibial medial."
+      },
+      {
+        "id": "C",
+        "text": "Desgarro en asa de cubo del menisco medial con atrapamiento intraarticular."
+      },
+      {
+        "id": "D",
+        "text": "Rotura aguda del ligamento colateral medial en su inserción femoral."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-82",
+    "condition": "Artrosis",
+    "domain": "Reconocimiento",
+    "explanation": "El dolor localizado distal a la interlínea articular sobre la inserción tibial de los tendones de la pata de ganso (sartorio, grácil, semitendinoso), desencadenado por su contracción y sin signos intraarticulares (derrame, bloqueo), corresponde a una tendinobursitis anserina, un dolor extraarticular frecuente que simula una crisis artrósica.",
+    "sources": [
+      {
+        "title": "Alvarez-Nemegyei · Pes Anserine Tendinobursitis, J Clin Rheumatol",
+        "url": "https://doi.org/10.1097/RHU.0b013e31818ea82f"
+      }
+    ],
+    "familyId": "knee-v1-82"
+  },
+  {
+    "id": "knee-v1-83",
+    "stem": "En el seguimiento de una usuaria con artrosis de rodilla sometida a un programa de ejercicio de 8 semanas, la subescala de Síntomas del KOOS aumentó 4 puntos y la de Actividades de la Vida Diaria (AVD) aumentó 12 puntos. Sabiendo que la diferencia mínima clínicamente importante (MCID) del KOOS oscila entre 8 y 10 puntos, ¿qué conclusión se desprende?",
+    "options": [
+      {
+        "id": "A",
+        "text": "El programa fracasó completamente ya que ambas subescalas debían duplicar su puntaje."
+      },
+      {
+        "id": "B",
+        "text": "La variación en AVD carece de relevancia si no se acompaña de cambios radiográficos."
+      },
+      {
+        "id": "C",
+        "text": "Hubo una mejoría clínicamente significativa en función cotidiana, pero no en síntomas."
+      },
+      {
+        "id": "D",
+        "text": "La puntuación indica empeoramiento sintomático grave que obliga a suspender la terapia."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-83",
+    "condition": "Artrosis",
+    "domain": "Interpretación",
+    "explanation": "El cambio de 12 puntos en la subescala KOOS-AVD supera el umbral de MCID (8-10 puntos), lo que confirma una mejoría funcional percibida real y significativa para la usuaria en su vida diaria, aun cuando la subescala de síntomas directos (4 puntos) no haya alcanzado dicho corte.",
+    "sources": [
+      {
+        "title": "Roos & Lohmander · The Knee injury and Osteoarthritis Outcome Score (KOOS), Health Qual Life Outcomes",
+        "url": "https://doi.org/10.1186/1477-7525-1-64"
+      }
+    ],
+    "familyId": "knee-v1-83"
+  },
+  {
+    "id": "knee-v1-84",
+    "stem": "Una persona de 68 años con gonartrosis moderada evita caminar por miedo a desgastar la rodilla. Según las guías internacionales OARSI y NICE (2022-2024), ¿cuál es la combinación de intervenciones kinesiológicas de primera línea con mayor recomendación?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Reposo en cama prolongado complementado con termoterapia profunda diaria."
+      },
+      {
+        "id": "B",
+        "text": "Educación estructurada, ejercicio terapéutico neuromuscular y control de peso."
+      },
+      {
+        "id": "C",
+        "text": "Tracción articular manual pasiva exclusiva asociada a ultrasonido continuo."
+      },
+      {
+        "id": "D",
+        "text": "Inmovilización preventiva con yeso inguinomaleolar durante cuatro semanas."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-84",
+    "condition": "Artrosis",
+    "domain": "Intervención",
+    "explanation": "Las guías OARSI, EULAR y NICE sitúan unánimemente en el núcleo de tratamiento de primera línea a la educación sobre la enfermedad, el ejercicio terapéutico individualizado (fuerza y aeróbico/neuromuscular) y la optimización del peso corporal. Las modalidades pasivas aisladas no forman parte de las recomendaciones centrales.",
+    "sources": [
+      {
+        "title": "NICE Guideline NG226 · Osteoarthritis: assessment and management, 2022",
+        "url": "https://www.nice.org.uk/guidance/ng226"
+      }
+    ],
+    "familyId": "knee-v1-84"
+  },
+  {
+    "id": "knee-v1-85",
+    "stem": "Un usuario con artrosis severa fue sometido a una infiltración con ácido hialurónico hace 48 horas. Acude a la sesión con rodilla eritematosa, caliente al tacto, derrame articular a gran tensión, imposibilidad de flexionar más de 20° por dolor y temperatura axilar de 38.3 °C. ¿Cuál es la conducta obligatoria?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Aplicar electroanalgesia y movilizaciones pasivas suaves de baja amplitud."
+      },
+      {
+        "id": "B",
+        "text": "Colocar crioterapia local e indicar reposo domiciliario por setenta y dos horas."
+      },
+      {
+        "id": "C",
+        "text": "Realizar masaje depletivo vigoroso del cuadriceps para drenar el líquido sinovial."
+      },
+      {
+        "id": "D",
+        "text": "Derivación médica urgente a servicio de urgencias por sospecha de artritis séptica."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-85",
+    "condition": "Artrosis",
+    "domain": "Seguridad",
+    "explanation": "La presencia de fiebre, signos inflamatorios locales cardinales marcados y derrame a gran tensión tras un procedimiento intraarticular invasivo reciente es una emergencia médica que sugiere artritis séptica iatrogénica. Requiere artrocentesis diagnóstica y antibioterapia urgente para evitar destrucción cartilaginosa irreversible o sepsis.",
+    "sources": [
+      {
+        "title": "Margaretten et al. · Does this adult patient have septic arthritis? JAMA",
+        "url": "https://doi.org/10.1001/jama.297.13.1478"
+      }
+    ],
+    "familyId": "knee-v1-85"
+  },
+  {
+    "id": "knee-v1-86",
+    "stem": "En relación con la vascularización meniscal en adultos, ¿por qué los desgarros longitudinales en la zona roja-roja periférica tienen indicación de sutura meniscal mientras que los desgarros complejos en la zona blanca-blanca suelen desbridarse?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La zona periférica posee aporte sanguíneo capilar perimeniscal capaz de cicatrizar."
+      },
+      {
+        "id": "B",
+        "text": "La zona blanca contiene abundantes fibroblastos con capacidad proliferativa acelerada."
+      },
+      {
+        "id": "C",
+        "text": "La zona roja carece de mecanorreceptores y por ello no produce dolor postoperatorio."
+      },
+      {
+        "id": "D",
+        "text": "La sutura meniscal en zona blanca-blanca tiene una tasa de éxito biológico del cien por ciento."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-86",
+    "condition": "Menisco",
+    "domain": "Fundamentos",
+    "explanation": "El tercio externo del menisco (zona roja-roja) recibe irrigación de las arterias geniculadas a través del plexo perimeniscal, lo que confiere un ambiente celular y vascular adecuado para la cicatrización biológica tras una sutura. Los dos tercios internos (zona blanca) son avasculares y nutricionalmente dependientes del líquido sinovial, con nulo potencial cicatrizal.",
+    "sources": [
+      {
+        "title": "Makris et al. · The Knee Meniscus: Structure-Function, Pathophysiology, and Repair, Biomaterials",
+        "url": "https://doi.org/10.1016/j.biomaterials.2011.06.037"
+      }
+    ],
+    "familyId": "knee-v1-86"
+  },
+  {
+    "id": "knee-v1-87",
+    "stem": "Un futbolista refiere sensación de rodilla trabada tras un traumatismo indirecto con pivote. En el examen no puede extender pasivamente los últimos 15° con un tope duro-elástico insuperable. ¿Cómo se diferencia clínicamente este bloqueo articular verdadero de un pseudobloqueo por espasmo?",
+    "options": [
+      {
+        "id": "A",
+        "text": "El bloqueo mecánico verdadero permite la extensión pasiva forzada sin dolor alguno."
+      },
+      {
+        "id": "B",
+        "text": "El pseudobloqueo produce siempre un tope óseo terminal con deformidad en recurvatum."
+      },
+      {
+        "id": "C",
+        "text": "El pseudobloqueo cede gradualmente con tracción suave o infiltración analgésica."
+      },
+      {
+        "id": "D",
+        "text": "Ambas entidades comparten una masa cartilaginosa interpuesta en la fosa intercondílea."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-87",
+    "condition": "Menisco",
+    "domain": "Reconocimiento",
+    "explanation": "El bloqueo mecánico verdadero (ej. desgarro en asa de cubo desplazado en la fosa intercondílea) opone una resistencia física firme e insuperable que no cede con la relajación del paciente. El pseudobloqueo se debe a inhibición por dolor y contractura refleja de isquiotibiales/cuádriceps o hemartrosis severa, cediendo al calmar el dolor o reposar.",
+    "sources": [
+      {
+        "title": "Beaufils et al. · The meniscus: from biology to tissue engineering, Sports Med Arthrosc Rev",
+        "url": "https://doi.org/10.1097/JSA.0b013e31826f6eb8"
+      }
+    ],
+    "familyId": "knee-v1-87"
+  },
+  {
+    "id": "knee-v1-88",
+    "stem": "Una persona de 58 años sin traumatismo agudo presenta dolor difuso en la rodilla. El test de Thessaly a 20° resulta positivo con dolor medial y en la resonancia se describe rotura horizontal del cuerpo meniscal medial. ¿Cómo debe interpretarse este hallazgo según la evidencia actual?",
+    "options": [
+      {
+        "id": "A",
+        "text": "El test de Thessaly positivo confirma un desgarro traumático que requiere cirugía."
+      },
+      {
+        "id": "B",
+        "text": "La rotura meniscal horizontal degenerativa es un hallazgo muy frecuente por edad."
+      },
+      {
+        "id": "C",
+        "text": "La resonancia magnética descarta con certeza total cualquier osteoartritis inicial."
+      },
+      {
+        "id": "D",
+        "text": "El dolor proviene de forma exclusiva e indiscutible del menisco lesionado."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-88",
+    "condition": "Menisco",
+    "domain": "Interpretación",
+    "explanation": "Las roturas meniscales degenerativas (frecuentemente horizontales) son prevalentes en más del 30-50% de personas mayores de 50 años asintomáticas y forman parte del proceso biológico de envejecimiento articular y artrosis incipiente. No deben asumirse como causa unívoca de dolor ni indicación automática de cirugía.",
+    "sources": [
+      {
+        "title": "Englund et al. · Incidental meniscal findings on knee MRI in middle-aged and elderly persons, NEJM",
+        "url": "https://doi.org/10.1056/NEJMoa0800777"
+      }
+    ],
+    "familyId": "knee-v1-88"
+  },
+  {
+    "id": "knee-v1-89",
+    "stem": "En personas mayores de 45 años con desgarro meniscal degenerativo no bloqueado, ¿qué demostraron los ensayos clínicos aleatorizados de alta calidad (ensayos METEOR y ESCAPE) al comparar la artroscopía con el ejercicio supervisado?",
+    "options": [
+      {
+        "id": "A",
+        "text": "La artroscopía parcial meniscal previene el desarrollo futuro de artrosis de rodilla."
+      },
+      {
+        "id": "B",
+        "text": "La cirugía meniscectomía parcial es clínicamente superior al ejercicio en todos los plazos."
+      },
+      {
+        "id": "C",
+        "text": "El ejercicio está contraindicado por riesgo de progresión del desgarro meniscal degenerativo."
+      },
+      {
+        "id": "D",
+        "text": "El ejercicio terapéutico logra resultados funcionales similares a la artroscopía a largo plazo."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-89",
+    "condition": "Menisco",
+    "domain": "Intervención",
+    "explanation": "Los grandes ensayos clínicos (METEOR, ESCAPE, Katz, Sihvonen) demostraron que un programa de ejercicio terapéutico estructurado ofrece mejoras en dolor y función equivalentes a la meniscectomía parcial artroscópica a los 6, 12 y 24 meses, sin los riesgos quirúrgicos ni la aceleración de cambios artrósicos.",
+    "sources": [
+      {
+        "title": "van de Graaf et al. · Effect of Partial Meniscectomy vs Physical Therapy (ESCAPE trial), JAMA",
+        "url": "https://doi.org/10.1001/jama.2018.13308"
+      }
+    ],
+    "familyId": "knee-v1-89"
+  },
+  {
+    "id": "knee-v1-90",
+    "stem": "Durante la flexión completa de rodilla en carga profunda, ¿cómo se desplazan los meniscos sobre los platillos tibiales y cuál de ellos presenta mayor movilidad anteroposterior?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Se desplazan hacia posterior, siendo el menisco lateral el que posee mayor movilidad."
+      },
+      {
+        "id": "B",
+        "text": "Ambos se desplazan anteriormente con idéntica excursión de tres milímetros."
+      },
+      {
+        "id": "C",
+        "text": "Se desplazan hacia anterior, siendo el menisco medial el de mayor excursión articular."
+      },
+      {
+        "id": "D",
+        "text": "Los meniscos permanecen completamente inmóviles por sus inserciones radiculares."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-90",
+    "condition": "Menisco",
+    "domain": "Fundamentos",
+    "explanation": "Durante la flexión, los cóndilos femorales ruedan y se deslizan empujando los meniscos hacia posterior. El menisco lateral se desplaza aproximadamente el doble (9-11 mm) que el medial (4-5 mm), debido a que el menisco medial está firmemente anclado a la cápsula articular y al ligamento colateral medial profundo.",
+    "sources": [
+      {
+        "title": "Thompson et al. · Biomechanics of the knee menisci, Sports Med Arthrosc Rev",
+        "url": "https://doi.org/10.1097/JSA.0b013e31826f6eb8"
+      }
+    ],
+    "familyId": "knee-v1-90"
+  },
+  {
+    "id": "knee-v1-91",
+    "stem": "El ligamento cruzado anterior (LCA) consta de dos fascículos funcionales: anteromedial (AM) y posterolateral (PL). ¿Cómo varía su tensión fisiológica en los diferentes rangos de flexoextensión de rodilla?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Ambos fascículos se encuentran en tensión máxima únicamente a noventa grados."
+      },
+      {
+        "id": "B",
+        "text": "El fascículo PL se tensa a noventa grados y el AM se relaja por completo en flexión."
+      },
+      {
+        "id": "C",
+        "text": "El fascículo AM se tensa en flexión profunda y el PL se tensa cerca de la extensión."
+      },
+      {
+        "id": "D",
+        "text": "Los dos fascículos se mantienen laxos en la extensión completa para permitir hiperextensión."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-91",
+    "condition": "Ligamentos",
+    "domain": "Fundamentos",
+    "explanation": "La anatomía en doble fascículo del LCA genera un comportamiento recíproco: el fascículo anteromedial (AM) se tensa progresivamente con la flexión de rodilla, controlando la traslación tibial anterior en rango medio-profundo, mientras que el fascículo posterolateral (PL) se tensa cerca de la extensión completa (0-30°), proporcionando estabilidad rotatoria.",
+    "sources": [
+      {
+        "title": "Petersen & Zantop · Anatomy and Biomechanics of the ACL, Orthop Clin North Am",
+        "url": "https://doi.org/10.1016/j.ocl.2007.03.008"
+      }
+    ],
+    "familyId": "knee-v1-91"
+  },
+  {
+    "id": "knee-v1-92",
+    "stem": "Tras un golpe lateral en fútbol, un jugador presenta gonalgia aguda. Al evaluar el estrés en valgo a 30° de flexión hay bostezo articular aumentado con dolor pero con tope final firme; sin embargo, al evaluar el valgo a 0° de extensión completa la rodilla permanece completamente estable sin bostezo. ¿Cuál es el diagnóstico clínico?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Rotura completa combinada del ligamento cruzado anterior y colateral medial."
+      },
+      {
+        "id": "B",
+        "text": "Lesión aislada grado II del ligamento colateral medial con estabilidad central."
+      },
+      {
+        "id": "C",
+        "text": "Desinserción masiva de la esquina posterolateral y cápsula articular medial."
+      },
+      {
+        "id": "D",
+        "text": "Avulsión ósea de la cabeza del peroné con compromiso del nervio peroneo común."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-92",
+    "condition": "Ligamentos",
+    "domain": "Reconocimiento",
+    "explanation": "El bostezo en valgo a 30° con tope firme indica un esguince grado II del ligamento colateral medial (LCM). La estabilidad en valgo a 0° de extensión completa confirma que los estabilizadores secundarios en extensión (cápsula posteromedial, ligamento poplíteo oblicuo y los ligamentos cruzados) están intactos, descartando una lesión multiligamentaria compleja.",
+    "sources": [
+      {
+        "title": "Wijdicks et al. · Injuries to the Medial Collateral Ligament, J Bone Joint Surg Am",
+        "url": "https://doi.org/10.2106/JBJS.I.01229"
+      }
+    ],
+    "familyId": "knee-v1-92"
+  },
+  {
+    "id": "knee-v1-93",
+    "stem": "En la evaluación funcional de un deportista post-reconstrucción de LCA a los 6 meses, el test de Lachman revela una traslación anterior de 3 mm mayor respecto a la contralateral pero con tope firme, mientras que el Pivot Shift es estrictamente negativo (grado 0). En la escala IKDC subjetiva obtiene 92 puntos. ¿Cómo se interpreta este estado ligamentoso y funcional?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Fallo catastrófico del injerto que exige revisión quirúrgica inmediata de urgencia."
+      },
+      {
+        "id": "B",
+        "text": "Inestabilidad rotatoria no compensada que contraindica cualquier actividad física."
+      },
+      {
+        "id": "C",
+        "text": "Rigidez articular excesiva (artrofibrosis) que requiere movilización bajo anestesia."
+      },
+      {
+        "id": "D",
+        "text": "Laxitud anteroposterior residual leve fisiológica con estabilidad rotatoria excelente."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-93",
+    "condition": "Ligamentos",
+    "domain": "Interpretación",
+    "explanation": "Una traslación anterior diferencial de 3 mm en Lachman con tope firme es común y compatible con un injerto biológicamente integrado. La ausencia de inestabilidad rotatoria dinámica (Pivot Shift negativo) y una puntuación alta en el IKDC (>90) reflejan una rodilla biomecánica y clínicamente estable con excelente compensación neuromuscular.",
+    "sources": [
+      {
+        "title": "van Eck et al. · Pivot Shift Test: Systematic Review of Diagnostics and Outcomes, Arthroscopy",
+        "url": "https://doi.org/10.1016/j.arthro.2012.06.012"
+      }
+    ],
+    "familyId": "knee-v1-93"
+  },
+  {
+    "id": "knee-v1-94",
+    "stem": "Una atleta de 24 años con plastía de LCA con tendón hueso-patela-hueso (H-T-H) cumple 12 semanas de evolución. No presenta dolor ni derrame articular y camina con patrón normal. ¿Cuál es el criterio clínico y de fuerza mínimo respaldado por consensos para autorizar el inicio de carrera continua?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Índice de simetría de fuerza en cuádriceps mayor o igual al setenta por ciento."
+      },
+      {
+        "id": "B",
+        "text": "Cumplir doce semanas calendario sin importar la simetría muscular alcanzada."
+      },
+      {
+        "id": "C",
+        "text": "Capacidad de realizar un salto unipodal con distancia idéntica a la sana."
+      },
+      {
+        "id": "D",
+        "text": "Completar una resonancia magnética que acredite ligamentización celular total."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-94",
+    "condition": "Ligamentos",
+    "domain": "Reconocimiento",
+    "explanation": "Los criterios de retorno al trote basados en evidencia (consensos de Rambaud y van Melick) exigen criterios objetivos funcionales: ausencia de derrame (derrame traza o 0), extensión completa simétrica, flexión >120° y un índice de simetría de fuerza (LSI) de cuádriceps de al menos 70-80% en dinamometría, no basándose solo en el tiempo transcurrido.",
+    "sources": [
+      {
+        "title": "Rambaud et al. · Criteria for return to running after ACL reconstruction: a scoping review, BJSM",
+        "url": "https://doi.org/10.1136/bjsports-2017-098602"
+      }
+    ],
+    "familyId": "knee-v1-94"
+  },
+  {
+    "id": "knee-v1-95",
+    "stem": "Un motociclista sufre un traumatismo de alta energía en rodilla con luxación femorotibial grosera reducida espontáneamente en el lugar. En la evaluación inicial hay bostezo masivo tanto en varo como en valgo y cajón posterior franco. ¿Cuál es la prioridad de seguridad clínica antes de cualquier examen kinésico?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Realizar maniobras de tracción axial vigorosas para evaluar la estabilidad capsular."
+      },
+      {
+        "id": "B",
+        "text": "Iniciar de inmediato movilización pasiva continua para evitar rigidez por sangrado."
+      },
+      {
+        "id": "C",
+        "text": "Evaluar pulsos pedios distales, llenado capilar y medir el índice tobillo-braquial."
+      },
+      {
+        "id": "D",
+        "text": "Indicar apoyo podálico completo y marcha con bastones para verificar propiocepción."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-95",
+    "condition": "Ligamentos",
+    "domain": "Seguridad",
+    "explanation": "Una luxación de rodilla (lesión multiligamentaria de alta energía) presenta un riesgo de lesión de la arteria poplítea de hasta un 30-40%. La valoración neurovascular urgente mediante palpación de pulsos y la medición del índice tobillo-braquial (ITB < 0.9 orienta a lesión vascular oculta) es de vida o muerte para la extremidad, requiriendo angiografía inmediata.",
+    "sources": [
+      {
+        "title": "Stannard et al. · Vascular injuries associated with knee dislocations, Phys Sportsmed",
+        "url": "https://doi.org/10.3810/psm.2010.12.1824"
+      }
+    ],
+    "familyId": "knee-v1-95"
+  },
+  {
+    "id": "knee-v1-96",
+    "stem": "En relación con la cinemática de la patela, ¿en qué rango de flexión de rodilla el ligamento patelofemoral medial (LPFM) actúa como el restrictor pasivo primario contra el desplazamiento lateral?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Entre 60° y 90° de flexión debido a la compresión rígida contra los cóndilos."
+      },
+      {
+        "id": "B",
+        "text": "Entre 0° y 30° de flexión antes de que la patela encaje en la tróclea femoral."
+      },
+      {
+        "id": "C",
+        "text": "Entre 90° y 120° de flexión sostenido por la tracción directa del tendón cuadricipital."
+      },
+      {
+        "id": "D",
+        "text": "Exclusivamente en hiperflexión mayor a 130° por tensión de la cápsula posterior."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-96",
+    "condition": "Inestabilidad patelar",
+    "domain": "Fundamentos",
+    "explanation": "Entre los 0° y los 30° de flexión, la patela aún no ha ingresado completamente en la garganta troclear femoral ósea y depende de estabilizadores de partes blandas, donde el LPFM aporta entre el 50% y el 60% de la fuerza total de contención contra el desplazamiento lateral. A mayor flexión, la congruencia ósea troclear asume la restricción principal.",
+    "sources": [
+      {
+        "title": "Amis et al. · Anatomy and biomechanics of the medial patellofemoral ligament, Knee",
+        "url": "https://doi.org/10.1016/S0968-0160(03)00006-1"
+      }
+    ],
+    "familyId": "knee-v1-96"
+  },
+  {
+    "id": "knee-v1-97",
+    "stem": "Entre los factores anatómicos predisponentes para la inestabilidad patelar recurrente, ¿cuál de las siguientes mediciones radiológicas y morfológicas representa una alteración de la alineación en el plano frontal y axial?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Un ángulo troclear menor a 120° con fosa femoral profunda y congruente."
+      },
+      {
+        "id": "B",
+        "text": "Índice de Caton-Deschamps inferior a 0.6 compatible con patela baja estricta."
+      },
+      {
+        "id": "C",
+        "text": "Presencia de una hipoplasia aislada del cóndilo femoral medial sin báscula lateral."
+      },
+      {
+        "id": "D",
+        "text": "Aumento patológico de la distancia entre tuberosidad tibial y surco troclear (TT-TG)."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-97",
+    "condition": "Inestabilidad patelar",
+    "domain": "Fundamentos",
+    "explanation": "Una distancia TT-TG (medida por TAC o RMN) mayor a 15-20 mm traduce una lateralización excesiva de la tuberosidad tibial respecto a la tróclea, aumentando el vector lateral de tracción cuadricipital (vector en cuerda de arco). La displasia troclear con aplanamiento y la patela alta (>1.2 en Caton-Deschamps) son los otros grandes factores.",
+    "sources": [
+      {
+        "title": "Dejour et al. · Factors of patellar instability: An anatomic study, Knee Surg Sports Traumatol Arthrosc",
+        "url": "https://doi.org/10.1007/BF01552649"
+      }
+    ],
+    "familyId": "knee-v1-97"
+  },
+  {
+    "id": "knee-v1-98",
+    "stem": "Una adolescente presenta una primera luxación patelar lateral aguda mientras bailaba. En la evaluación inicial no hay fractura visible en radiografía. ¿Qué signos físicos y hallazgos semiológicos confirman la rotura retinacular medial aguda?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Dolor exquisito a la palpación del tubérculo aductor y hematoma focal peripatelo medial."
+      },
+      {
+        "id": "B",
+        "text": "Equimosis masiva en fosa poplítea con ausencia total de pulso pedio y tibial posterior."
+      },
+      {
+        "id": "C",
+        "text": "Incapacidad de realizar rotación interna pasiva de cadera con choque patelar negativo."
+      },
+      {
+        "id": "D",
+        "text": "Dolor localizado exclusivamente en la cabeza del peroné con paresia de flexores dorsales."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-98",
+    "condition": "Inestabilidad patelar",
+    "domain": "Reconocimiento",
+    "explanation": "En la luxación patelar lateral traumática, el LPFM se desgarra habitualmente en su inserción femoral (tubérculo del aductor) o en el borde medial de la patela. Esto se manifiesta por dolor exquisito en dicho punto (punto de Bassett), hematoma medial y hemartrosis articular secundaria.",
+    "sources": [
+      {
+        "title": "Duthon et al. · Acute patellar dislocation: diagnosis and management, Sports Med Arthrosc Rev",
+        "url": "https://doi.org/10.1097/JSA.0000000000000155"
+      }
+    ],
+    "familyId": "knee-v1-98"
+  },
+  {
+    "id": "knee-v1-99",
+    "stem": "Al evaluar a una paciente con antecedentes de luxación patelar recidivante, el test de aprehensión de Fairbank es positivo a 20° de flexión (la paciente contrae con pánico el cuádriceps al desplazar la patela hacia lateral). Sin embargo, a 60° de flexión el test es indoloro y no genera aprehensión. ¿Qué explica esta diferencia?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A 60° se produce una rotura completa del tendón cuadricipital que relaja la articulación."
+      },
+      {
+        "id": "B",
+        "text": "La prueba a 20° era un falso positivo condicionado por hipersensibilidad en piel."
+      },
+      {
+        "id": "C",
+        "text": "A 60° la patela está firmemente encajada en la tróclea ósea, restringiendo el desplazamiento."
+      },
+      {
+        "id": "D",
+        "text": "El ligamento patelofemoral medial se tensa de manera absoluta únicamente a 60°."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-99",
+    "condition": "Inestabilidad patelar",
+    "domain": "Interpretación",
+    "explanation": "A 20° de flexión la patela descansa sobre el plano supratroclear y carece de contención ósea, por lo que el desplazamiento lateral activa el reflejo de aprehensión por fallo del LPFM. A 60° la patela penetra profundamente en la garganta troclear y las paredes óseas impiden el desplazamiento, normalizando la prueba.",
+    "sources": [
+      {
+        "title": "Fithian et al. · Fate of the First-Time Patellar Dislocator, J Bone Joint Surg Am",
+        "url": "https://doi.org/10.2106/JBJS.I.01229"
+      }
+    ],
+    "familyId": "knee-v1-99"
+  },
+  {
+    "id": "knee-v1-100",
+    "stem": "En el manejo conservador tras una primera luxación patelar aguda sin fragmentos osteocondrales libres, ¿cuál es el enfoque de ejercicio terapéutico más seguro durante las primeras 3 semanas?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Sentadillas profundas a 90° con pivote rotacional forzado de la tibia."
+      },
+      {
+        "id": "B",
+        "text": "Isométricos de cuádriceps en extensión completa y fortalecimiento posterolateral de cadera."
+      },
+      {
+        "id": "C",
+        "text": "Extensión de rodilla balística en máquina de 90° a 0° con máxima velocidad."
+      },
+      {
+        "id": "D",
+        "text": "Inmovilización con rodillera rígida en flexión de sesenta grados por seis semanas."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-100",
+    "condition": "Inestabilidad patelar",
+    "domain": "Intervención",
+    "explanation": "Durante la fase aguda protegida, se promueve la activación isométrica del cuádriceps (foco en vasto medial para evitar atrofia e inhibición artrogénica) y el fortalecimiento de la musculatura de cadera (glúteo medio y rotadores externos) para controlar el valgo dinámico, protegiendo la cicatrización del retináculo medial.",
+    "sources": [
+      {
+        "title": "Smith et al. · Conservative management of patellar dislocation, Cochrane Database Syst Rev",
+        "url": "https://doi.org/10.1002/14651858.CD008481.pub2"
+      }
+    ],
+    "familyId": "knee-v1-100"
+  },
+  {
+    "id": "knee-v1-101",
+    "stem": "Un joven de 16 años acude tras luxación patelar ocurrida hace 6 horas que fue reducida en la cancha. Presenta hemartrosis masiva a gran tensión y la rodilla queda bloqueada en flexión de 30° con incapacidad absoluta de extensión activa o pasiva. ¿Qué complicación grave debe sospecharse prioritariamente?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tendinopatía patelar reactiva bilateral con inflamación periarticular leve."
+      },
+      {
+        "id": "B",
+        "text": "Espasmo involuntario de la musculatura aductora por deshidratación simple."
+      },
+      {
+        "id": "C",
+        "text": "Desarrollo inmediato de quiste de Baker complicado con tromboflebitis distal."
+      },
+      {
+        "id": "D",
+        "text": "Fractura osteocondral con fragmento libre articular interpuesto en la fosa."
+      }
+    ],
+    "correct": "D",
+    "objective": "KNEE-101",
+    "condition": "Inestabilidad patelar",
+    "domain": "Seguridad",
+    "explanation": "Hasta en un 25-40% de las luxaciones patelares agudas primarias se produce una fractura osteocondral por cizallamiento (del reborde medial de la patela o del cóndilo femoral lateral durante la reducción). Un bloqueo mecánico articular o una hemartrosis rápida con gotas de grasa exige estudio radiológico/RMN y derivación traumatológica urgente para fijación o extracción.",
+    "sources": [
+      {
+        "title": "Seeley et al. · Osteochondral Injury in Patellar Dislocation, J Pediatr Orthop",
+        "url": "https://doi.org/10.1097/BPO.0b013e318285c5b9"
+      }
+    ],
+    "familyId": "knee-v1-101"
+  },
+  {
+    "id": "knee-v1-102",
+    "stem": "En una artroplastia total de rodilla con técnica de sustitución o sacrificio del ligamento cruzado posterior (cruciate-sacrificing con inserto post-cam), ¿qué función mecánica cumple el mecanismo de pivote central del polietileno?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Prevenir la traslación tibial posterior excesiva y guiar el rollback femoral."
+      },
+      {
+        "id": "B",
+        "text": "Sustituir la función del ligamento colateral medial eliminando todo bostezo."
+      },
+      {
+        "id": "C",
+        "text": "Bloquear por completo la flexión de rodilla a los cuarenta y cinco grados."
+      },
+      {
+        "id": "D",
+        "text": "Impedir la rotación fisiológica axial tibial en todos los grados de movimiento."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-102",
+    "condition": "Artroplastia",
+    "domain": "Fundamentos",
+    "explanation": "El diseño post-cam (estabilizado posterior) incorpora un poste de polietileno que se acopla con una leva metálica en el componente femoral a medida que la rodilla se flexiona. Esto sustituye la acción del LCP, previniendo la traslación anterior del fémur (o posterior de la tibia) y forzando el retroceso o rollback femoral para permitir mayor flexión sin pinzamiento.",
+    "sources": [
+      {
+        "title": "Dennis et al. · In vivo kinematics of cruciate retaining and sacrificing TKA, J Biomech",
+        "url": "https://doi.org/10.1016/S0021-9290(98)00087-4"
+      }
+    ],
+    "familyId": "knee-v1-102"
+  },
+  {
+    "id": "knee-v1-103",
+    "stem": "Una usuaria de 72 años en su décimo día post-artroplastia total de rodilla refiere aumento de dolor en pantorrilla al descender de la cama. En el examen presenta edema asimétrico que deja fóvea en tercio inferior de pierna (>3 cm de diferencia de perímetro con la sana), calor local y dolor a la palpación profunda del gastrocnemio. ¿Cuál es el procedimiento prioritario?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Aplicar compresión elástica fuerte y realizar ejercicio de bombeo vigoroso."
+      },
+      {
+        "id": "B",
+        "text": "Suspender la sesión y coordinar eco-Doppler venoso de urgencia por riesgo de TVP."
+      },
+      {
+        "id": "C",
+        "text": "Indicar calor local superficial y masaje profundo de tejido conectivo en pantorrilla."
+      },
+      {
+        "id": "D",
+        "text": "Continuar el protocolo habitual de fortalecimiento atribuyendo el dolor a fatiga."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-103",
+    "condition": "Artroplastia",
+    "domain": "Reconocimiento",
+    "explanation": "El edema asimétrico >3 cm, dolor localizado en trayecto venoso profundo y cirugía ortopédica mayor reciente otorgan una alta puntuación en los criterios de Wells para Trombosis Venosa Profunda (TVP). Ante esta sospecha, está contraindicado el masaje o ejercicio vigoroso y se debe derivar de urgencia para confirmación con ecografía Doppler venosa.",
+    "sources": [
+      {
+        "title": "Wells et al. · Evaluation of D-Dimer in the Diagnosis of Suspected Deep-Vein Thrombosis, NEJM",
+        "url": "https://doi.org/10.1056/NEJMoa023153"
+      }
+    ],
+    "familyId": "knee-v1-103"
+  },
+  {
+    "id": "knee-v1-104",
+    "stem": "A las 6 semanas post-artroplastia total de rodilla, un paciente presenta una flexión pasiva de 115° y una extensión pasiva de 0°, pero al solicitarle la extensión activa en sedente le falta alcanzar los últimos 15° (presenta un lag extensor de 15°). ¿Qué interpretación clínica se deriva de este hallazgo?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Existe un tope óseo protésico anterior que impide físicamente estirar la rodilla."
+      },
+      {
+        "id": "B",
+        "text": "La prótesis sufrió un aflojamiento séptico precoz con rotura del componente tibial."
+      },
+      {
+        "id": "C",
+        "text": "Hay un déficit de activación o fuerza de cuádriceps, sin limitación capsular articular."
+      },
+      {
+        "id": "D",
+        "text": "El paciente presenta una retracción capsular posterior fija en flexión estructurada."
+      }
+    ],
+    "correct": "C",
+    "objective": "KNEE-104",
+    "condition": "Artroplastia",
+    "domain": "Interpretación",
+    "explanation": "La discrepancia entre una extensión pasiva completa (0°) y una extensión activa incompleta (falta de 15°) define un déficit de extensión activa o lag extensor. Esto demuestra que la movilidad articular intrínseca está preservada y que el problema es neuromuscular (inhibición artrogénica o debilidad severa del cuádriceps), requiriendo reeducación motriz y fuerza.",
+    "sources": [
+      {
+        "title": "Bade & Stevens-Lapsley · Restoration of Extension and Quadriceps Activation After TKA, J Orthop Sports Phys Ther",
+        "url": "https://doi.org/10.2519/jospt.2011.3533"
+      }
+    ],
+    "familyId": "knee-v1-104"
+  },
+  {
+    "id": "knee-v1-105",
+    "stem": "En el diseño de un programa de rehabilitación ambulatoria temprana tras artroplastia total de rodilla, ¿qué estrategia de entrenamiento ha demostrado mayor impacto funcional en tareas de subida de escaleras y transferencias?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Entrenamiento de fuerza muscular progresiva de cuádriceps y glúteos de alta intensidad."
+      },
+      {
+        "id": "B",
+        "text": "Pedaleo libre en bicicleta estática sin resistencia durante sesenta minutos diarios."
+      },
+      {
+        "id": "C",
+        "text": "Reposo en sedente con almohada bajo el hueco poplíteo para mantener flexión de confort."
+      },
+      {
+        "id": "D",
+        "text": "Uso exclusivo de electroestimulación en reposo sin participación neuromuscular voluntaria."
+      }
+    ],
+    "correct": "A",
+    "objective": "KNEE-105",
+    "condition": "Artroplastia",
+    "domain": "Intervención",
+    "explanation": "Los ensayos clínicos de Stevens-Lapsley y guías de artroplastia demuestran que el entrenamiento de fuerza progresiva (high-intensity resistance training) enfocado en cuádriceps y extensores de cadera produce mejoras sustancialmente superiores en velocidad de marcha, subida de escaleras y pruebas funcionales (TUG) comparado con protocolos de baja intensidad o pasivos.",
+    "sources": [
+      {
+        "title": "Stevens-Lapsley et al. · High-intensity progressive resistance training after TKA: a randomized trial, J Bone Joint Surg Am",
+        "url": "https://doi.org/10.2106/JBJS.K.00940"
+      }
+    ],
+    "familyId": "knee-v1-105"
+  }
+]

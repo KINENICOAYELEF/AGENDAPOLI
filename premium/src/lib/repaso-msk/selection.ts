@@ -15,15 +15,22 @@ function shuffle<T>(items: T[], random: (max: number) => number) {
 function balanced(pool: ReviewedQuestion[], count: number, random: (max: number) => number, initial: ReviewedQuestion[] = []) {
   const remaining = shuffle(pool, random), result: ReviewedQuestion[] = [];
   const groups = new Map<string, number>(), domains = new Map<string, number>();
+  // A short test still needs key foundations, but it must not become a glossary.
+  // At least three quarters of a 35-item test are clinical application/interpretation.
+  const foundationLimit = Math.ceil(TEST_SIZE * 0.25);
   const record = (q: ReviewedQuestion) => {
     groups.set(q.condition, (groups.get(q.condition) ?? 0) + 1);
     const d = domainGroup(q.domain); domains.set(d, (domains.get(d) ?? 0) + 1);
   };
   initial.forEach(record);
   while (result.length < count && remaining.length) {
-    remaining.sort((a, b) => (groups.get(a.condition) ?? 0) - (groups.get(b.condition) ?? 0)
+    const eligible = remaining.filter(q => domainGroup(q.domain) !== 'Fundamentos'
+      || (domains.get('Fundamentos') ?? 0) < foundationLimit);
+    const candidates = eligible.length ? eligible : remaining;
+    candidates.sort((a, b) => (groups.get(a.condition) ?? 0) - (groups.get(b.condition) ?? 0)
       || (domains.get(domainGroup(a.domain)) ?? 0) - (domains.get(domainGroup(b.domain)) ?? 0));
-    const q = remaining.shift()!; result.push(q); record(q);
+    const q = candidates[0];
+    remaining.splice(remaining.indexOf(q), 1); result.push(q); record(q);
   }
   return result;
 }

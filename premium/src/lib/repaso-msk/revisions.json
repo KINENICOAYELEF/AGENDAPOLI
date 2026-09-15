@@ -208,5 +208,256 @@
     ],
     "familyId": "hip-v1-32",
     "replaces": "hip-v1-32"
+  },
+  {
+    "id": "knee-v1-02-r2",
+    "stem": "Un deportista de 23 años sufre un traumatismo rotacional sin contacto en rodilla derecha con hemartrosis a las dos horas. En la evaluación subaguda, el test de Lachman a 25° de flexión muestra traslación anterior aumentada con tope blando, mientras que el cajón anterior a 90° de flexión resulta dudoso o aparentemente negativo. ¿Qué factor biomecánico y anatómico fundamenta la mayor sensibilidad diagnóstica del Lachman frente al cajón anterior en la rotura del ligamento cruzado anterior?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A 90° el cuerno posterior meniscal y los isquiotibiales pueden bloquear la traslación, falseando el cajón."
+      },
+      {
+        "id": "B",
+        "text": "A 25° la cápsula articular posterior se tensa al máximo, permitiendo evaluar el tope óseo sin interferencia muscular."
+      },
+      {
+        "id": "C",
+        "text": "A 90° el ligamento colateral medial asume por completo la restricción primaria de traslación tibial anterior."
+      },
+      {
+        "id": "D",
+        "text": "A 25° el fascículo anteromedial del cruzado anterior se relaja totalmente, permitiendo aislar el daño periférico."
+      }
+    ],
+    "correct": "A",
+    "objective": "R-ACL0",
+    "condition": "Ligamentos",
+    "domain": "Interpretación",
+    "explanation": "A 90° de flexión, el cuerno posterior del menisco medial puede acuñarse contra el cóndilo femoral y el espasmo de isquiotibiales bloquea la tibia, reduciendo la sensibilidad del cajón anterior. A 20-30° (Lachman), las estructuras secundarias se relajan y el LCA es el restrictor primario casi exclusivo.",
+    "sources": [
+      {
+        "title": "van Eck et al. · Lachman and Anterior Drawer Biomechanics, Arthroscopy",
+        "url": "https://doi.org/10.1016/j.arthro.2012.06.012"
+      }
+    ],
+    "familyId": "knee-v1-02",
+    "replaces": "knee-v1-02"
+  },
+  {
+    "id": "knee-v1-36-r2",
+    "stem": "En una sentadilla con mayor flexión, la demanda patelofemoral cambia notablemente. ¿Qué combinación mecánica determina el estrés articular sobre el cartílago patelofemoral, y no simplemente la magnitud de la fuerza muscular?",
+    "options": [
+      {
+        "id": "A",
+        "text": "El ángulo Q estático en bipedestación combinado con la tensión del tracto iliotibial."
+      },
+      {
+        "id": "B",
+        "text": "La fuerza de reacción articular patelofemoral dividida por el área de contacto efectiva."
+      },
+      {
+        "id": "C",
+        "text": "El peso corporal total multiplicado por la longitud anatómica del tendón rotuliano."
+      },
+      {
+        "id": "D",
+        "text": "La velocidad angular concéntrica del cuádriceps sin considerar la superficie articular."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-36",
+    "condition": "Dolor patelofemoral",
+    "domain": "Fundamentos",
+    "explanation": "El estrés articular patelofemoral es una medida de presión (fuerza por unidad de superficie). Depende del cociente entre la fuerza de reacción articular patelofemoral (PFJRF) y el área de contacto disponible en ese ángulo de flexión específico, no únicamente de la fuerza bruta generada.",
+    "sources": [
+      {
+        "title": "Powers et al. · Biomecánica patelofemoral en cadena abierta y cerrada, JOSPT",
+        "url": "https://doi.org/10.2519/jospt.2014.5295"
+      }
+    ],
+    "familyId": "knee-v1-36",
+    "replaces": "knee-v1-36"
+  },
+  {
+    "id": "knee-v1-38-r2",
+    "stem": "Una persona joven y activa consulta por gonalgia anterior desencadenada por tareas de carga repetitivas. ¿Qué hallazgo semiológico orienta hacia dolor patelofemoral en lugar de una tendinopatía patelar proximal?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Dolor focalizado a la palpación del polo inferior de la patela que cede al relajar el cuádriceps."
+      },
+      {
+        "id": "B",
+        "text": "Dolor retro o peripatelar difuso al bajar escaleras o en sedente prolongado, sin dolor focal tendinoso."
+      },
+      {
+        "id": "C",
+        "text": "Presencia constante de dolor articular en reposo nocturno sin relación alguna con tareas de flexión."
+      },
+      {
+        "id": "D",
+        "text": "Sensación de inestabilidad rotatoria franca con bostezo en valgo y derrame articular masivo a tensión."
+      }
+    ],
+    "correct": "B",
+    "objective": "KNEE-38",
+    "condition": "Dolor patelofemoral",
+    "domain": "Evaluación",
+    "explanation": "El dolor patelofemoral se caracteriza por dolor retro o peripatelar difuso agravado en actividades que cargan la articulación flexionada (escaleras, cuclillas, signo de la butaca) sin dolor focalizado a la palpación tendinosa. La tendinopatía patelar presenta dolor exquisitamente focal en el polo inferior patelar.",
+    "sources": [
+      {
+        "title": "Crossley et al. · Patellofemoral Pain Clinical Practice Guideline, JOSPT",
+        "url": "https://doi.org/10.2519/jospt.2016.0301"
+      }
+    ],
+    "familyId": "knee-v1-38",
+    "replaces": "knee-v1-38"
+  },
+  {
+    "id": "shoulder-v1-02-r2",
+    "stem": "En la biomecánica de la elevación del brazo, ¿cómo actúa el manguito rotador para permitir la función eficaz del deltoides y evitar el ascenso descontrolado de la cabeza humeral?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Genera un par de fuerzas compresor y depresor que centra la cabeza humeral en la fosa glenoidea durante la elevación."
+      },
+      {
+        "id": "B",
+        "text": "Tracciona la cabeza humeral hacia superior y anterior para forzar el contacto íntimo contra el arco coracoacromial."
+      },
+      {
+        "id": "C",
+        "text": "Bloquea la rotación externa humeral para mantener la tuberosidad mayor oculta bajo el acromion durante todo el arco."
+      },
+      {
+        "id": "D",
+        "text": "Inhibe de forma refleja la contracción del serrato anterior para reducir la báscula lateral de la escápula en carga."
+      }
+    ],
+    "correct": "A",
+    "objective": "S-02",
+    "condition": "Manguito rotador",
+    "domain": "Fundamentos",
+    "explanation": "El manguito rotador (especialmente infraespinoso, subescapular y redondo menor) ejerce una fuerza caudal y compresiva en la glenoides que contrarresta el vector ascensional vertical del deltoides en los primeros 60° de elevación, manteniendo la cabeza humeral centrada y evitando el pinzamiento secundario.",
+    "sources": [
+      {
+        "title": "Inman et al. · Observations on the function of the shoulder joint, Clin Orthop Relat Res",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/890479/"
+      }
+    ],
+    "familyId": "shoulder-v1-02",
+    "replaces": "shoulder-v1-02"
+  },
+  {
+    "id": "hip-v1-03-r2",
+    "stem": "Dos personas presentan artrosis de cadera con grado radiográfico Kellgren-Lawrence III similar. Una camina 60 minutos sin molestias y la otra claudica a los 10 minutos por dolor. ¿Qué principio clínico fundamenta el diseño de sus planes de rehabilitación?",
+    "options": [
+      {
+        "id": "A",
+        "text": "El daño estructural visible en la radiografía debe definir una dosis idéntica de descarga para ambas personas."
+      },
+      {
+        "id": "B",
+        "text": "La capacidad funcional, metas personales y respuesta individual a la carga determinan la prescripción de ejercicio."
+      },
+      {
+        "id": "C",
+        "text": "La persona con menor tolerancia al caminar debe guardar reposo absoluto hasta normalizar el espacio articular."
+      },
+      {
+        "id": "D",
+        "text": "La edad cronológica y el peso corporal deben ser los únicos dos parámetros para autorizar el trabajo aeróbico."
+      }
+    ],
+    "correct": "B",
+    "objective": "H-03",
+    "condition": "Artrosis de cadera",
+    "domain": "Fundamentos",
+    "explanation": "La concordancia entre los hallazgos radiográficos en artrosis y la severidad clínica del dolor o la capacidad funcional es moderada o baja. La prescripción terapéutica debe basarse en la evaluación clínica individualizada, capacidad de carga actual, tolerancia sintomática y objetivos de la persona.",
+    "sources": [
+      {
+        "title": "NICE NG226 · Osteoarthritis Guidelines, 2022",
+        "url": "https://www.nice.org.uk/guidance/NG226/chapter/recommendations"
+      }
+    ],
+    "familyId": "hip-v1-03",
+    "replaces": "hip-v1-03"
+  },
+  {
+    "id": "knee-v1-26-r2",
+    "stem": "Un corredor refiere dolor focal en el polo inferior de la patela que apareció al aumentar bruscamente los saltos. El dolor se reproduce con una sentadilla declinada y limita su función, pero no hubo traumatismo ni una rotura demostrada. ¿Cuál es la formulación clínica más prudente?",
+    "options": [{"id":"A","text":"Tendinopatía relacionada con carga, que requiere integrar tolerancia y función."},{"id":"B","text":"Rotura parcial confirmada aunque no existan imágenes ni traumatismo."},{"id":"C","text":"Inflamación aguda obligatoria que exige reposo absoluto."},{"id":"D","text":"Cambio de grosor tendinoso, incluso si los síntomas no son concordantes."}],
+    "correct":"A","objective":"R-T0","condition":"Tendinopatía patelar","domain":"Reconocimiento",
+    "explanation":"La localización, relación con carga y limitación funcional apoyan una hipótesis de tendinopatía patelar. No permiten inferir una rotura ni un proceso inflamatorio uniforme. La etiqueta clínica debe seguir contrastándose con historia, examen y respuesta a carga.",
+    "sources":[{"title":"JOSPT · Tendinopatía patelar: guía de práctica clínica","url":"https://www.jospt.org/doi/10.2519/jospt.2024.12400"}],"familyId":"knee-v1-26","replaces":"knee-v1-26"
+  },
+  {
+    "id": "knee-v1-29-r2",
+    "stem": "Tras un giro sin contacto, una jugadora presenta derrame precoz y una prueba de Lachman con mayor traslación anterior que el lado contrario. ¿Qué hallazgo del examen se relaciona más directamente con la función que normalmente limita el LCA?",
+    "options":[{"id":"A","text":"Traslación anterior tibial aumentada, interpretada junto con el mecanismo y el tope final."},{"id":"B","text":"Extensión activa débil, porque el LCA genera la fuerza del cuádriceps."},{"id":"C","text":"Dolor en el tendón patelar, porque el LCA transmite la fuerza de la patela."},{"id":"D","text":"Traslación posterior aislada, porque el LCA es su freno principal."}],
+    "correct":"A","objective":"R-LI0","condition":"Ligamentos","domain":"Interpretación",
+    "explanation":"El LCA contribuye a limitar la traslación anterior tibial y al control rotacional. Un Lachman alterado aumenta la sospecha cuando es concordante con la historia; no reemplaza la evaluación completa ni define por sí solo el tratamiento.",
+    "sources":[{"title":"AAOS · Guía de lesiones del ligamento cruzado anterior","url":"https://www.aaos.org/quality/quality-programs/anterior-cruciate-ligament-injuries/"}],"familyId":"knee-v1-29","replaces":"knee-v1-29"
+  },
+  {
+    "id": "knee-v1-53-r2",
+    "stem": "Después de una torsión, una persona refiere que la rodilla se traba y no puede recuperar extensión completa hasta que cambia bruscamente de posición. Entre episodios, persiste una limitación mecánica. ¿Qué dato hace que este relato requiera valoración prioritaria frente a un chasquido habitual?",
+    "options":[{"id":"A","text":"La limitación persistente y mecánica de la extensión, no sólo el ruido."},{"id":"B","text":"Cualquier crepitación indolora al subir escaleras."},{"id":"C","text":"Dolor difuso sin cambio de movilidad."},{"id":"D","text":"Que el ruido sea audible para otra persona."}],
+    "correct":"A","objective":"R-M2","condition":"Menisco y bloqueos","domain":"Seguridad y diferencial",
+    "explanation":"Un bloqueo verdadero describe una restricción mecánica relevante del movimiento, especialmente si impide la extensión. Un chasquido o crepitación aislados son frecuentes y no equivalen a bloqueo. El dato no confirma por sí solo una causa anatómica, pero cambia la prioridad de valoración.",
+    "sources":[{"title":"AAOS · Lesiones meniscales","url":"https://orthoinfo.aaos.org/en/diseases--conditions/meniscus-tears/"}],"familyId":"knee-v1-53","replaces":"knee-v1-53"
+  },
+  {
+    "id": "knee-v1-56-r2",
+    "stem": "Tras un golpe directo sobre la cara anterior de la tibia con la rodilla flexionada, el examen muestra mayor traslación posterior tibial que el lado contrario. ¿Qué estructura es la hipótesis ligamentaria que mejor explica ese patrón?",
+    "options":[{"id":"A","text":"Ligamento cruzado posterior, que resiste principalmente la traslación posterior tibial."},{"id":"B","text":"Ligamento cruzado anterior, porque es el freno principal de la traslación posterior."},{"id":"C","text":"Tendón patelar, porque une la patela al fémur."},{"id":"D","text":"Ligamento patelofemoral medial, porque controla la traslación tibial."}],
+    "correct":"A","objective":"R-LI4","condition":"Ligamentos","domain":"Interpretación",
+    "explanation":"Mecanismo de impacto anterior sobre tibia flexionada y traslación posterior aumentada son concordantes con compromiso de LCP. Es una hipótesis de trabajo: se integra con dolor, estabilidad global, otras estructuras y seguridad.",
+    "sources":[{"title":"AAOS · Lesiones del ligamento cruzado posterior","url":"https://orthoinfo.aaos.org/en/diseases--conditions/posterior-cruciate-ligament-pcl-injuries/"}],"familyId":"knee-v1-56","replaces":"knee-v1-56"
+  },
+  {
+    "id": "knee-v1-61-r2",
+    "stem": "Una adolescente describe un episodio de desplazamiento lateral de la patela al girar, con derrame y aprehensión al llevar la patela lateralmente cerca de extensión. ¿Qué estructura medial es clínicamente relevante dentro del diferencial de estabilizadores?",
+    "options":[{"id":"A","text":"Ligamento patelofemoral medial, sin que el dato aislado confirme su lesión."},{"id":"B","text":"Ligamento colateral lateral como estabilizador medial principal."},{"id":"C","text":"Ligamento cruzado posterior como freno patelar lateral."},{"id":"D","text":"Tendón del bíceps femoral como único estabilizador patelar."}],
+    "correct":"A","objective":"R-PI1","condition":"Inestabilidad patelar","domain":"Interpretación",
+    "explanation":"El MPFL es un restricción medial relevante frente a la traslación lateral patelar en extensión temprana. La historia y aprehensión aumentan una hipótesis de inestabilidad, pero no demuestran por sí mismas una lesión aislada ni sustituyen evaluación médica cuando corresponde.",
+    "sources":[{"title":"JOSPT · Inestabilidad patelar: guía clínica","url":"https://www.jospt.org/doi/10.2519/jospt.2019.0303"}],"familyId":"knee-v1-61","replaces":"knee-v1-61"
+  },
+  {
+    "id":"hip-v1-23-r2","stem":"A las seis semanas de una artroplastia total de cadera sin signos de complicación, una persona camina distancias cortas pero evita subir escaleras por inseguridad y baja capacidad. ¿Cuál objetivo describe mejor el papel de la rehabilitación en esta fase?",
+    "options":[{"id":"A","text":"Recuperar función y capacidad de manera progresiva, considerando síntomas, seguridad y contexto."},{"id":"B","text":"Asumir que la prótesis normalizó fuerza, equilibrio y desempeño al salir de pabellón."},{"id":"C","text":"Evitar valorar función porque el reemplazo articular determina el resultado."},{"id":"D","text":"Prometer ausencia de dolor y de complicaciones futuras."}],"correct":"A","objective":"H-23","condition":"Artroplastia total de cadera","domain":"Intervención","explanation":"La artroplastia reemplaza superficies articulares, pero no restituye automáticamente fuerza, confianza, equilibrio ni participación. La rehabilitación se orienta a metas funcionales y a la fase postoperatoria, sin prometer resultados absolutos.","sources":[{"title":"AAOS · Reemplazo total de cadera","url":"https://orthoinfo.aaos.org/en/treatment/total-hip-replacement/"}],"familyId":"hip-v1-23","replaces":"hip-v1-23"
+  },
+  {
+    "id":"hip-v1-36-r2","stem":"En una persona con artrosis de cadera, el dolor al caminar bajó en dos semanas, pero el test de marcha sostenida y la subida de escalón casi no cambiaron. ¿Qué conclusión guía mejor la siguiente decisión?",
+    "options":[{"id":"A","text":"Dolor y capacidad pueden evolucionar de modo diferente; conviene seguir ambos y ajustar el plan."},{"id":"B","text":"La menor intensidad de dolor confirma recuperación completa de fuerza y tolerancia."},{"id":"C","text":"La radiografía permite estimar con precisión la distancia que podrá caminar."},{"id":"D","text":"Si bajó el dolor, ya no es necesario medir desempeño funcional."}],"correct":"A","objective":"H-36","condition":"Artrosis de cadera","domain":"Interpretación","explanation":"El dolor, la capacidad y la participación son resultados relacionados pero no intercambiables. Un cambio favorable en uno no prueba que los demás se hayan resuelto. Repetir medidas funcionales pertinentes permite decidir progresión de manera más defendible.","sources":[{"title":"NICE NG226 · Artrosis","url":"https://www.nice.org.uk/guidance/ng226/chapter/Recommendations"}],"familyId":"hip-v1-36","replaces":"hip-v1-36"
+  },
+  {
+    "id":"hip-v1-42-r2","stem":"Una radiografía tomada por otro motivo informa morfología cam en una persona sin dolor de cadera y con función normal. Semanas después consulta por dolor inguinal tras aumentar deporte. ¿Qué uso de aquel hallazgo es más riguroso?",
+    "options":[{"id":"A","text":"Es un dato anatómico que se integra con la presentación actual; no diagnostica por sí solo un síndrome."},{"id":"B","text":"Confirma que el dolor actual proviene del labrum sin necesidad de examen."},{"id":"C","text":"Obliga a suspender deporte de por vida aunque no haya síntomas."},{"id":"D","text":"Demuestra una disminución de cobertura acetabular."}],"correct":"A","objective":"H-42","condition":"Dolor no artrósico y FAI","domain":"Interpretación","explanation":"La morfología cam describe un contorno de la unión cabeza-cuello femoral. Puede estar presente en personas asintomáticas; su relevancia se interpreta con síntomas, signos clínicos, función y contexto, no como diagnóstico automático.","sources":[{"title":"Warwick Agreement · Síndrome FAI","url":"https://bjsm.bmj.com/content/50/19/1169"}],"familyId":"hip-v1-42","replaces":"hip-v1-42"
+  },
+  {
+    "id":"hip-v1-68-r2","stem":"Una interna escribe: “el problema principal es debilidad de abductores”, porque la usuaria tiene dificultad para caminar 20 minutos y el test de fuerza fue doloroso. ¿Cuál reformulación separa mejor hallazgo, limitación e hipótesis?",
+    "options":[{"id":"A","text":"Limitación: caminar 20 minutos; hallazgo: menor fuerza en prueba dolorosa; hipótesis: por precisar."},{"id":"B","text":"La dificultad para caminar demuestra una lesión concreta del glúteo medio."},{"id":"C","text":"Una hipótesis diagnóstica reemplaza la necesidad de describir actividad y participación."},{"id":"D","text":"Limitación funcional e hipótesis diagnóstica son etiquetas equivalentes."}],"correct":"A","objective":"H-68","condition":"Evaluación y razonamiento","domain":"Interpretación","explanation":"Una limitación describe qué actividad o participación está afectada. Los hallazgos se registran con sus condiciones de medición. La hipótesis intenta explicar el patrón y debe quedar abierta a contraste; no se convierte automáticamente en diagnóstico anatómico.","sources":[{"title":"OMS · Clasificación Internacional del Funcionamiento","url":"https://www.who.int/standards/classifications/international-classification-of-functioning-disability-and-health"}],"familyId":"hip-v1-68","replaces":"hip-v1-68"
+  },
+  {
+    "id":"shoulder-v1-05-r2","stem":"Durante la elevación del brazo, una persona presenta dolor lateral pero conserva movilidad pasiva casi completa. La rotación externa resistida es dolorosa y débil. ¿Qué interpretación de la función del manguito evita una conclusión simplista?",
+    "options":[{"id":"A","text":"Contribuye a estabilidad dinámica glenohumeral junto con otros músculos; el hallazgo no aísla un tendón."},{"id":"B","text":"Produce toda la elevación del brazo sin participación escapular ni deltoidea."},{"id":"C","text":"Aporta sólo estabilidad pasiva y no participa en control de carga."},{"id":"D","text":"El dolor resistido confirma una rotura estructural específica."}],"correct":"A","objective":"SHOULDER-5","condition":"Manguito rotador","domain":"Interpretación","explanation":"El manguito contribuye a la estabilidad dinámica y al control de la cabeza humeral, pero la función depende de un sistema completo. Un test doloroso o débil informa una respuesta a esa tarea, no confirma por sí mismo un tendón roto.","sources":[{"title":"JOSPT · Dolor relacionado con manguito rotador","url":"https://www.jospt.org/doi/10.2519/jospt.2025.13182"}],"familyId":"shoulder-v1-05","replaces":"shoulder-v1-05"
+  },
+  {
+    "id":"shoulder-v1-22-r2","stem":"Una nadadora tiene traslación humeral aumentada en ambos hombros al examen, pero no refiere dolor, sensación de salida ni limitación. Meses después, otra persona describe episodios de aprensión y subluxación al lanzar. ¿Qué diferencia ordena mejor el razonamiento?",
+    "options":[{"id":"A","text":"La laxitud puede ser asintomática; la inestabilidad es clínicamente relevante cuando se asocia a síntomas o pérdida de función."},{"id":"B","text":"Toda laxitud confirma lesión labral y debe etiquetarse como inestabilidad."},{"id":"C","text":"La inestabilidad se define únicamente por flexibilidad general."},{"id":"D","text":"La laxitud bilateral asintomática demuestra daño estructural oculto."}],"correct":"A","objective":"SHOULDER-22","condition":"Inestabilidad de hombro","domain":"Interpretación","explanation":"Laxitud describe mayor movilidad o traslación y puede ser una variante sin síntomas. Inestabilidad implica que esa movilidad se relaciona con síntomas, aprehensión, episodios de salida o pérdida funcional. El contexto cambia el significado del hallazgo.","sources":[{"title":"JOSPT · Inestabilidad de hombro","url":"https://www.jospt.org/doi/10.2519/jospt.2019.0302"}],"familyId":"shoulder-v1-22","replaces":"shoulder-v1-22"
+  },
+  {
+    "id":"shoulder-v1-48-r2","stem":"Una persona con artrosis glenohumeral pregunta si debe dejar de mover el hombro hasta “regenerar el cartílago”. Tiene dolor tolerable, metas de autocuidado y no hay signos de alarma. ¿Qué respuesta evita promesas y orienta una intervención defendible?",
+    "options":[{"id":"A","text":"Adaptar ejercicio y actividad a capacidad, síntomas y metas, sin prometer regenerar cartílago."},{"id":"B","text":"La mejoría del dolor demostraría regeneración del cartílago."},{"id":"C","text":"Cualquier molestia durante movimiento equivale a daño nuevo."},{"id":"D","text":"El ejercicio reemplaza siempre toda otra alternativa de manejo."}],"correct":"A","objective":"SHOULDER-48","condition":"Artrosis glenohumeral","domain":"Intervención","explanation":"El movimiento y ejercicio se prescriben con objetivos funcionales, respuesta individual y progresión razonable. No es adecuado prometer regeneración del cartílago ni convertir cualquier síntoma en señal de lesión nueva.","sources":[{"title":"NICE NG226 · Artrosis","url":"https://www.nice.org.uk/guidance/ng226/chapter/Recommendations"}],"familyId":"shoulder-v1-48","replaces":"shoulder-v1-48"
+  },
+  {
+    "id":"shoulder-v1-54-r2","stem":"Tras una reparación de manguito, una persona logra mayor rango pasivo que activo en elevación, sin nueva caída ni signo de alarma. ¿Cuál es la lectura inicial más útil para decidir qué explorar después?",
+    "options":[{"id":"A","text":"Existe una diferencia entre movilidad disponible y desempeño activo; hay que integrar dolor, control, fuerza y fase de recuperación."},{"id":"B","text":"El rango pasivo demuestra que la fuerza ya se recuperó."},{"id":"C","text":"El movimiento activo no carga tejidos reparados."},{"id":"D","text":"La diferencia prueba de forma aislada una nueva rotura."}],"correct":"A","objective":"SHOULDER-54","condition":"Postoperatorio y progresión","domain":"Interpretación","explanation":"El movimiento pasivo describe amplitud disponible con fuerza externa; el activo exige producción y control. La discrepancia orienta qué explorar, pero no identifica por sí sola la causa ni autoriza inferir una complicación estructural.","sources":[{"title":"AAOS · Lesiones y reparación del manguito rotador","url":"https://orthoinfo.aaos.org/en/treatment/rotator-cuff-tears-surgical-treatment-options/"}],"familyId":"shoulder-v1-54","replaces":"shoulder-v1-54"
+  },
+  {
+    "id":"shoulder-v1-58-r2","stem":"En control posoperatorio, una estudiante propone dar de alta porque la persona asistió a todas las sesiones y ya está en la semana esperada del protocolo. Aún le cuesta vestir una prenda por encima de la cabeza y evitar compensaciones. ¿Qué conjunto debe pesar más en la decisión?",
+    "options":[{"id":"A","text":"Autoinforme, movilidad, capacidad y desempeño de tareas relevantes, interpretados según fase."},{"id":"B","text":"Sólo el número de visitas asistidas."},{"id":"C","text":"Sólo la semana del calendario posoperatorio."},{"id":"D","text":"Sólo una comparación visual rápida entre hombros."}],"correct":"A","objective":"SHOULDER-58","condition":"Postoperatorio y progresión","domain":"Interpretación","explanation":"El tiempo desde cirugía aporta contexto, pero no sustituye medidas de síntomas, movilidad, capacidad y desempeño funcional. La decisión se apoya en criterios relevantes para la persona y en restricciones de fase, no en una sola variable.","sources":[{"title":"JOSPT · Resultados funcionales de hombro","url":"https://www.jospt.org/doi/10.2519/jospt.2022.11330"}],"familyId":"shoulder-v1-58","replaces":"shoulder-v1-58"
   }
 ]
