@@ -16,5 +16,5 @@ export default function RepasoMskPage() {
     <p className="my-4 text-slate-600">Este módulo estará disponible cuando tu cuenta sea autorizada como interno o docente.</p>
     <Link className="font-bold text-indigo-700" href="/app/dashboard">Volver al inicio</Link>
   </section>;
-  return <RepasoMsk uid={user.uid} />;
+  return <><RepasoMsk uid={user.uid} />{user.role === 'DOCENTE' && <Link href="/app/repaso-msk/banco" className="fixed bottom-5 right-5 rounded-full bg-slate-950 px-4 py-3 text-sm font-bold text-white shadow-lg">Administrar banco docente</Link>}</>;
 }

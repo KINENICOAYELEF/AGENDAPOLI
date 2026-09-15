@@ -143,9 +143,9 @@ test('API acepta un interno autorizado y lo limita a su propio espacio privado',
   }) } };
   const route = load('src/app/api/repaso-msk/route.ts', {
     'next/server': require('next/server'), 'node:crypto': require('node:crypto'),
-    '@/lib/server/firebaseAdmin': { requireRepasoUser: async () => ({ uid: 'interno-uid', user: { role: 'INTERNO' } }) },
+    '@/lib/server/firebaseAdmin': { requireRepasoUser: async () => ({ uid: 'interno-uid', user: { role: 'INTERNO' } }), getAdminDb: () => ({ collection: () => ({ doc: () => ({ get: async () => ({ data: () => ({ hiddenIds: [] }) }) }) }) }) },
     '@/lib/server/apiResponse': { getRequestId: () => 'test', handleApiError: () => ({ status: 500 }) },
-    '@/lib/repaso-msk/server': { attemptsRef: uid => { assert.equal(uid, 'interno-uid'); return ref; }, bankQuestions, attemptView },
+    '@/lib/repaso-msk/server': { attemptsRef: uid => { assert.equal(uid, 'interno-uid'); return ref; }, bankQuestionsVisible: bankQuestions, attemptView },
     '@/lib/repaso-msk/catalog': catalog, '@/lib/repaso-msk/bank-state': bankState, '@/lib/repaso-msk/selection': selection,
   });
   const response = await route.POST({ headers: new Headers(), json: async () => ({ version: 'shoulder-v1' }) });
@@ -205,9 +205,9 @@ test('API crea cada banco una vez, retoma el correcto y exige permiso para repet
   }) } };
   const route = load('src/app/api/repaso-msk/route.ts', {
     'next/server': require('next/server'), 'node:crypto': require('node:crypto'),
-    '@/lib/server/firebaseAdmin': { requireRepasoUser: async () => ({ uid: 'teacher' }) },
+    '@/lib/server/firebaseAdmin': { requireRepasoUser: async () => ({ uid: 'teacher' }), getAdminDb: () => ({ collection: () => ({ doc: () => ({ get: async () => ({ data: () => ({ hiddenIds: [] }) }) }) }) }) },
     '@/lib/server/apiResponse': { getRequestId: () => 'test', handleApiError: () => ({ status: 500 }) },
-    '@/lib/repaso-msk/server': { attemptsRef: () => ref, bankQuestions, attemptView },
+    '@/lib/repaso-msk/server': { attemptsRef: () => ref, bankQuestionsVisible: bankQuestions, attemptView },
     '@/lib/repaso-msk/catalog': catalog, '@/lib/repaso-msk/bank-state': bankState,
     '@/lib/repaso-msk/selection': selection,
   });

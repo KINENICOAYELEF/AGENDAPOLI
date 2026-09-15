@@ -15,6 +15,10 @@ import type { Attempt, AttemptView, ReviewedQuestion } from './types';
 export const bank = [...bankData, ...hipData, ...kneeAdditional, ...kneeBatch3, ...hipAdditional, ...hipBatch3, ...shoulderData, ...shoulderBatch2, ...revisions] as ReviewedQuestion[];
 const replaced = new Set(revisions.map(q => q.replaces));
 export const bankQuestions = (version: Attempt['version']) => bank.filter(q => q.id.startsWith(`${version}-`) && !replaced.has(q.id));
+export const bankQuestionsVisible = (version: Attempt['version'], hiddenIds: Iterable<string> = []) => {
+  const hidden = new Set(hiddenIds);
+  return bankQuestions(version).filter(q => !hidden.has(q.id));
+};
 export const attemptsRef = (uid: string) => (getAdminDb() as Firestore).collection('msk_quiz_private').doc(uid).collection('attempts');
 // Keep the order stable for a resumed attempt, but remove any answer-position cue
 // embedded in authoring order. Option IDs remain unchanged for scoring and review.
