@@ -11,8 +11,32 @@ import shoulderBatch2 from './shoulder-batch2.json';
 import revisions from './revisions.json';
 import type { Attempt, AttemptView, ReviewedQuestion } from './types';
 
+// A legacy item may retain a factual answer, but a new attempt must ask the
+// learner to weigh it as clinical evidence rather than merely recite a label.
+// Individually rewritten items use one of the decision domains and pass through.
+const legacyDomainToDecision: Record<string, string> = {
+  Reconocimiento: 'Evaluación e interpretación',
+  Fundamentos: 'Razonamiento aplicado',
+  'Conocimientos esenciales': 'Integración clínico-funcional',
+};
+function asClinicalDecision(question: ReviewedQuestion): ReviewedQuestion {
+  const domain = legacyDomainToDecision[question.domain];
+  if (!domain) return question;
+  const trimmed = question.stem.trim();
+  const match = trimmed.match(/^([\s\S]*?)(?:\s*¿[^?]+\?)$/);
+  const context = match?.[1]?.trim();
+  const prefix = context && !context.startsWith('¿')
+    ? context
+    : `En la discusión de un caso de ${question.condition.toLowerCase()}, el equipo necesita usar este principio para cambiar una decisión y no sólo repetir una definición.`;
+  const task = question.domain === 'Reconocimiento'
+    ? '¿Cuál opción debe ganar mayor peso como hipótesis provisional, y qué hallazgo discordante obligaría a reconsiderarla?'
+    : '¿Cuál opción cambia una decisión de evaluación, carga, educación o seguimiento sin exceder lo que permite inferir el dato?';
+  return { ...question, domain, stem: `${prefix}\n\n${task}` };
+}
+
 // Keep immutable originals for attempts already saved; select only current revisions for new attempts.
-export const bank = [...bankData, ...hipData, ...kneeAdditional, ...kneeBatch3, ...hipAdditional, ...hipBatch3, ...shoulderData, ...shoulderBatch2, ...revisions] as ReviewedQuestion[];
+const sourceBank = [...bankData, ...hipData, ...kneeAdditional, ...kneeBatch3, ...hipAdditional, ...hipBatch3, ...shoulderData, ...shoulderBatch2, ...revisions] as ReviewedQuestion[];
+export const bank = sourceBank.map(asClinicalDecision);
 const replaced = new Set(revisions.map(q => q.replaces));
 export const bankQuestions = (version: Attempt['version']) => bank.filter(q => q.id.startsWith(`${version}-`) && !replaced.has(q.id));
 export const bankQuestionsVisible = (version: Attempt['version'], hiddenIds: Iterable<string> = []) => {

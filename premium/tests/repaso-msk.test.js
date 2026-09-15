@@ -170,6 +170,19 @@ test('tres zonas tienen ítems activos completos, cuatro alternativas y fundamen
   for (const key of ['A', 'B', 'C', 'D']) assert.ok(hipBank.filter(q => q.correct === key).length >= 8);
   assert.ok(hipBank.filter(q => q.domain === 'Fundamentos').length >= 5);
 });
+test('banco activo no expone ítems de reconocimiento o definición como tarea de estudiante', () => {
+  const legacy = new Set(['Reconocimiento', 'Fundamentos', 'Conocimientos esenciales']);
+  for (const version of ['knee-v1', 'hip-v1', 'shoulder-v1']) {
+    const questions = bankQuestions(version);
+    assert.equal(questions.length, 105);
+    for (const question of questions) {
+      assert.equal(legacy.has(question.domain), false, question.id);
+      assert.match(question.stem, /¿(?:cuál|qué|cómo|por qué)/i, question.id);
+      assert.ok(question.explanation.length > 60, question.id);
+      assert.ok(question.sources.length > 0, question.id);
+    }
+  }
+});
 test('cada prueba reserva la mayor parte para aplicación e interpretación clínica', () => {
   for (const version of ['knee-v1', 'hip-v1', 'shoulder-v1']) {
     const { questions } = selection.selectQuestions(bankQuestions(version), [], false, max => 0);

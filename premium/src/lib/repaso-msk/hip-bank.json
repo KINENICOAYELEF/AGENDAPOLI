@@ -1,30 +1,30 @@
 [
   {
     "id": "hip-v1-01",
-    "stem": "Una persona de 68 años tiene dolor inguinal gradual al caminar, rigidez matinal de 15 minutos y dificultad para ponerse los calcetines. La rotación interna está limitada y reproduce su dolor. Sin trauma ni deterioro brusco. ¿Qué hipótesis integra mejor el conjunto?",
+    "stem": "Una persona de 68 años tiene dolor inguinal gradual al caminar, rigidez breve y dificultad para ponerse calcetines. La rotación interna limitada reproduce su dolor; no hay trauma ni deterioro brusco. Quiere volver a caminar al almacén. ¿Qué información convertiría esta hipótesis inicial en un plan de rehabilitación individual, en vez de tratar la radiografía o la edad?",
     "options": [
       {
         "id": "A",
-        "text": "Dolor exclusivamente referido de columna."
+        "text": "Repetir imagen y usar su grado como criterio principal de dosis y progresión."
       },
       {
         "id": "B",
-        "text": "Artrosis de cadera."
+        "text": "Cuantificar marcha, transferencias, objetivo de desplazamiento y respuesta a carga antes de graduar ejercicio."
       },
       {
         "id": "C",
-        "text": "Tendinopatía glútea aislada."
+        "text": "Medir sólo fuerza abductora y atribuirle por completo la limitación al caminar."
       },
       {
         "id": "D",
-        "text": "Lesión aguda de aductores."
+        "text": "Usar un protocolo por edad sin registrar tarea prioritaria ni tolerancia actual."
       }
     ],
     "correct": "B",
     "objective": "H-01",
     "condition": "Artrosis de cadera",
-    "domain": "Reconocimiento",
-    "explanation": "El patrón favorece artrosis. La distribución por sí sola no basta: hay que integrar rigidez, movilidad y función; los datos atípicos obligarían a ampliar la evaluación.",
+    "domain": "Objetivos y seguimiento",
+    "explanation": "El patrón hace plausible artrosis de cadera, pero el diagnóstico de trabajo no especifica dosis ni objetivo. Capacidad de marcha, transferencias, meta acordada y respuesta a carga permiten construir y después reevaluar un plan. Datos atípicos obligarían a ampliar el diferencial.",
     "sources": [
       {
         "title": "NICE NG226 · Artrosis",
@@ -166,30 +166,30 @@
   },
   {
     "id": "hip-v1-06",
-    "stem": "Se informa morfología cam en una radiografía solicitada por otro motivo. La persona no tiene dolor ni limitación. ¿Cuál interpretación corresponde?",
+    "stem": "Una radiografía tomada por otro motivo informa morfología cam en una persona sin dolor, limitación ni antecedente de reducción de actividad. Semanas después pregunta si debe abandonar deporte para “evitar que se transforme en síndrome”. ¿Qué decisión comunica mejor incertidumbre y seguridad?",
     "options": [
       {
         "id": "A",
-        "text": "Es un hallazgo morfológico; por sí solo no establece síndrome FAI."
+        "text": "Explicar que es un hallazgo morfológico, no un síndrome por sí solo; mantener actividad según tolerancia y reevaluar si aparecen síntomas concordantes."
       },
       {
         "id": "B",
-        "text": "Confirma síndrome FAI aunque no existan síntomas."
+        "text": "Indicar que confirma síndrome FAI aunque no existan síntomas ni limitación."
       },
       {
         "id": "C",
-        "text": "Demuestra una lesión labral sintomática."
+        "text": "Indicar que demuestra lesión labral sintomática y requiere evitar flexión de cadera."
       },
       {
         "id": "D",
-        "text": "Indica que necesita cirugía para prevenir cualquier dolor futuro."
+        "text": "Indicar cirugía preventiva para eliminar el riesgo de dolor futuro."
       }
     ],
     "correct": "A",
     "objective": "H-06",
     "condition": "Dolor no artrósico y FAI",
-    "domain": "Fundamentos",
-    "explanation": "Warwick exige concordancia entre síntomas, signos clínicos e imagen. Una forma ósea aislada no equivale al síndrome ni decide el tratamiento.",
+    "domain": "Educación y autocuidado",
+    "explanation": "El consenso Warwick requiere concordancia entre síntomas, signos clínicos e imagen. Una morfología aislada no equivale al síndrome ni decide tratamiento. La educación evita medicalizar un hallazgo y define qué cambios sí justificarían nueva evaluación.",
     "sources": [
       {
         "title": "Consenso Warwick · Síndrome FAI",
@@ -232,30 +232,30 @@
   },
   {
     "id": "hip-v1-08",
-    "stem": "Una deportista presenta dolor inguinal relacionado con flexión y giro, signos clínicos concordantes e imágenes compatibles con morfología de impingement. ¿Qué conjunto permite considerar síndrome FAI?",
+    "stem": "Una deportista presenta dolor inguinal con flexión y giro, signos provocadores concordantes e imágenes con morfología compatible. Quiere saber si debe operarse. ¿Qué conclusión usa la tríada diagnóstica sin saltar desde síndrome a indicación quirúrgica?",
     "options": [
       {
         "id": "A",
-        "text": "Solo el tamaño del ángulo alfa en la radiografía."
+        "text": "La morfología radiográfica basta para indicar cirugía, aunque no se integre función."
       },
       {
         "id": "B",
-        "text": "Solo la sensación de chasquido, aunque sea indoloro."
+        "text": "Un chasquido aislado basta para decidir cirugía, aunque no sea concordante con dolor."
       },
       {
         "id": "C",
-        "text": "La concordancia de síntomas, signos e imágenes."
+        "text": "La tríada permite considerar síndrome FAI; la conducta posterior requiere metas, capacidad, preferencias y respuesta a manejo conservador."
       },
       {
         "id": "D",
-        "text": "Solo el dolor inguinal, independientemente del examen."
+        "text": "Dolor inguinal por sí solo confirma síndrome FAI y excluye otros competidores."
       }
     ],
     "correct": "C",
     "objective": "H-08",
     "condition": "Dolor no artrósico y FAI",
-    "domain": "Reconocimiento",
-    "explanation": "El diagnóstico requiere el conjunto, no una característica aislada. Considerar FAI no excluye condiciones coexistentes ni determina cirugía.",
+    "domain": "Seguridad y derivación",
+    "explanation": "El consenso Warwick requiere síntomas, signos clínicos e imagen concordantes. La tríada permite una hipótesis de síndrome, no demuestra una estructura causal única ni determina cirugía. La decisión integra objetivos, función, preferencias, riesgos y respuesta a manejo conservador.",
     "sources": [
       {
         "title": "Consenso Warwick · Síndrome FAI",
