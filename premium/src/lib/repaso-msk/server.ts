@@ -9,34 +9,15 @@ import hipBatch3 from './hip-batch3.json';
 import shoulderData from './shoulder-bank.json';
 import shoulderBatch2 from './shoulder-batch2.json';
 import revisions from './revisions.json';
+import { reconstructAsAdvancedItem } from './advanced-item';
 import type { Attempt, AttemptView, ReviewedQuestion } from './types';
-
-// A legacy item may retain a factual answer, but a new attempt must ask the
-// learner to weigh it as clinical evidence rather than merely recite a label.
-// Individually rewritten items use one of the decision domains and pass through.
-const legacyDomainToDecision: Record<string, string> = {
-  Reconocimiento: 'Evaluación e interpretación',
-  Fundamentos: 'Razonamiento aplicado',
-  'Conocimientos esenciales': 'Integración clínico-funcional',
-};
-function asClinicalDecision(question: ReviewedQuestion): ReviewedQuestion {
-  const domain = legacyDomainToDecision[question.domain];
-  if (!domain) return question;
-  const trimmed = question.stem.trim();
-  const match = trimmed.match(/^([\s\S]*?)(?:\s*¿[^?]+\?)$/);
-  const context = match?.[1]?.trim();
-  const prefix = context && !context.startsWith('¿')
-    ? context
-    : `En la discusión de un caso de ${question.condition.toLowerCase()}, el equipo necesita usar este principio para cambiar una decisión y no sólo repetir una definición.`;
-  const task = question.domain === 'Reconocimiento'
-    ? '¿Cuál opción debe ganar mayor peso como hipótesis provisional, y qué hallazgo discordante obligaría a reconsiderarla?'
-    : '¿Cuál opción cambia una decisión de evaluación, carga, educación o seguimiento sin exceder lo que permite inferir el dato?';
-  return { ...question, domain, stem: `${prefix}\n\n${task}` };
-}
 
 // Keep immutable originals for attempts already saved; select only current revisions for new attempts.
 const sourceBank = [...bankData, ...hipData, ...kneeAdditional, ...kneeBatch3, ...hipAdditional, ...hipBatch3, ...shoulderData, ...shoulderBatch2, ...revisions] as ReviewedQuestion[];
-export const bank = sourceBank.map(asClinicalDecision);
+// Every active item is reconstructed at the delivery boundary.  Historical
+// source records remain immutable for audit, while both the teacher panel and
+// a newly created attempt receive the same intermediate/high decision item.
+export const bank = sourceBank.map(reconstructAsAdvancedItem);
 const replaced = new Set(revisions.map(q => q.replaces));
 export const bankQuestions = (version: Attempt['version']) => bank.filter(q => q.id.startsWith(`${version}-`) && !replaced.has(q.id));
 export const bankQuestionsVisible = (version: Attempt['version'], hiddenIds: Iterable<string> = []) => {
@@ -58,7 +39,12 @@ function optionsForAttempt(question: ReviewedQuestion, attemptId: string) {
 }
 export function attemptView(attempt: Attempt): AttemptView {
   const ordered = attempt.questionIds.map(id => {
-    const question = bank.find(q => q.id === id);
+    // A replaced ID can only belong to a legacy attempt. Keep exactly the
+    // wording that student received then; current IDs resolve to the rebuilt
+    // clinical-decision version used by new attempts.
+    const question = replaced.has(id)
+      ? sourceBank.find(q => q.id === id)
+      : bank.find(q => q.id === id);
     if (!question) throw new Error('Unknown bank version');
     return question;
   });

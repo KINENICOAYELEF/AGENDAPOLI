@@ -14,7 +14,8 @@ function load(file, dependencies = {}) {
 const types = load('src/lib/repaso-msk/types.ts');
 const { advanceAttempt } = load('src/lib/repaso-msk/engine.ts', { './types': types });
 const jsonBanks = Object.fromEntries(['knee-bank', 'hip-bank', 'knee-additional', 'knee-batch3', 'hip-additional', 'hip-batch3', 'shoulder-bank', 'shoulder-batch2', 'revisions'].map(name => [`./${name}.json`, require(`../src/lib/repaso-msk/${name}.json`)]));
-const { attemptView, bankQuestions } = load('src/lib/repaso-msk/server.ts', { ...jsonBanks, '@/lib/server/firebaseAdmin': {} });
+const advancedItem = load('src/lib/repaso-msk/advanced-item.ts', { './types': types });
+const { attemptView, bankQuestions } = load('src/lib/repaso-msk/server.ts', { ...jsonBanks, './advanced-item': advancedItem, '@/lib/server/firebaseAdmin': {} });
 const selection = load('src/lib/repaso-msk/selection.ts', { './types': types });
 const catalog = load('src/lib/repaso-msk/catalog.ts');
 const bankState = load('src/lib/repaso-msk/bank-state.ts');
