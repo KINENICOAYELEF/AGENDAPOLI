@@ -104,17 +104,12 @@ function select<T>(values: T[], key: string) {
   return values[value % values.length];
 }
 
-function optionForDecision(option: string, isCorrect: boolean, discriminator: string, boundary: string) {
-  if (isCorrect) return `${option} como hipótesis o decisión provisional, y comprobar ${discriminator} antes de cerrar el caso.`;
-  return `${option}, pero sólo si la historia, el examen y el retest aportan datos concordantes; de otro modo, ${boundary.toLowerCase()}`;
-}
-
 export function reconstructAsAdvancedItem(question: ReviewedQuestion): ReviewedQuestion {
   const lens = lensFor(question);
   const discriminator = select(lens.discriminators, question.id);
   const stem = [
     question.stem.trim(),
-    `El caso contiene información suficiente para orientar una hipótesis, pero no para cerrarla: la tarea significativa es ${lens.function}. Antes de atribuir el problema a una sola estructura, contrasta ${discriminator}.`,
+    `Para decidir, no basta con el hallazgo más llamativo: la tarea relevante es ${lens.function}. Contrasta ${discriminator}.`,
     decisionFor(question),
   ].join('\n\n');
   const explanation = `${question.explanation.trim()} ${lens.boundary} La respuesta correcta representa la mejor decisión con la información actual; no sustituye una evaluación completa ni impide coexistencia de hallazgos.`;
@@ -123,10 +118,9 @@ export function reconstructAsAdvancedItem(question: ReviewedQuestion): ReviewedQ
     stem,
     domain: domainFor(question),
     objective: `Ponderar datos concordantes y discordantes para ${question.objective.charAt(0).toLowerCase()}${question.objective.slice(1)}`,
-    options: question.options.map(option => ({
-      ...option,
-      text: optionForDecision(option.text, option.id === question.correct, discriminator, lens.boundary),
-    })),
+    // Do not decorate only the keyed option: that would make the answer
+    // visible by style rather than force comparison of plausible alternatives.
+    options: question.options,
     explanation,
   };
 }
